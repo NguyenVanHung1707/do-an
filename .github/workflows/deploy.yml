@@ -44,8 +44,14 @@ jobs:
             cd Graduation_thesis_ver2_BE
 
             # Khởi động / tái xây dựng các container bị thay đổi
-            echo "Đang tái xây dựng các container Docker bị thay đổi..."
-            docker compose up --build -d
+            echo "Đang tái xây dựng các container Docker sequentially để tiết kiệm RAM trên VPS..."
+            docker compose build fe_web
+            docker compose build backend
+            docker compose build detect_face
+            docker compose build ai_proctor
+            
+            echo "Khởi chạy các service..."
+            docker compose up -d
 
             # Dọn dẹp các Docker image cũ/rác để tránh đầy ổ đĩa VPS
             echo "Dọn dẹp Docker images không sử dụng..."

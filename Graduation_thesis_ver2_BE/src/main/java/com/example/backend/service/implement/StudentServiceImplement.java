@@ -330,4 +330,50 @@ public class StudentServiceImplement implements StudentService {
             throw new CustomException("Image not found", HttpStatus.NOT_FOUND);
         }
     }
+
+    @Override
+    public java.util.Map<String, Object> getStudentProfileStatus(String sub, String defaultEmail, String defaultName) {
+        java.util.Map<String, Object> status = new java.util.HashMap<>();
+        Optional<Student> studentOpt = studentRepository.findByKeycloakId(sub);
+        if (studentOpt.isEmpty()) {
+            status.put("exists", false);
+            status.put("profileCompleted", false);
+            status.put("studentCode", null);
+            status.put("name", defaultName);
+            status.put("email", defaultEmail);
+        } else {
+            Student student = studentOpt.get();
+            status.put("exists", true);
+            boolean completed = student.getStudentCode() != null && !student.getStudentCode().trim().isEmpty();
+            status.put("profileCompleted", completed);
+            status.put("studentCode", student.getStudentCode());
+            status.put("name", student.getName() != null ? student.getName() : defaultName);
+            status.put("email", student.getEmail() != null ? student.getEmail() : defaultEmail);
+        }
+        return status;
+    }
+
+    @Override
+    public Student completeStudentProfile(String sub, String studentCode, String name, String email) {
+        if (studentCode == null || studentCode.trim().isEmpty()) {
+            throw new CustomException("Mã số sinh viên (MSSV) là bắt buộc", HttpStatus.BAD_REQUEST);
+        }
+        Optional<Student> studentOpt = studentRepository.findByKeycloakId(sub);
+        Student student;
+        if (studentOpt.isEmpty()) {
+            student = new Student();
+            student.setKeycloakId(sub);
+            student.setIsActive(true);
+        } else {
+            student = studentOpt.get();
+        }
+        student.setStudentCode(studentCode.trim());
+        if (name != null && !name.trim().isEmpty()) {
+            student.setName(name.trim());
+        }
+        if (email != null && !email.trim().isEmpty()) {
+            student.setEmail(email.trim());
+        }
+        return studentRepository.save(student);
+    }
 }

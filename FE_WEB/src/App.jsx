@@ -26,9 +26,10 @@ import TeacherApproval from './views/Admin/TeacherApproval';
 import MyCourses from './views/Student/MyCourses';
 import FaceUpload from './views/Student/FaceUpload';
 import AnswerForm from './views/Student/AnswerForm';
+import CompleteProfile from './views/Student/CompleteProfile';
 
 // API
-import { getTeacherProfile } from './services/api';
+import { getTeacherProfile, getStudentProfile } from './services/api';
 
 export default function App() {
   const { isAuthenticated, role } = useSelector((state) => state.auth);
@@ -42,6 +43,10 @@ export default function App() {
   // Teacher Approval verification states
   const [teacherProfile, setTeacherProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+
+  // Student Profile status verification states
+  const [studentProfile, setStudentProfile] = useState(null);
+  const [loadingStudentProfile, setLoadingStudentProfile] = useState(false);
 
   // Auto-set initial view and fetch classes based on role upon successful authentication
   useEffect(() => {
@@ -75,6 +80,41 @@ export default function App() {
       setTeacherProfile(null);
     }
   }, [isAuthenticated, role]);
+
+  // Load student profile if logged in as a student
+  useEffect(() => {
+    if (isAuthenticated && role === 'student') {
+      setLoadingStudentProfile(true);
+      getStudentProfile()
+        .then(profile => {
+          setStudentProfile(profile);
+        })
+        .catch(err => {
+          console.error("Lỗi lấy thông tin sinh viên:", err);
+        })
+        .finally(() => {
+          setLoadingStudentProfile(false);
+        });
+    } else {
+      setStudentProfile(null);
+    }
+  }, [isAuthenticated, role]);
+
+  const handleProfileCompleted = () => {
+    setLoadingStudentProfile(true);
+    getStudentProfile()
+      .then(profile => {
+        setStudentProfile(profile);
+        dispatch(fetchClasses());
+        setCurrentView('my-courses');
+      })
+      .catch(err => {
+        console.error("Lỗi tải lại hồ sơ sinh viên sau khi cập nhật:", err);
+      })
+      .finally(() => {
+        setLoadingStudentProfile(false);
+      });
+  };
 
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -162,7 +202,23 @@ export default function App() {
     );
   }
 
+  // If currently fetching the student profile state, show premium spinner
+  if (isAuthenticated && role === 'student' && (loadingStudentProfile || !studentProfile)) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-600">
+        <Navbar onToggleSidebar={() => {}} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold text-slate-500">Đang tải thông tin tài khoản...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const isTeacherPending = teacherProfile && (teacherProfile.accountStatus === 'PENDING' || teacherProfile.accountStatus === 'REJECTED');
+  const isStudentIncomplete = studentProfile && !studentProfile.profileCompleted;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-600">
@@ -177,6 +233,10 @@ export default function App() {
       ) : isTeacherPending ? (
         <div className="flex-1 flex flex-col justify-center bg-slate-50">
           <PendingApproval teacherData={teacherProfile} />
+        </div>
+      ) : isStudentIncomplete ? (
+        <div className="flex-1 flex flex-col justify-center bg-slate-50">
+          <CompleteProfile onComplete={handleProfileCompleted} />
         </div>
       ) : (
         <div className="flex-1 flex relative">

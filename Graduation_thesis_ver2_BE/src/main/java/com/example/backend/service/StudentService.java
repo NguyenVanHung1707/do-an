@@ -32,4 +32,8 @@ public interface StudentService {
     void uploadMyImage(MultipartFile file, String sub);
 
     Object getMyImage(String sub);
+
+    java.util.Map<String, Object> getStudentProfileStatus(String sub, String defaultEmail, String defaultName);
+
+    Student completeStudentProfile(String sub, String studentCode, String name, String email);
 }

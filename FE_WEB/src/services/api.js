@@ -216,3 +216,15 @@ export const getPerformanceMetrics = async () => {
 export const getTeacherProfile = async () => {
   return await apiFetch('/teacher/profile');
 };
+
+export const getStudentProfile = async () => {
+  return await apiFetch('/student/profile');
+};
+
+export const completeStudentProfile = async (payload) => {
+  return await apiFetch('/student/complete-profile', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+};
+

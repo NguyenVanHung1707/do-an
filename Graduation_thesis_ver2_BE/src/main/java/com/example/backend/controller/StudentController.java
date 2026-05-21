@@ -49,4 +49,32 @@ public class StudentController {
     public ResponseEntity<?> getMyImage(@AuthenticationPrincipal Jwt jwt){
         return ResponseEntity.ok(studentService.getMyImage(jwt.getClaimAsString("sub")));
     }
+
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile(@AuthenticationPrincipal Jwt jwt) {
+        String sub = jwt.getClaimAsString("sub");
+        String email = jwt.getClaimAsString("email");
+        String name = jwt.getClaimAsString("name");
+        if (name == null) {
+            name = jwt.getClaimAsString("preferred_username");
+        }
+        return ResponseEntity.ok(studentService.getStudentProfileStatus(sub, email != null ? email : "", name != null ? name : ""));
+    }
+
+    @PostMapping("/complete-profile")
+    public ResponseEntity<?> completeProfile(@RequestBody java.util.Map<String, String> payload, @AuthenticationPrincipal Jwt jwt) {
+        String sub = jwt.getClaimAsString("sub");
+        String studentCode = payload.get("studentCode");
+        String name = payload.get("name");
+        String email = payload.get("email");
+        
+        if (email == null || email.trim().isEmpty()) {
+            email = jwt.getClaimAsString("email");
+        }
+        if (name == null || name.trim().isEmpty()) {
+            name = jwt.getClaimAsString("name");
+        }
+        
+        return ResponseEntity.ok(studentService.completeStudentProfile(sub, studentCode, name, email));
+    }
 }
