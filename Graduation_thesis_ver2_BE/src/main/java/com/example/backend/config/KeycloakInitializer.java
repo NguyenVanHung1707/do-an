@@ -40,7 +40,7 @@ public class KeycloakInitializer implements CommandLineRunner {
             UsersResource usersResource = keycloak.realm(keycloakConfig.getRealm()).users();
             
             // Tìm kiếm xem đã có user tên 'admin' hay chưa
-            List<UserRepresentation> existing = usersResource.searchByUsernameOrEmail("admin", true);
+            List<UserRepresentation> existing = usersResource.search("admin", true);
             
             if (existing.isEmpty()) {
                 log.info("Chưa tìm thấy tài khoản Admin trong realm: '{}'. Tiến hành tạo mới...", keycloakConfig.getRealm());
