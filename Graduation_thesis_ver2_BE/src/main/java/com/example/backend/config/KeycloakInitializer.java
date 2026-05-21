@@ -48,7 +48,7 @@ public class KeycloakInitializer implements CommandLineRunner {
                 UserRepresentation adminUser = new UserRepresentation();
                 adminUser.setEnabled(true);
                 adminUser.setUsername("admin");
-                adminUser.setEmail("admin@example.com");
+                adminUser.setEmail("admin_system@example.com");
                 adminUser.setFirstName("System");
                 adminUser.setLastName("Admin");
                 adminUser.setEmailVerified(true);
@@ -73,7 +73,7 @@ public class KeycloakInitializer implements CommandLineRunner {
                     usersResource.get(adminId).roles().realmLevel().add(List.of(adminRole));
                     
                     log.info("=== ĐÃ TẠO THÀNH CÔNG TÀI KHOẢN ADMIN: ===");
-                    log.info("Email: admin@example.com");
+                    log.info("Email: admin_system@example.com");
                     log.info("Username: admin");
                     log.info("Password: Password123!");
                     log.info("Role: admin");
