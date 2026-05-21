@@ -226,60 +226,58 @@ export default function LoginRegister() {
           </div>
 
           {/* Social login buttons */}
-          {!isRegister && (
-            <div className="mt-6">
-              <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-slate-200"></div>
-                <span className="flex-shrink mx-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                  Đăng nhập nhanh sinh viên bằng
-                </span>
-                <div className="flex-grow border-t border-slate-200"></div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <button
-                  type="button"
-                  disabled={socialLoading !== null}
-                  onClick={() => handleSocialLogin('google')}
-                  className="flex items-center justify-center gap-2 px-3 py-2.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold rounded-xl text-sm transition duration-150 border border-slate-200 shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed hover:-translate-y-0.5 transform"
-                >
-                  {socialLoading === 'google' ? (
-                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M21.35,11.1H12v2.7h5.38c-0.24,1.28 -0.96,2.37 -2.05,3.1v2.58h3.31c1.94,-1.78 3.06,-4.41 3.06,-7.48c0,-0.61 -0.06,-1.2 -0.16,-1.72Z" fill="#4285f4" />
-                      <path d="M12,20.62c2.43,0 4.47,-0.81 5.96,-2.18l-3.31,-2.58c-0.92,0.62 -2.1,0.98 -3.65,0.98c-2.35,0 -4.34,-1.59 -5.05,-3.72H2.52v2.66c1.49,2.96 4.54,4.84 8.01,4.84Z" fill="#34a853" />
-                      <path d="M6.95,13.12c-0.18,-0.54 -0.28,-1.11 -0.28,-1.7c0,-0.59 0.1,-1.16 0.28,-1.7V7.06H2.52c-0.61,1.22 -0.95,2.6 -0.95,4.06c0,1.46 0.35,2.83 0.95,4.06l4.43,-3.06Z" fill="#fbbc05" />
-                      <path d="M12,5.92c1.32,0 2.5,0.45 3.44,1.35l2.58,-2.58C16.46,3.22 14.42,2.38 12,2.38c-3.47,0 -6.52,1.88 -8.01,4.84l4.43,3.06C9.13,7.56 11.12,5.92 12,5.92Z" fill="#ea4335" />
-                    </svg>
-                  )}
-                  <span>Google</span>
-                </button>
-                
-                <button
-                  type="button"
-                  disabled={socialLoading !== null}
-                  onClick={() => handleSocialLogin('facebook')}
-                  className="flex items-center justify-center gap-2 px-3 py-2.5 bg-[#1877F2] hover:bg-[#166FE5] active:bg-[#1466D5] text-white font-bold rounded-xl text-sm transition duration-150 shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed hover:-translate-y-0.5 transform border border-transparent"
-                >
-                  {socialLoading === 'facebook' ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                    </svg>
-                  )}
-                  <span>Facebook</span>
-                </button>
-              </div>
-
-              {socialLoading && (
-                <div className="mt-3 text-center text-xs font-semibold animate-pulse text-[#34568B]">
-                  Đang thiết lập kết nối tới API {socialLoading === 'google' ? 'Google Sign-in' : 'Facebook Login'}...
-                </div>
-              )}
+          <div className="mt-6">
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="flex-shrink mx-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Đăng nhập nhanh sinh viên bằng
+              </span>
+              <div className="flex-grow border-t border-slate-200"></div>
             </div>
-          )}
+            
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <button
+                type="button"
+                disabled={socialLoading !== null}
+                onClick={() => handleSocialLogin('google')}
+                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold rounded-xl text-sm transition duration-150 border border-slate-200 shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed hover:-translate-y-0.5 transform"
+              >
+                {socialLoading === 'google' ? (
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21.35,11.1H12v2.7h5.38c-0.24,1.28 -0.96,2.37 -2.05,3.1v2.58h3.31c1.94,-1.78 3.06,-4.41 3.06,-7.48c0,-0.61 -0.06,-1.2 -0.16,-1.72Z" fill="#4285f4" />
+                    <path d="M12,20.62c2.43,0 4.47,-0.81 5.96,-2.18l-3.31,-2.58c-0.92,0.62 -2.1,0.98 -3.65,0.98c-2.35,0 -4.34,-1.59 -5.05,-3.72H2.52v2.66c1.49,2.96 4.54,4.84 8.01,4.84Z" fill="#34a853" />
+                    <path d="M6.95,13.12c-0.18,-0.54 -0.28,-1.11 -0.28,-1.7c0,-0.59 0.1,-1.16 0.28,-1.7V7.06H2.52c-0.61,1.22 -0.95,2.6 -0.95,4.06c0,1.46 0.35,2.83 0.95,4.06l4.43,-3.06Z" fill="#fbbc05" />
+                    <path d="M12,5.92c1.32,0 2.5,0.45 3.44,1.35l2.58,-2.58C16.46,3.22 14.42,2.38 12,2.38c-3.47,0 -6.52,1.88 -8.01,4.84l4.43,3.06C9.13,7.56 11.12,5.92 12,5.92Z" fill="#ea4335" />
+                  </svg>
+                )}
+                <span>Google</span>
+              </button>
+              
+              <button
+                type="button"
+                disabled={socialLoading !== null}
+                onClick={() => handleSocialLogin('facebook')}
+                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-[#1877F2] hover:bg-[#166FE5] active:bg-[#1466D5] text-white font-bold rounded-xl text-sm transition duration-150 shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed hover:-translate-y-0.5 transform border border-transparent"
+              >
+                {socialLoading === 'facebook' ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                )}
+                <span>Facebook</span>
+              </button>
+            </div>
+
+            {socialLoading && (
+              <div className="mt-3 text-center text-xs font-semibold animate-pulse text-[#34568B]">
+                Đang thiết lập kết nối tới API {socialLoading === 'google' ? 'Google Sign-in' : 'Facebook Login'}...
+              </div>
+            )}
+          </div>
 
 
           {/* Demo account quick bypass (highly helpful for reviewers) */}
