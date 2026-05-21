@@ -17,7 +17,8 @@ export const fetchStudentFace = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const hostname = window.location.hostname;
-      const baseUrl = hostname === 'localhost' ? 'http://localhost:8080' : `http://${hostname}:8080`;
+      const protocol = window.location.protocol;
+      const baseUrl = hostname === 'localhost' ? 'http://localhost:8080' : `${protocol}//${hostname}`;
       const response = await fetch(`${baseUrl}/api/student/get-my-image`, {
         headers: getAuthHeader()
       });
@@ -176,7 +177,10 @@ export const detectGroupFaceAttendance = createAsyncThunk(
       formData.append('image_file', file);
       formData.append('image_ids', studentIds.join(','));
 
-      const response = await fetch('http://localhost:8888/attendance', {
+      const hostname = window.location.hostname;
+      const protocol = window.location.protocol;
+      const detectUrl = hostname === 'localhost' ? 'http://localhost:8888/attendance' : `${protocol}//${hostname}/detect-face/attendance`;
+      const response = await fetch(detectUrl, {
         method: 'POST',
         body: formData
       });
