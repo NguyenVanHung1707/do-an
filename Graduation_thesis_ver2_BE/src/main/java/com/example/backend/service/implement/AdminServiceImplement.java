@@ -22,13 +22,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AdminServiceImplement implements AdminService {
 
     private final TeacherRepository teacherRepository;
-    private final JavaMailSender mailSender;
     private final KeycloakConfig keycloakConfig;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private JavaMailSender mailSender;
+
+    public AdminServiceImplement(TeacherRepository teacherRepository, KeycloakConfig keycloakConfig) {
+        this.teacherRepository = teacherRepository;
+        this.keycloakConfig = keycloakConfig;
+    }
 
     private Keycloak getKeycloakClient() {
         return KeycloakBuilder.builder()
@@ -103,6 +109,10 @@ public class AdminServiceImplement implements AdminService {
 
     private void sendEmail(String to, String subject, String body) {
         try {
+            if (mailSender == null) {
+                log.warn("JavaMailSender is not configured (SMTP settings missing). Skipping email notification to: {}", to);
+                return;
+            }
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(to);
             message.setSubject(subject);
