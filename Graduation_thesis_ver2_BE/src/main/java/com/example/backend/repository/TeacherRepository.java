@@ -14,6 +14,14 @@ import java.util.Optional;
 public interface TeacherRepository extends JpaRepository<Teacher, Long> {
     Optional<Teacher> findByKeycloakId(String teacherKeycloakId);
 
+    @Query("SELECT t FROM Teacher t WHERE t.accountStatus = :status AND " +
+           "(LOWER(t.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(t.name) LIKE LOWER(CONCAT('%', :search, '%')))")
+    org.springframework.data.domain.Page<Teacher> findPendingTeachers(
+            @Param("status") String status,
+            @Param("search") String search,
+            org.springframework.data.domain.Pageable pageable);
+
     @Transactional
     @Modifying
     @Query(value = "CALL update_attendance_count(:courseId, :studentId)", nativeQuery = true)

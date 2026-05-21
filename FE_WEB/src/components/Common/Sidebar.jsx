@@ -30,7 +30,18 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
     { id: 'profile', label: 'Thông tin cá nhân', icon: User }
   ];
 
-  const menuItems = role === 'teacher' ? teacherItems : studentItems;
+  const adminItems = [
+    { id: 'admin-dashboard', label: 'Dashboard Hệ thống', icon: LayoutDashboard },
+    { id: 'teacher-approval', label: 'Phê duyệt tài khoản', icon: ShieldCheck },
+    { id: 'profile', label: 'Thông tin cá nhân', icon: User }
+  ];
+
+  let menuItems = studentItems;
+  if (role === 'admin') {
+    menuItems = adminItems;
+  } else if (role === 'teacher') {
+    menuItems = teacherItems;
+  }
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-white border-r border-slate-200">
@@ -46,12 +57,12 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
       <div className="p-4 border-b border-slate-100 bg-slate-50/50">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-bold shadow-md shadow-primary/20">
-            {role === 'teacher' ? 'GV' : 'SV'}
+            {role === 'admin' ? 'AD' : role === 'teacher' ? 'GV' : 'SV'}
           </div>
           <div>
             <p className="font-semibold text-slate-800 text-sm">{user?.fullName || 'Người dùng'}</p>
             <p className="text-xs font-medium text-primary mt-0.5 capitalize">
-              {role === 'teacher' ? 'Giảng viên' : 'Sinh viên'}
+              {role === 'admin' ? 'Quản trị viên' : role === 'teacher' ? 'Giảng viên' : 'Sinh viên'}
             </p>
           </div>
         </div>

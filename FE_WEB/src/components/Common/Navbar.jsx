@@ -42,7 +42,7 @@ export default function Navbar({ onToggleSidebar }) {
             <div className="hidden md:block">
               <p className="font-medium text-slate-800 text-sm">{user.fullName}</p>
               <p className="text-xs text-slate-500 font-mono">
-                {user.role === 'teacher' ? `Giảng viên - ${user.code}` : `Sinh viên - ${user.code}`}
+                {user.role === 'admin' ? 'Quản trị viên' : user.role === 'teacher' ? `Giảng viên - ${user.code}` : `Sinh viên - ${user.code}`}
               </p>
             </div>
             <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm border border-primary/20">

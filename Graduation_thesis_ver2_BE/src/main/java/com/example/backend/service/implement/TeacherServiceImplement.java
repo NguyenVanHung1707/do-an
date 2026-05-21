@@ -563,4 +563,10 @@ public class TeacherServiceImplement implements TeacherService {
         }
         return response;
     }
+
+    @Override
+    public Teacher getTeacherByKeycloakId(String keycloakId) {
+        return teacherRepository.findByKeycloakId(keycloakId)
+                .orElseThrow(() -> new CustomException("Teacher not found with keycloak id: " + keycloakId, HttpStatus.NOT_FOUND));
+    }
 }

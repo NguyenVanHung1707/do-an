@@ -45,4 +45,10 @@ public class Teacher {
     @Column(name = "is_active")
     private Boolean isActive;
 
+    @Column(name = "account_status", nullable = false)
+    private String accountStatus = "PENDING"; // Trạng thái: PENDING, ACTIVE, REJECTED, SUSPENDED
+
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
+
 }

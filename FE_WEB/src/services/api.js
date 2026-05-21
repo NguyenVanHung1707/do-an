@@ -116,7 +116,12 @@ export const keycloakLogin = async (username, password) => {
     throw new Error('Token JWT Keycloak không hợp lệ!');
   }
 
-  const role = decoded.realm_access?.roles?.includes('teacher') ? 'teacher' : 'student';
+  let role = 'student';
+  if (decoded.realm_access?.roles?.includes('admin')) {
+    role = 'admin';
+  } else if (decoded.realm_access?.roles?.includes('teacher')) {
+    role = 'teacher';
+  }
 
   const user = {
     id: decoded.sub,
@@ -177,4 +182,37 @@ export const keycloakRegister = async ({ username, email, fullName, code, passwo
 
   // Auto-login
   return await keycloakLogin(username, password);
+};
+
+// ==========================================
+// ADMIN DASHBOARD & SYSTEM MONITORING APIS
+// ==========================================
+
+export const getPendingTeachers = async (page = 0, size = 5, search = '') => {
+  return await apiFetch(`/admin/teachers/pending?page=${page}&size=${size}&search=${encodeURIComponent(search)}`);
+};
+
+export const approveTeacher = async (id) => {
+  return await apiFetch(`/admin/teachers/${id}/approve`, {
+    method: 'PUT'
+  });
+};
+
+export const rejectTeacher = async (id, reason) => {
+  return await apiFetch(`/admin/teachers/${id}/reject`, {
+    method: 'PUT',
+    body: JSON.stringify({ reason })
+  });
+};
+
+export const getTrafficMetrics = async (period = 'day') => {
+  return await apiFetch(`/admin/metrics/traffic?period=${period}`);
+};
+
+export const getPerformanceMetrics = async () => {
+  return await apiFetch(`/admin/metrics/performance`);
+};
+
+export const getTeacherProfile = async () => {
+  return await apiFetch('/teacher/profile');
 };

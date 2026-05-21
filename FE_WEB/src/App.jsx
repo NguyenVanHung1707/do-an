@@ -16,11 +16,19 @@ import ClassManagement from './views/Teacher/ClassManagement';
 import ClassDetail from './views/Teacher/ClassDetail';
 import PhotoAttendance from './views/Teacher/PhotoAttendance';
 import CreateForm from './views/Teacher/CreateForm';
+import PendingApproval from './views/Teacher/PendingApproval';
+
+// Admin Views
+import AdminDashboard from './views/Admin/AdminDashboard';
+import TeacherApproval from './views/Admin/TeacherApproval';
 
 // Student Views
 import MyCourses from './views/Student/MyCourses';
 import FaceUpload from './views/Student/FaceUpload';
 import AnswerForm from './views/Student/AnswerForm';
+
+// API
+import { getTeacherProfile } from './services/api';
 
 export default function App() {
   const { isAuthenticated, role } = useSelector((state) => state.auth);
@@ -31,15 +39,42 @@ export default function App() {
   const [currentView, setCurrentView] = useState('');
   const [activeClassId, setActiveClassId] = useState(null);
 
+  // Teacher Approval verification states
+  const [teacherProfile, setTeacherProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
   // Auto-set initial view and fetch classes based on role upon successful authentication
   useEffect(() => {
     if (isAuthenticated) {
-      dispatch(fetchClasses());
-      setCurrentView(role === 'teacher' ? 'dashboard' : 'my-courses');
+      if (role === 'admin') {
+        setCurrentView('admin-dashboard');
+      } else {
+        dispatch(fetchClasses());
+        setCurrentView(role === 'teacher' ? 'dashboard' : 'my-courses');
+      }
     } else {
       setCurrentView('');
     }
   }, [isAuthenticated, role, dispatch]);
+
+  // Load teacher profile if logged in as a teacher
+  useEffect(() => {
+    if (isAuthenticated && role === 'teacher') {
+      setLoadingProfile(true);
+      getTeacherProfile()
+        .then(profile => {
+          setTeacherProfile(profile);
+        })
+        .catch(err => {
+          console.error("Lỗi lấy thông tin giáo viên:", err);
+        })
+        .finally(() => {
+          setLoadingProfile(false);
+        });
+    } else {
+      setTeacherProfile(null);
+    }
+  }, [isAuthenticated, role]);
 
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -55,24 +90,35 @@ export default function App() {
 
   // Render content based on current view and role
   const renderContent = () => {
-    if (role === 'teacher') {
+    if (role === 'admin') {
+      switch (currentView) {
+        case 'admin-dashboard':
+          return <AdminDashboard />;
+        case 'teacher-approval':
+          return <TeacherApproval />;
+        case 'profile':
+          return <Profile />;
+        default:
+          return <AdminDashboard />;
+      }
+    } else if (role === 'teacher') {
       switch (currentView) {
         case 'dashboard':
           return <TeacherDashboard />;
         case 'class-management':
           return (
             <ClassManagement
-              onSelectClass={(id) => {
-                setActiveClassId(id);
-                setCurrentView('class-detail');
-              }}
+               onSelectClass={(id) => {
+                 setActiveClassId(id);
+                 setCurrentView('class-detail');
+               }}
             />
           );
         case 'class-detail':
           return (
             <ClassDetail
-              classId={activeClassId}
-              onBack={() => setCurrentView('class-management')}
+               classId={activeClassId}
+               onBack={() => setCurrentView('class-management')}
             />
           );
         case 'photo-attendance':
@@ -101,6 +147,23 @@ export default function App() {
     return null;
   };
 
+  // If currently fetching the teacher verification state, show premium spinner
+  if (isAuthenticated && role === 'teacher' && (loadingProfile || !teacherProfile)) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-600">
+        <Navbar onToggleSidebar={() => {}} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold text-slate-500">Đang tải thông tin tài khoản...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isTeacherPending = teacherProfile && (teacherProfile.accountStatus === 'PENDING' || teacherProfile.accountStatus === 'REJECTED');
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-600">
       {/* Universal Header Navbar */}
@@ -110,6 +173,10 @@ export default function App() {
       {!isAuthenticated ? (
         <div className="flex-1 flex flex-col justify-center">
           <LoginRegister />
+        </div>
+      ) : isTeacherPending ? (
+        <div className="flex-1 flex flex-col justify-center bg-slate-50">
+          <PendingApproval teacherData={teacherProfile} />
         </div>
       ) : (
         <div className="flex-1 flex relative">

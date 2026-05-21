@@ -132,7 +132,8 @@ public class KeycloakServiceImplement implements KeycloakService {
         teacher.setTeacherCode(signUpDto.getTeacherCode());
         teacher.setName(signUpDto.getFirstName() + " " + signUpDto.getLastName());
         teacher.setEmail(signUpDto.getEmail());
-        teacher.setIsActive(true);
+        teacher.setIsActive(false);
+        teacher.setAccountStatus("PENDING");
         teacherRepository.save(teacher);
 
         return new SignUpResponseDto(userId, signUpDto.getUsername(), signUpDto.getEmail(), signUpDto.getFirstName(),

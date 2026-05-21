@@ -59,4 +59,6 @@ public interface TeacherService {
     List<BarChartDto> getMyClassChart(String sub);
 
     List<?> getRateOfMyClassChart(String sub);
+
+    Teacher getTeacherByKeycloakId(String keycloakId);
 }

@@ -127,4 +127,9 @@ public class TeacherController {
     public ResponseEntity<List<?>> getRateOfMyClassChart(@AuthenticationPrincipal Jwt jwt){
         return ResponseEntity.ok(teacherService.getRateOfMyClassChart(jwt.getClaimAsString("sub")));
     }
+
+    @GetMapping("/profile")
+    public ResponseEntity<?> getTeacherProfile(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(teacherService.getTeacherByKeycloakId(jwt.getClaimAsString("sub")));
+    }
 }
