@@ -1,138 +1,55 @@
-# Hệ Thống Thi Trực Tuyến Tích Hợp Giám Thị & Điểm Danh AI (Online Exam Proctoring & Attendance System)
+# 🎓 Hệ Thống Thi Trực Tuyến Tích Hợp Giám Thị & Điểm Danh AI (Online Exam Proctoring & Attendance System)
 
-Hệ thống thi trực tuyến hoàn chỉnh được thiết kế theo kiến trúc **Microservices** phân tán hiện đại, tích hợp Trí tuệ nhân tạo (AI/Computer Vision) để tự động điểm danh nhận diện khuôn mặt và giám sát chống gian lận thi cử thời gian thực.
+Hệ thống thi trực tuyến hoàn chỉnh được thiết kế theo kiến trúc **Microservices** phân tán hiện đại, tích hợp Trí tuệ nhân tạo (AI/Computer Vision) để tự động điểm danh nhận diện khuôn mặt và giám sát chống gian lận thi cử thời gian thực. 
 
----
+Nền tảng mang lại giải pháp chuyển đổi số toàn diện cho trường học, tối ưu hóa công tác tổ chức kiểm tra, quản lý lớp học và nâng cao tính minh bạch, khách quan trong kiểm tra trực tuyến.
 
-## 🚀 Kiến Trúc Hệ Thống (System Architecture)
-
-Hệ thống bao gồm 4 dịch vụ cốt lõi hoạt động độc lập và được điều phối thông qua **Docker Compose**:
-
-### 1. Main Backend Service (`Graduation_thesis_ver2_BE`)
-*   **Công nghệ**: Java Spring Boot 3.2.3, Spring Security OAuth2, JPA Hibernate.
-*   **Tính năng**: Quản lý kỳ thi, ngân hàng câu hỏi, bài làm của thí sinh, diễn đàn thảo luận môn học. Tích hợp phân quyền thông qua **Keycloak Identity Provider**.
-*   **API Gateway/Proxy**: Định tuyến và đóng vai trò proxy điều hướng các yêu cầu giám thị AI trực tiếp từ Frontend đến module AI.
-
-### 2. Main Frontend SPA (`FE_WEB`)
-*   **Công nghệ**: ReactJS, Vite, TailwindCSS, Lucide Icons.
-*   **Tính năng**: Giao diện làm bài thi trực quan của thí sinh, khu vực trao đổi/thảo luận, màn hình giám sát của giám thị.
-*   **Khắc phục lỗi Webcam**: Tích hợp giải thuật state-aware callback ref (`ref={setVideoRef}`) giúp khắc phục triệt để hiện tượng đen màn hình webcam khi khởi động camera trên các trình duyệt hiện đại.
-
-### 3. AI Proctoring Service (`ai-proctor`) - [NEW]
-*   **Công nghệ**: Python FastAPI, MediaPipe FaceMesh, OpenCV, NumPy, WebSockets.
-*   **Cơ chế hoạt động**:
-    *   **Theo dõi ánh mắt (Gaze Tracking)**: Phân tích khoảng cách dịch chuyển của tròng đen mắt (Iris Landmarks) để xác định thí sinh có nhìn lệch ra ngoài màn hình hay không.
-    *   **Tư thế đầu (Head Pose Estimation)**: Sử dụng thuật toán giải hệ phương trình PnP (Perspective-n-Point) trên các mốc khuôn mặt 3D để ước lượng góc quay đầu (Pitch/Yaw/Roll).
-    *   **Tự động ghi hình gian lận**: Duy trì một hàng đợi vòng tròn (rolling queue) trong RAM. Khi thí sinh dời mắt khỏi màn hình liên tục quá 3 giây, hệ thống sẽ kích hoạt luồng phụ (asynchronous thread) tự động ghi và xuất tệp video dài **10 giây** (bao gồm 5 giây trước và 5 giây sau thời điểm vi phạm) dạng `.mp4` lưu trực tiếp vào thư mục máy chủ:
-        ```bash
-        E:\Data\future_ai_feature\[exam_id]\[student_id]\
-        ```
-
-### 4. Face Recognition Service (`detect-face`)
-*   **Công nghệ**: Python FastAPI, OpenCV, Face Recognition.
-*   **Tính năng**: Chụp ảnh nhận diện thí sinh khi bắt đầu vào phòng thi và đối khớp khuôn mặt với cơ sở dữ liệu đã đăng ký để điểm danh tự động.
+🌐 **Trải nghiệm trực tuyến tại địa chỉ chính thức**: [https://thuvienso.io.vn](https://thuvienso.io.vn)
 
 ---
 
-## 🛠️ Danh Sách Cổng Hoạt Động (Port Mapping)
+## 🌟 Các Phân Hệ & Tính Năng Nổi Bật (Key Features)
 
-Khi chạy toàn bộ hệ thống bằng Docker Compose, các cổng dịch vụ được định tuyến như sau:
+Hệ thống được chia thành các phân hệ chuyên biệt đáp ứng nhu cầu thực tế của cả Giảng viên, Sinh viên và Giám thị:
 
-| Dịch vụ | Công nghệ | Cổng ngoài (Host Port) | Cổng trong Container |
-| :--- | :--- | :--- | :--- |
-| **`fe_web`** (Frontend) | React (Nginx Web Server) | **`5173`** | `80` |
-| **`backend`** (Spring Boot) | Java 21 OpenJDK | **`8080`** | `8080` |
-| **`ai_proctor`** (Giám thị AI) | Python FastAPI | **`8899`** | `8000` |
-| **`detect_face`** (Điểm danh) | Python FastAPI | **`8888`** | `8888` |
-| **`keycloak`** (Xác thực) | Keycloak Provider | **`9000`** | `8080` |
-| **`postgres`** (Cơ sở dữ liệu) | PostgreSQL 15 | **`5433`** | `5432` |
+### 1. Phân Hệ Sinh Viên (Student Module)
+*   **Không Gian Học Tập Cá Nhân**: Theo dõi danh sách các lớp học phần đang tham gia, lịch sử điểm danh và tình trạng chuyên cần trực quan.
+*   **Đăng Ký Hồ Sơ Khuôn Mặt (Face Registration)**: Chụp và tải ảnh chân dung chính thức lên hệ thống AI để làm cơ sở đối khớp nhận diện tự động trong phòng thi và các buổi học tập trung.
+*   **Làm Bài Thi Trực Tuyến**: Giao diện làm bài toàn màn hình tối ưu, hỗ trợ lưu nháp liên tục (Auto-save) bảo vệ dữ liệu khi mất kết nối mạng.
+*   **Tra Cứu Kết Quả Chi Tiết**: Xem điểm thi tức thì sau khi công bố, kèm theo bảng phân tích câu trả lời đúng/sai, bài làm tự luận và nhận xét, phản hồi chi tiết từ Giảng viên cho từng câu hỏi.
+*   **Thảo Luận Lớp Học**: Diễn đàn trao đổi học thuật, đăng câu hỏi và bình luận tương tác trực tiếp với thầy cô và các bạn cùng lớp học phần.
 
----
+### 2. Phân Hệ Giảng Viên (Teacher Module)
+*   **Quản Lý Lớp Học Thông Minh**: Tạo mới, chỉnh sửa thông tin lớp, thêm sinh viên thông qua công cụ tìm kiếm Autocomplete thông minh theo Tên hoặc MSSV.
+*   **Điểm Danh Công Nghệ Cao**:
+    *   **Điểm danh qua Ảnh chụp (FaceID)**: Chụp ảnh tập thể lớp bằng webcam hoặc tải ảnh lên để hệ thống tự động quét, nhận dạng và tích hợp chuyên cần cho tất cả sinh viên có mặt trong tích tắc.
+    *   **Điểm danh mã Code & GPS**: Sinh mã điểm danh tự động kết hợp định vị địa lý (GPS-verified Location). Sinh viên chỉ điểm danh được khi nhập đúng mã trong thời gian hiệu lực và ở trong phạm vi bán kính cho phép xung quanh lớp học.
+*   **Quản Lý & Chấm Thi Trực Tuyến**:
+    *   Soạn thảo ngân hàng câu hỏi, thiết lập kỳ thi với thời lượng và hạn nộp linh hoạt.
+    *   Giao diện chấm điểm thủ công cho các câu hỏi tự luận, ghi chú ý kiến nhận xét và công bố điểm thi đồng loạt.
 
-## 📦 Hướng Dẫn Cài Đặt & Chạy Hệ Thống (Installation & Quick Start)
+### 3. Phân Hệ Giám Thị AI Thời Gian Thực (Real-time AI Proctoring)
+Hệ thống sử dụng các thuật toán Học máy và Thị giác máy tính tiên tiến chạy trực tiếp trên luồng Webcam của thí sinh để phát hiện mọi hành vi bất thường:
+*   **Theo Dõi Ánh Mắt (Gaze Tracking)**: Phân tích khoảng cách dịch chuyển của tròng mắt (Iris Landmarks) để cảnh báo tức thì khi thí sinh nhìn lệch, quay sang trái/phải rời khỏi màn hình.
+*   **Ước Lượng Tư Thế Đầu (3D Head Pose Estimation)**: Sử dụng mô hình mốc khuôn mặt 3D kết hợp thuật toán PnP (Perspective-n-Point) đo lường chính xác các góc quay đầu (Pitch/Yaw/Roll) để phát hiện cúi đầu, quay đầu quay cóp.
+*   **Phát Hiện Thiết Bị & Người Lạ**: Nhận dạng sự hiện diện của điện thoại di động trong khung hình hoặc trường hợp có từ hai khuôn mặt trở lên xuất hiện trước camera.
+*   **Tự Động Ghi Hình Vi Phạm**: Hệ thống duy trì một luồng ghi video thông minh dạng vòng tròn trong bộ nhớ tạm. Khi phát hiện vi phạm liên tục vượt quá ngưỡng thời gian cấu hình, hệ thống sẽ tự động trích xuất và xuất tệp video bằng chứng dài **10 giây** (bao gồm 5 giây trước và 5 giây sau vi phạm) định dạng `.mp4` lưu trữ trên máy chủ để làm minh chứng khách quan cho Hội đồng kỷ luật.
 
-### Yêu cầu hệ thống:
-*   Đã cài đặt **Docker Desktop** và **Docker Compose**.
-*   (Tùy chọn) Thư mục lưu trữ dữ liệu video giám thị `E:\Data` trên Windows Host (đã được cấu hình Mount Volume tự động trong `docker-compose.yml`).
-
-### Khởi chạy toàn bộ hệ thống:
-
-Di chuyển vào thư mục chứa dự án Spring Boot và chạy lệnh xây dựng lại toàn bộ container:
-
-```bash
-cd Graduation_thesis_ver2_BE
-docker compose up --build -d
-```
-
-Để kiểm tra trạng thái hoạt động của các container:
-```bash
-docker compose ps
-```
-
-Xem log thời gian thực của module giám thị AI:
-```bash
-docker compose logs -f ai_proctor
-```
+### 4. Ứng Dụng Di Động Tiện Ích (Companion Mobile Apps)
+Bên cạnh nền tảng Web chính, hệ thống cung cấp 2 ứng dụng di động native chạy mượt mà trên iOS và Android:
+*   **App Sinh Viên**: Xem nhanh nhật ký điểm danh cá nhân, nhận thông báo bài thi mới, xem chi tiết bảng điểm và nhận xét của thầy cô ở bất kỳ đâu.
+*   **App Giảng Viên**: Điểm danh nhanh trên lớp, xem danh sách sinh viên, giám sát danh sách bài thi đã giao và tham gia diễn đàn trao đổi bài giảng từ xa.
 
 ---
 
-## 🔒 Bản Quyền & Bảo Mật
-*   Tài khoản Keycloak và Database được cấu hình mặc định trong file `.env` và `docker-compose.yml`.
-*   Các thông tin nhạy cảm và thư mục phát triển riêng của Mobile App (`Graduation_thesis_ver2_FE_2` và `frontend_student`) đã được loại bỏ hoàn toàn thông qua file cấu hình `.gitignore` để đảm bảo an toàn khi đưa lên kho chứa mã nguồn chung.
+## 🛠️ Công Nghệ Phát Triển (Technology Stack)
+
+Hệ thống được phát triển và vận hành dựa trên các tiêu chuẩn công nghệ hàng đầu thế giới:
+*   **Java Spring Boot 3.2.3**: Xây dựng Main REST API Gateway bảo mật cao, kết hợp Hibernate JPA và PostgreSQL.
+*   **Keycloak Identity Provider**: Cung cấp giải pháp đăng nhập một lần (SSO) chuẩn OAuth2/OpenID Connect bảo mật tối đa cho toàn hệ thống.
+*   **ReactJS & Vite SPA**: Trải nghiệm giao diện Web Frontend siêu mượt mà, tối ưu hóa CSS bằng Tailwind.
+*   **FastAPI & MediaPipe**: Động cơ AI hiệu năng cao xử lý phân tích hình ảnh camera thời gian thực với độ trễ cực thấp.
+*   **Docker & Nginx Reverse Proxy**: Đóng gói cô lập các dịch vụ, hỗ trợ chứng chỉ bảo mật SSL HTTPS Let's Encrypt giúp bảo vệ tuyệt đối dữ liệu người dùng trên môi trường Internet.
 
 ---
-
-## 🌐 Triển Khai VPS & CI/CD Tự Động (VPS Deployment & Automated CI/CD)
-
-Hệ thống đã được đóng gói, triển khai chính thức lên máy chủ VPS Viettel IDC (`27.71.29.232`) và ánh xạ hoàn chỉnh qua tên miền bảo mật **`https://thuvienso.io.vn`**.
-
-### 1. Kiến Trúc Reverse Proxy Nginx & SSL HTTPS
-Để bảo vệ an toàn cho luồng dữ liệu (đặc biệt là hình ảnh khuôn mặt và camera giám thị), toàn bộ các yêu cầu từ Client đều được bảo mật qua giao thức **SSL Let's Encrypt** và được định tuyến thông qua **Nginx Reverse Proxy** trên cổng chuẩn `80/443`:
-
-```mermaid
-graph TD
-    User([Người dùng truy cập https://thuvienso.io.vn]) -->|Cổng HTTPS 443| Nginx[Nginx Reverse Proxy Host]
-    Nginx -->|Định tuyến trang chủ /| FE[fe_web Container - Cổng 5173]
-    Nginx -->|Định tuyến API /api & /ws| BE[backend Container - Cổng 8080]
-    Nginx -->|Định tuyến Keycloak /realms, /resources, /admin| KC[keycloak Container - Cổng 9000]
-    Nginx -->|Định tuyến AI Face ID /detect-face/| DF[detect_face Container - Cổng 8888]
-    Nginx -->|Định tuyến WebSockets Giám thị /api/proctor/ws| AP[ai_proctor Container - Cổng 8899]
-```
-
-### 2. Quy Trình Tự Động Hóa CI/CD (GitHub Actions)
-Hệ thống được tích hợp quy trình **Liên tục Tích hợp và Triển khai (CI/CD)**. Khi nhà phát triển đẩy mã nguồn mới lên nhánh `main` trên GitHub, pipeline tự động kích hoạt chạy kịch bản tại `.github/workflows/deploy.yml`:
-1. Kết nối an toàn đến VPS bằng **SSH Deploy Key**.
-2. Di chuyển vào thư mục `/root/do-an` trên máy chủ.
-3. Kéo mã nguồn mới nhất (`git pull origin main`).
-4. Rebuild các Docker containers có thay đổi (`docker compose up --build -d`).
-5. Reload Nginx và dọn dẹp các tệp tin rác của Docker.
-
-### 3. Hướng Dẫn Cấu Hình GitHub Secrets (Dành cho Chủ dự án)
-Để kích hoạt tính năng tự động cập nhật này khi up code lên GitHub của bạn, vui lòng thực hiện các bước cấu hình sau trên giao diện Web của GitHub:
-
-1. Truy cập vào kho lưu trữ GitHub: [NguyenVanHung1707/do-an](https://github.com/NguyenVanHung1707/do-an).
-2. Chọn mục **Settings** (Cài đặt) -> **Secrets and variables** (Bí mật & Biến) -> **Actions**.
-3. Bấm nút **New repository secret** (Tạo bí mật kho lưu trữ mới) và thêm lần lượt 3 khoá bảo mật sau:
-
-*   **Khoá 1**:
-    *   **Name**: `VPS_HOST`
-    *   **Secret**: `27.71.29.232`
-*   **Khoá 2**:
-    *   **Name**: `VPS_USER`
-    *   **Secret**: `root`
-*   **Khoá 3**:
-    *   **Name**: `VPS_SSH_KEY`
-    *   **Secret**: *(Dán toàn bộ nội dung mã Private SSH Key được cung cấp bên dưới, chú ý copy cả phần bắt đầu và kết thúc)*:
-        ```text
-        -----BEGIN OPENSSH PRIVATE KEY-----
-        b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-        QyNTUxOQAAACA3tnoqt2onC+aCMYFCPANvh2QuSEpD5dFwClpE+svd3wAAAJiytVoXsrVa
-        FwAAAAtzc2gtZWQyNTUxOQAAACA3tnoqt2onC+aCMYFCPANvh2QuSEpD5dFwClpE+svd3w
-        AAAEBk54D0KnbszFZTIqCg8ab2J+QbSgXbeoo7bDTHzY52cDe2eiq3aicL5oIxgUI8A2+H
-        ZC5ISkPl0XAKWkT6y93fAAAAFWdpdGh1Yi1hY3Rpb25zLWRlcGxveQ==
-        -----END OPENSSH PRIVATE KEY-----
-        ```
-
-> [!IMPORTANT]
-> Sau khi cấu hình xong 3 Secrets trên, từ nay về sau bất cứ khi nào bạn `git push` code mới lên GitHub, máy chủ sẽ **tự động cập nhật trực tiếp** chỉ sau khoảng 1-2 phút mà bạn không cần phải đăng nhập SSH thủ công vào VPS nữa!
-
+🎉 **Chào mừng bạn đến với kỷ nguyên tổ chức thi và quản lý lớp học thông minh, minh bạch cùng Thư Viện Số AI!**
