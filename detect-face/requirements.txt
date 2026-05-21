@@ -1,0 +1,13 @@
+fastapi==0.95.1
+uvicorn==0.22.0
+deepface==0.0.75
+retina-face
+shutilwhich==1.1.0
+pydantic==1.10.10
+typing-extensions==4.5.0
+
+# Optional for environment variables (if needed)
+python-dotenv==1.0.0
+psycopg2-binary
+tensorflow<2.16.0
+python-multipart

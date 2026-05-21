@@ -1,0 +1,59 @@
+# Mobile Apps to exclude (as requested by user)
+Graduation_thesis_ver2_FE_2/
+frontend_student/
+
+# Dependency directories
+node_modules/
+jspm_packages/
+web_modules/
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Build outputs
+dist/
+build/
+target/
+out/
+*.jar
+*.war
+*.ear
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables & secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+comment.txt
+
+# Local data & media uploads
+data/
+uploads/
+future_ai_feature/

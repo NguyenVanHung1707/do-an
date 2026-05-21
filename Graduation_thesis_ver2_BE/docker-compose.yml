@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: graduation_thesis_postgres
+    environment:
+      POSTGRES_DB: graduation_thesis_ver2
+      POSTGRES_USER: doanhung
+      POSTGRES_PASSWORD: hung2004
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.2
+    container_name: graduation_thesis_keycloak
+    command: start-dev --import-realm --features=scripts
+    environment:
+      KEYCLOAK_ADMIN: keycloak_owner
+      KEYCLOAK_ADMIN_PASSWORD: keycloak_owner
+    ports:
+      - "9000:8080"
+    volumes:
+      - ./src/main/resources/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+
+  backend:
+    build: .
+    container_name: graduation_thesis_backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/graduation_thesis_ver2
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/hung2004/protocol/openid-connect/certs
+      - KEYCLOAK_URLS_AUTH=http://keycloak:8080
+      - TZ=Asia/Ho_Chi_Minh
+      - APP_UPLOAD_DIR=/app/data/student_faces
+    volumes:
+      - E:\Data:/app/data
+    depends_on:
+      - postgres
+      - keycloak
+    restart: unless-stopped
+
+  detect_face:
+    build: ../detect-face
+    container_name: graduation_thesis_detect_face
+    ports:
+      - "8888:8888"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=doanhung
+      - DB_PASSWORD=hung2004
+      - DB_NAME=graduation_thesis_ver2
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      - E:\Data:/app/data
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  fe_web:
+    build: ../FE_WEB
+    container_name: graduation_thesis_fe_web
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  ai_proctor:
+    build: ../ai-proctor
+    container_name: graduation_thesis_ai_proctor
+    ports:
+      - "8899:8000"
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - STORAGE_ROOT=/app/data/future_ai_feature
+    volumes:
+      - E:\Data:/app/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
