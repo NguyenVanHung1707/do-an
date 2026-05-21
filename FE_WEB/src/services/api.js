@@ -1,5 +1,8 @@
-const BASE_API_URL = 'http://localhost:8080/api';
-const KEYCLOAK_TOKEN_URL = 'http://localhost:9000/realms/hung2004/protocol/openid-connect/token';
+const hostname = window.location.hostname;
+const BASE_API_URL = hostname === 'localhost' ? 'http://localhost:8080/api' : `http://${hostname}:8080/api`;
+const KEYCLOAK_TOKEN_URL = hostname === 'localhost' 
+  ? 'http://localhost:9000/realms/hung2004/protocol/openid-connect/token' 
+  : `http://${hostname}:9000/realms/hung2004/protocol/openid-connect/token`;
 
 export const decodeJWT = (token) => {
   try {

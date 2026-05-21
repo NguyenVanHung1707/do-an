@@ -16,7 +16,9 @@ export const fetchStudentFace = createAsyncThunk(
   'attendance/fetchStudentFace',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch('http://localhost:8080/api/student/get-my-image', {
+      const hostname = window.location.hostname;
+      const baseUrl = hostname === 'localhost' ? 'http://localhost:8080' : `http://${hostname}:8080`;
+      const response = await fetch(`${baseUrl}/api/student/get-my-image`, {
         headers: getAuthHeader()
       });
       if (!response.ok) {

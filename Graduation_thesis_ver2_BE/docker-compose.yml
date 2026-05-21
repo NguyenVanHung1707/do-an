@@ -42,7 +42,7 @@ services:
       - TZ=Asia/Ho_Chi_Minh
       - APP_UPLOAD_DIR=/app/data/student_faces
     volumes:
-      - E:\Data:/app/data
+      - ${DATA_PATH:-./data}:/app/data
     depends_on:
       - postgres
       - keycloak
@@ -61,7 +61,7 @@ services:
       - DB_NAME=graduation_thesis_ver2
       - TZ=Asia/Ho_Chi_Minh
     volumes:
-      - E:\Data:/app/data
+      - ${DATA_PATH:-./data}:/app/data
     depends_on:
       - postgres
     restart: unless-stopped
@@ -84,7 +84,7 @@ services:
       - TZ=Asia/Ho_Chi_Minh
       - STORAGE_ROOT=/app/data/future_ai_feature
     volumes:
-      - E:\Data:/app/data
+      - ${DATA_PATH:-./data}:/app/data
     restart: unless-stopped
 
 volumes:

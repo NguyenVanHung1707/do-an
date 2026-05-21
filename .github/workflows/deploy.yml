@@ -1,0 +1,54 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            echo "=== BẮT ĐẦU QUY TRÌNH DEPLOY TỰ ĐỘNG ==="
+            
+            # Di chuyển vào thư mục dự án
+            cd /root/do-an || {
+              echo "Thư mục /root/do-an chưa tồn tại, tiến hành clone mới..."
+              git clone https://github.com/NguyenVanHung1707/do-an.git /root/do-an
+              cd /root/do-an
+            }
+
+            # Cập nhật code mới nhất từ GitHub
+            echo "Đang kéo mã nguồn mới nhất từ GitHub..."
+            git pull origin main
+
+            # Cấu hình biến môi trường nếu chưa có
+            if [ ! -f Graduation_thesis_ver2_BE/.env ]; then
+              echo "Khởi tạo file .env trên VPS..."
+              echo "DATA_PATH=/root/data" > Graduation_thesis_ver2_BE/.env
+            fi
+
+            # Di chuyển vào thư mục chứa Docker Compose
+            cd Graduation_thesis_ver2_BE
+
+            # Khởi động / tái xây dựng các container bị thay đổi
+            echo "Đang tái xây dựng các container Docker bị thay đổi..."
+            docker compose up --build -d
+
+            # Dọn dẹp các Docker image cũ/rác để tránh đầy ổ đĩa VPS
+            echo "Dọn dẹp Docker images không sử dụng..."
+            docker image prune -f
+
+            echo "=== HOÀN TẤT DEPLOY THÀNH CÔNG ==="
