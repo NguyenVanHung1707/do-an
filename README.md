@@ -79,3 +79,60 @@ docker compose logs -f ai_proctor
 ## 🔒 Bản Quyền & Bảo Mật
 *   Tài khoản Keycloak và Database được cấu hình mặc định trong file `.env` và `docker-compose.yml`.
 *   Các thông tin nhạy cảm và thư mục phát triển riêng của Mobile App (`Graduation_thesis_ver2_FE_2` và `frontend_student`) đã được loại bỏ hoàn toàn thông qua file cấu hình `.gitignore` để đảm bảo an toàn khi đưa lên kho chứa mã nguồn chung.
+
+---
+
+## 🌐 Triển Khai VPS & CI/CD Tự Động (VPS Deployment & Automated CI/CD)
+
+Hệ thống đã được đóng gói, triển khai chính thức lên máy chủ VPS Viettel IDC (`27.71.29.232`) và ánh xạ hoàn chỉnh qua tên miền bảo mật **`https://thuvienso.io.vn`**.
+
+### 1. Kiến Trúc Reverse Proxy Nginx & SSL HTTPS
+Để bảo vệ an toàn cho luồng dữ liệu (đặc biệt là hình ảnh khuôn mặt và camera giám thị), toàn bộ các yêu cầu từ Client đều được bảo mật qua giao thức **SSL Let's Encrypt** và được định tuyến thông qua **Nginx Reverse Proxy** trên cổng chuẩn `80/443`:
+
+```mermaid
+graph TD
+    User([Người dùng truy cập https://thuvienso.io.vn]) -->|Cổng HTTPS 443| Nginx[Nginx Reverse Proxy Host]
+    Nginx -->|Định tuyến trang chủ /| FE[fe_web Container - Cổng 5173]
+    Nginx -->|Định tuyến API /api & /ws| BE[backend Container - Cổng 8080]
+    Nginx -->|Định tuyến Keycloak /realms, /resources, /admin| KC[keycloak Container - Cổng 9000]
+    Nginx -->|Định tuyến AI Face ID /detect-face/| DF[detect_face Container - Cổng 8888]
+    Nginx -->|Định tuyến WebSockets Giám thị /api/proctor/ws| AP[ai_proctor Container - Cổng 8899]
+```
+
+### 2. Quy Trình Tự Động Hóa CI/CD (GitHub Actions)
+Hệ thống được tích hợp quy trình **Liên tục Tích hợp và Triển khai (CI/CD)**. Khi nhà phát triển đẩy mã nguồn mới lên nhánh `main` trên GitHub, pipeline tự động kích hoạt chạy kịch bản tại `.github/workflows/deploy.yml`:
+1. Kết nối an toàn đến VPS bằng **SSH Deploy Key**.
+2. Di chuyển vào thư mục `/root/do-an` trên máy chủ.
+3. Kéo mã nguồn mới nhất (`git pull origin main`).
+4. Rebuild các Docker containers có thay đổi (`docker compose up --build -d`).
+5. Reload Nginx và dọn dẹp các tệp tin rác của Docker.
+
+### 3. Hướng Dẫn Cấu Hình GitHub Secrets (Dành cho Chủ dự án)
+Để kích hoạt tính năng tự động cập nhật này khi up code lên GitHub của bạn, vui lòng thực hiện các bước cấu hình sau trên giao diện Web của GitHub:
+
+1. Truy cập vào kho lưu trữ GitHub: [NguyenVanHung1707/do-an](https://github.com/NguyenVanHung1707/do-an).
+2. Chọn mục **Settings** (Cài đặt) -> **Secrets and variables** (Bí mật & Biến) -> **Actions**.
+3. Bấm nút **New repository secret** (Tạo bí mật kho lưu trữ mới) và thêm lần lượt 3 khoá bảo mật sau:
+
+*   **Khoá 1**:
+    *   **Name**: `VPS_HOST`
+    *   **Secret**: `27.71.29.232`
+*   **Khoá 2**:
+    *   **Name**: `VPS_USER`
+    *   **Secret**: `root`
+*   **Khoá 3**:
+    *   **Name**: `VPS_SSH_KEY`
+    *   **Secret**: *(Dán toàn bộ nội dung mã Private SSH Key được cung cấp bên dưới, chú ý copy cả phần bắt đầu và kết thúc)*:
+        ```text
+        -----BEGIN OPENSSH PRIVATE KEY-----
+        b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+        QyNTUxOQAAACA3tnoqt2onC+aCMYFCPANvh2QuSEpD5dFwClpE+svd3wAAAJiytVoXsrVa
+        FwAAAAtzc2gtZWQyNTUxOQAAACA3tnoqt2onC+aCMYFCPANvh2QuSEpD5dFwClpE+svd3w
+        AAAEBk54D0KnbszFZTIqCg8ab2J+QbSgXbeoo7bDTHzY52cDe2eiq3aicL5oIxgUI8A2+H
+        ZC5ISkPl0XAKWkT6y93fAAAAFWdpdGh1Yi1hY3Rpb25zLWRlcGxveQ==
+        -----END OPENSSH PRIVATE KEY-----
+        ```
+
+> [!IMPORTANT]
+> Sau khi cấu hình xong 3 Secrets trên, từ nay về sau bất cứ khi nào bạn `git push` code mới lên GitHub, máy chủ sẽ **tự động cập nhật trực tiếp** chỉ sau khoảng 1-2 phút mà bạn không cần phải đăng nhập SSH thủ công vào VPS nữa!
+
