@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { login, registerUser, clearError } from '../../store/authSlice';
-import { LogIn, UserPlus, ShieldAlert, KeyRound, Award, BookOpen } from 'lucide-react';
+import { LogIn, UserPlus, ShieldAlert, KeyRound, BookOpen } from 'lucide-react';
 
 export default function LoginRegister() {
   const [isRegister, setIsRegister] = useState(false);
@@ -34,14 +34,6 @@ export default function LoginRegister() {
     }
   };
 
-  const handleQuickLogin = (userRole) => {
-    dispatch(clearError());
-    if (userRole === 'teacher') {
-      dispatch(login({ username: 'teacher1', password: 'password' }));
-    } else {
-      dispatch(login({ username: 'student1', password: 'password' }));
-    }
-  };
 
   const handleSocialLogin = (provider) => {
     dispatch(clearError());
@@ -279,34 +271,6 @@ export default function LoginRegister() {
             )}
           </div>
 
-
-          {/* Demo account quick bypass (highly helpful for reviewers) */}
-          <div className="mt-8 border-t border-slate-200 pt-6">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-3">
-              Dùng thử tài khoản Demo nhanh
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('teacher')}
-                className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold rounded-lg text-xs transition duration-150 border border-slate-200"
-              >
-                <Award className="w-4 h-4 text-amber-500" />
-                <span>MOCK GIẢNG VIÊN</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('student')}
-                className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold rounded-lg text-xs transition duration-150 border border-slate-200"
-              >
-                <Award className="w-4 h-4 text-primary" />
-                <span>MOCK SINH VIÊN</span>
-              </button>
-            </div>
-            <p className="text-[10px] text-slate-400 text-center mt-2 italic font-mono">
-              Bypass Keycloak credentials (account: teacher1 / student1, password)
-            </p>
-          </div>
 
         </div>
 
