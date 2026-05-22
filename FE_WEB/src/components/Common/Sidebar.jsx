@@ -9,6 +9,7 @@ import {
   History,
   Smile,
   ShieldCheck,
+  Award,
   X
 } from 'lucide-react';
 
@@ -25,6 +26,7 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
 
   const studentItems = [
     { id: 'my-courses', label: 'Lớp học của tôi', icon: BookOpen },
+    { id: 'grades-attendance', label: 'Kết quả học tập', icon: Award },
     { id: 'face-upload', label: 'Upload khuôn mặt', icon: Smile },
     { id: 'answer-form', label: 'Trả lời điểm danh', icon: ShieldCheck },
     { id: 'profile', label: 'Thông tin cá nhân', icon: User }

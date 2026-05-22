@@ -24,6 +24,7 @@ import TeacherApproval from './views/Admin/TeacherApproval';
 
 // Student Views
 import MyCourses from './views/Student/MyCourses';
+import GradesAndAttendance from './views/Student/GradesAndAttendance';
 import FaceUpload from './views/Student/FaceUpload';
 import AnswerForm from './views/Student/AnswerForm';
 import CompleteProfile from './views/Student/CompleteProfile';
@@ -174,6 +175,8 @@ export default function App() {
       switch (currentView) {
         case 'my-courses':
           return <MyCourses />;
+        case 'grades-attendance':
+          return <GradesAndAttendance />;
         case 'face-upload':
           return <FaceUpload />;
         case 'answer-form':

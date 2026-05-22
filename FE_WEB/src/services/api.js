@@ -228,3 +228,15 @@ export const completeStudentProfile = async (payload) => {
   });
 };
 
+export const getMyCourses = async () => {
+  return await apiFetch('/student/get-my-course');
+};
+
+export const getMyAttendance = async (courseId) => {
+  return await apiFetch(`/student/get-my-attendance-in-a-course?courseId=${courseId}`);
+};
+
+export const getCourseAssessments = async (courseId) => {
+  return await apiFetch(`/courses/${courseId}/assessments`);
+};
+
