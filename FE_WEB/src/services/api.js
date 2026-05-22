@@ -240,3 +240,80 @@ export const getCourseAssessments = async (courseId) => {
   return await apiFetch(`/courses/${courseId}/assessments`);
 };
 
+// ==========================================
+// CLASSROOM DOCUMENT MANAGEMENT APIS (MINI-DRIVE)
+// ==========================================
+
+export const getClassDocuments = async (classId, parentFolderId = null) => {
+  const query = parentFolderId ? `?parentFolderId=${parentFolderId}` : '';
+  return await apiFetch(`/documents/class/${classId}${query}`);
+};
+
+export const uploadClassDocument = async (courseId, parentFolderId, file) => {
+  const formData = new FormData();
+  formData.append('courseId', courseId);
+  if (parentFolderId) {
+    formData.append('parentFolderId', parentFolderId);
+  }
+  formData.append('file', file);
+  return await apiFetch(`/documents/upload`, {
+    method: 'POST',
+    body: formData
+  });
+};
+
+export const createClassFolder = async (courseId, parentFolderId, folderName) => {
+  return await apiFetch(`/documents/folder`, {
+    method: 'POST',
+    body: JSON.stringify({
+      courseId,
+      parentFolderId,
+      folderName
+    })
+  });
+};
+
+export const downloadClassDocument = async (docId) => {
+  const response = await fetch(`${BASE_API_URL}/documents/download/${docId}`, {
+    headers: getAuthHeader()
+  });
+  if (!response.ok) {
+    throw new Error('Không thể tải tài liệu về');
+  }
+  return await response.blob();
+};
+
+export const deleteClassDocument = async (docId) => {
+  return await apiFetch(`/documents/${docId}`, {
+    method: 'DELETE'
+  });
+};
+
+export const getClassStudentPermissions = async (classId) => {
+  return await apiFetch(`/documents/class/${classId}/permissions`);
+};
+
+export const updateStudentPermissions = async (classId, studentId, canUpload, canDownload) => {
+  return await apiFetch(`/documents/class/${classId}/permissions/student/${studentId}`, {
+    method: 'POST',
+    body: JSON.stringify({
+      canUpload,
+      canDownload
+    })
+  });
+};
+
+export const updateClassPermissionsBulk = async (classId, canUpload, canDownload) => {
+  return await apiFetch(`/documents/class/${classId}/permissions/bulk`, {
+    method: 'POST',
+    body: JSON.stringify({
+      canUpload,
+      canDownload
+    })
+  });
+};
+
+export const getMyClassPermission = async (classId) => {
+  return await apiFetch(`/documents/class/${classId}/my-permissions`);
+};
+

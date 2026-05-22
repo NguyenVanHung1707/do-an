@@ -36,4 +36,10 @@ public class Register {
     //tong so lan vang
     @Column(name = "number_of_absence")
     private Integer numberOfAbsence;
+
+    @Column(name = "can_upload_documents", nullable = false)
+    private Boolean canUploadDocuments = false;
+
+    @Column(name = "can_download_documents", nullable = false)
+    private Boolean canDownloadDocuments = false;
 }

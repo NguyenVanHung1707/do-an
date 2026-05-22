@@ -4,6 +4,7 @@ import { BookOpen, Calendar, MapPin, CheckCircle, XCircle, ArrowLeft, Award, Clo
 import Card from '../../components/Common/Card';
 import DiscussionBoard from '../../components/Common/DiscussionBoard';
 import TakeAssessment from './TakeAssessment';
+import ClassDocuments from '../../components/Common/ClassDocuments';
 import { apiFetch } from '../../services/api';
 
 export default function MyCourses() {
@@ -201,6 +202,16 @@ export default function MyCourses() {
         >
           Bài thi & Bài tập
         </button>
+        <button
+          onClick={() => setActiveTab('document')}
+          className={`py-3 px-6 text-sm font-bold border-b-2 transition duration-200 ${
+            activeTab === 'document'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Tài liệu lớp học
+        </button>
       </div>
 
       {activeTab === 'attendance' ? (
@@ -276,6 +287,8 @@ export default function MyCourses() {
         </Card>
       ) : activeTab === 'discussion' ? (
         <DiscussionBoard courseId={selectedClass.id} />
+      ) : activeTab === 'document' ? (
+        <ClassDocuments classId={selectedClass.id} isTeacher={false} />
       ) : (
         /* Assessment listing view */
         <div className="space-y-6">
