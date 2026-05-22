@@ -294,7 +294,7 @@ export default function ClassDocuments({ classId, isTeacher = false }) {
               title="Dạng lưới"
             >
               <Grid className="w-4 h-4" />
-            </</button>
+            </button>
             <button 
               onClick={() => setViewMode('list')}
               className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
