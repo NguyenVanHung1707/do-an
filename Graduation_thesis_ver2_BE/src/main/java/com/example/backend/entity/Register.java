@@ -41,5 +41,5 @@ public class Register {
     private Boolean canUploadDocuments = false;
 
     @Column(name = "can_download_documents", nullable = false)
-    private Boolean canDownloadDocuments = false;
+    private Boolean canDownloadDocuments = true;
 }

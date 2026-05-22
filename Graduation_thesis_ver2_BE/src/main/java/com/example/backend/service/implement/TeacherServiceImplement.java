@@ -147,6 +147,8 @@ public class TeacherServiceImplement implements TeacherService {
         register.setId(registerId);
         register.setNumberOfAbsence(0);
         register.setNumberOfAttendance(0);
+        register.setCanDownloadDocuments(true);
+        register.setCanUploadDocuments(false);
         registerRepository.save(register);
     }
 
