@@ -25,6 +25,8 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/graduation_thesis_ver2
       KC_DB_USERNAME: doanhung
       KC_DB_PASSWORD: hung2004
+      KC_PROXY: edge
+      KC_HOSTNAME_STRICT: "false"
     ports:
       - "9000:8080"
     volumes:
