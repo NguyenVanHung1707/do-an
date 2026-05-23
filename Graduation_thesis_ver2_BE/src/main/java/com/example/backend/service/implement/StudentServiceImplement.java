@@ -276,6 +276,7 @@ public class StudentServiceImplement implements StudentService {
             attendanceLog.setLectureNumber(form.get().getLectureNumber());
             attendanceLog.setAttendanceTime(OffsetDateTime.now());
             attendanceLogRepository.save(attendanceLog);
+            registerRepository.updateAttendanceCount(course.getId(), student.get().getId());
             throw new CustomException("Answer is not correct", HttpStatus.BAD_REQUEST);
         }
 
@@ -286,6 +287,7 @@ public class StudentServiceImplement implements StudentService {
         attendanceLog.setLectureNumber(form.get().getLectureNumber());
         attendanceLog.setAttendanceTime(OffsetDateTime.now());
         attendanceLogRepository.save(attendanceLog);
+        registerRepository.updateAttendanceCount(course.getId(), student.get().getId());
         return attendanceLog;
     }
 

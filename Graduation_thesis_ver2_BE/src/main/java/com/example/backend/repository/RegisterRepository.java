@@ -24,4 +24,9 @@ public interface RegisterRepository extends JpaRepository<Register, RegisterId> 
 
     @Query("select r from Register r where r.id.student = ?1")
     List<Register> findByIdStudent(Student student);
+
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @Query(value = "CALL update_attendance_count(:courseId, :studentId)", nativeQuery = true)
+    void updateAttendanceCount(@org.springframework.data.repository.query.Param("courseId") Long courseId, @org.springframework.data.repository.query.Param("studentId") Long studentId);
 }

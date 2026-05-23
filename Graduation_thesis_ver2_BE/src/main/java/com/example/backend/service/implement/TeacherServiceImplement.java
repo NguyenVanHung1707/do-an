@@ -177,6 +177,7 @@ public class TeacherServiceImplement implements TeacherService {
             attendanceLog.setIsAttendance(attendanceLogDto.getIsAttendance());
             attendanceLog.setAttendanceTime(attendanceLogDto.getAttendanceTime());
             attendanceLogRepository.save(attendanceLog);
+            teacherRepository.updateAttendanceCount(course.get().getId(), student.get().getId());
             return;
         }
         AttendanceLog attendanceLog = new AttendanceLog();
@@ -260,7 +261,10 @@ public class TeacherServiceImplement implements TeacherService {
         if(!attendanceLog.get().getCourse().getTeacher().equals(teacher.get())){
             throw new CustomException("Course is not yours", HttpStatus.BAD_REQUEST);
         }
+        Long courseId = attendanceLog.get().getCourse().getId();
+        Long studentId = attendanceLog.get().getStudent().getId();
         attendanceLogRepository.deleteById(attendanceId);
+        teacherRepository.updateAttendanceCount(courseId, studentId);
     }
 
     @Override
