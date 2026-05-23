@@ -137,6 +137,11 @@ jobs:
             echo "Đăng nhập GHCR trên VPS..."
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+            # Dừng tất cả các phiên bản ứng dụng cũ (cả Dev và Prod) để tránh chạy song song 2 ứng dụng
+            echo "Đang dừng tất cả các container cũ (Dev & Prod)..."
+            docker compose -f docker-compose.yml down --remove-orphans || true
+            docker compose -f docker-compose.prod.yml down --remove-orphans || true
+
             # Pull các image mới nhất đã build trên GitHub Runner
             echo "Kéo các Docker images mới nhất từ GHCR..."
             docker compose -f docker-compose.prod.yml pull
