@@ -193,12 +193,12 @@ export default function App() {
   // If currently fetching the teacher verification state, show premium spinner
   if (isAuthenticated && role === 'teacher' && (loadingProfile || !teacherProfile)) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-600">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans antialiased text-slate-600 dark:text-slate-350 transition-colors duration-300">
         <Navbar onToggleSidebar={() => {}} />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-semibold text-slate-500">Đang tải thông tin tài khoản...</p>
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Đang tải thông tin tài khoản...</p>
           </div>
         </div>
       </div>
@@ -208,12 +208,12 @@ export default function App() {
   // If currently fetching the student profile state, show premium spinner
   if (isAuthenticated && role === 'student' && (loadingStudentProfile || !studentProfile)) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-600">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans antialiased text-slate-600 dark:text-slate-350 transition-colors duration-300">
         <Navbar onToggleSidebar={() => {}} />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-semibold text-slate-500">Đang tải thông tin tài khoản...</p>
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Đang tải thông tin tài khoản...</p>
           </div>
         </div>
       </div>
@@ -224,7 +224,7 @@ export default function App() {
   const isStudentIncomplete = studentProfile && !studentProfile.profileCompleted;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-600">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans antialiased text-slate-600 dark:text-slate-350 transition-colors duration-300">
       {/* Universal Header Navbar */}
       <Navbar onToggleSidebar={handleToggleSidebar} />
 
@@ -234,11 +234,11 @@ export default function App() {
           <LoginRegister />
         </div>
       ) : isTeacherPending ? (
-        <div className="flex-1 flex flex-col justify-center bg-slate-50">
+        <div className="flex-1 flex flex-col justify-center bg-slate-50 dark:bg-slate-950">
           <PendingApproval teacherData={teacherProfile} />
         </div>
       ) : isStudentIncomplete ? (
-        <div className="flex-1 flex flex-col justify-center bg-slate-50">
+        <div className="flex-1 flex flex-col justify-center bg-slate-50 dark:bg-slate-950">
           <CompleteProfile onComplete={handleProfileCompleted} />
         </div>
       ) : (

@@ -46,23 +46,23 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
   }
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white border-r border-slate-200">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
       {/* Mobile Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-100 md:hidden">
-        <span className="font-bold text-slate-800">Menu chức năng</span>
-        <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500">
+      <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 md:hidden">
+        <span className="font-bold text-slate-800 dark:text-slate-100">Menu chức năng</span>
+        <button onClick={onClose} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400">
           <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* Role Profile Badge */}
-      <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+      <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-bold shadow-md shadow-primary/20">
             {role === 'admin' ? 'AD' : role === 'teacher' ? 'GV' : 'SV'}
           </div>
           <div>
-            <p className="font-semibold text-slate-800 text-sm">{user?.fullName || 'Người dùng'}</p>
+            <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{user?.fullName || 'Người dùng'}</p>
             <p className="text-xs font-medium text-primary mt-0.5 capitalize">
               {role === 'admin' ? 'Quản trị viên' : role === 'teacher' ? 'Giảng viên' : 'Sinh viên'}
             </p>
@@ -85,10 +85,10 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 group ${
                 isActive
                   ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  : 'text-slate-600 dark:text-slate-450 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
-              <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 duration-200 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-primary'}`} />
+              <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 duration-200 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'}`} />
               <span>{item.label}</span>
             </button>
           );
@@ -96,8 +96,8 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
       </nav>
 
       {/* Version footer */}
-      <div className="p-4 border-t border-slate-100 text-center">
-        <span className="text-[10px] text-slate-400 font-mono tracking-wider">
+      <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-center">
+        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tracking-wider">
           BKHN-CLASSROOM V1.0.0
         </span>
       </div>
