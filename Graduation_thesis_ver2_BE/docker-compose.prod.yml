@@ -21,6 +21,10 @@ services:
     environment:
       KEYCLOAK_ADMIN: keycloak_owner
       KEYCLOAK_ADMIN_PASSWORD: keycloak_owner
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/graduation_thesis_ver2
+      KC_DB_USERNAME: doanhung
+      KC_DB_PASSWORD: hung2004
     ports:
       - "9000:8080"
     volumes:
