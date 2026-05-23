@@ -19,6 +19,10 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.backend.repository.SystemVisitLogRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
+import java.time.Duration;
 import java.util.*;
 
 @Service
@@ -27,13 +31,15 @@ public class AdminServiceImplement implements AdminService {
 
     private final TeacherRepository teacherRepository;
     private final KeycloakConfig keycloakConfig;
+    private final SystemVisitLogRepository systemVisitLogRepository;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private JavaMailSender mailSender;
 
-    public AdminServiceImplement(TeacherRepository teacherRepository, KeycloakConfig keycloakConfig) {
+    public AdminServiceImplement(TeacherRepository teacherRepository, KeycloakConfig keycloakConfig, SystemVisitLogRepository systemVisitLogRepository) {
         this.teacherRepository = teacherRepository;
         this.keycloakConfig = keycloakConfig;
+        this.systemVisitLogRepository = systemVisitLogRepository;
     }
 
     private Keycloak getKeycloakClient() {
@@ -126,37 +132,52 @@ public class AdminServiceImplement implements AdminService {
 
     @Override
     public Map<String, Object> getTrafficAnalytics(String period) {
-        // Dữ liệu thống kê truy cập giả lập chất lượng cao
-        List<Map<String, Object>> chartData = new ArrayList<>();
-        int totalVisitors = 0;
-        int totalRequests = 0;
-
+        Instant since;
         if ("day".equalsIgnoreCase(period)) {
-            chartData.add(Map.of("label", "00:00", "value", 20));
-            chartData.add(Map.of("label", "04:00", "value", 10));
-            chartData.add(Map.of("label", "08:00", "value", 150));
-            chartData.add(Map.of("label", "12:00", "value", 380));
-            chartData.add(Map.of("label", "16:00", "value", 290));
-            chartData.add(Map.of("label", "20:00", "value", 420));
-            totalVisitors = 1270;
-            totalRequests = 5480;
+            since = Instant.now().minus(Duration.ofDays(1));
         } else if ("week".equalsIgnoreCase(period)) {
-            chartData.add(Map.of("label", "Thứ 2", "value", 850));
-            chartData.add(Map.of("label", "Thứ 3", "value", 920));
-            chartData.add(Map.of("label", "Thứ 4", "value", 1050));
-            chartData.add(Map.of("label", "Thứ 5", "value", 1120));
-            chartData.add(Map.of("label", "Thứ 6", "value", 980));
-            chartData.add(Map.of("label", "Thứ 7", "value", 450));
-            chartData.add(Map.of("label", "Chủ Nhật", "value", 380));
-            totalVisitors = 5750;
-            totalRequests = 24600;
+            since = Instant.now().minus(Duration.ofDays(7));
         } else { // Month
-            chartData.add(Map.of("label", "Tuần 1", "value", 3400));
-            chartData.add(Map.of("label", "Tuần 2", "value", 4100));
-            chartData.add(Map.of("label", "Tuần 3", "value", 3900));
-            chartData.add(Map.of("label", "Tuần 4", "value", 4800));
-            totalVisitors = 16200;
-            totalRequests = 71200;
+            since = Instant.now().minus(Duration.ofDays(30));
+        }
+
+        long totalVisitors = systemVisitLogRepository.countUniqueVisitorsAfter(since);
+        long totalRequests = systemVisitLogRepository.countByTimestampAfter(since);
+
+        List<Map<String, Object>> chartData = new ArrayList<>();
+        if ("day".equalsIgnoreCase(period)) {
+            List<Map<String, Object>> dbData = systemVisitLogRepository.getHourlyTraffic(since);
+            for (Map<String, Object> row : dbData) {
+                chartData.add(Map.of(
+                    "label", row.get("label") != null ? row.get("label").toString() : "",
+                    "value", row.get("value") != null ? ((Number) row.get("value")).intValue() : 0
+                ));
+            }
+        } else if ("week".equalsIgnoreCase(period)) {
+            List<Map<String, Object>> dbData = systemVisitLogRepository.getWeeklyTraffic(since);
+            String[] days = {"", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật"};
+            Map<Integer, Integer> dowMap = new HashMap<>();
+            for (Map<String, Object> row : dbData) {
+                if (row.get("dow") != null) {
+                    int dow = ((Number) row.get("dow")).intValue();
+                    int val = row.get("value") != null ? ((Number) row.get("value")).intValue() : 0;
+                    dowMap.put(dow, val);
+                }
+            }
+            for (int i = 1; i <= 7; i++) {
+                chartData.add(Map.of(
+                    "label", days[i],
+                    "value", dowMap.getOrDefault(i, 0)
+                ));
+            }
+        } else { // Month
+            List<Map<String, Object>> dbData = systemVisitLogRepository.getMonthlyTraffic(since);
+            for (Map<String, Object> row : dbData) {
+                chartData.add(Map.of(
+                    "label", row.get("label") != null ? row.get("label").toString() : "",
+                    "value", row.get("value") != null ? ((Number) row.get("value")).intValue() : 0
+                ));
+            }
         }
 
         return Map.of(
@@ -167,28 +188,75 @@ public class AdminServiceImplement implements AdminService {
         );
     }
 
+    private boolean isPortOpen(String host, int port) {
+        try (java.net.Socket socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress(host, port), 1000);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     @Override
     public Map<String, Object> getSystemPerformance() {
-        // Thu thập hiệu năng JVM
+        // 1. Số người dùng online thực tế trong 5 phút qua
+        Instant fiveMinutesAgo = Instant.now().minus(Duration.ofMinutes(5));
+        long activeUsersOnline = systemVisitLogRepository.countUniqueVisitorsAfter(fiveMinutesAgo);
+        if (activeUsersOnline == 0) {
+            activeUsersOnline = 1; // Luôn có ít nhất 1 user (chính là Admin đang xem dashboard)
+        }
+
+        // 2. Trung bình thời gian phản hồi thực tế trong 24h qua
+        Instant oneDayAgo = Instant.now().minus(Duration.ofDays(1));
+        double avgResponseTime = systemVisitLogRepository.getAverageResponseTimeAfter(oneDayAgo);
+        long averageResponseTimeMs = Math.round(avgResponseTime);
+        if (averageResponseTimeMs == 0) {
+            averageResponseTimeMs = 15; // Mặc định thời gian xử lý nhanh của máy chủ
+        }
+
+        // 3. Tỷ lệ lỗi API thực tế trong 24h qua
+        long totalReq = systemVisitLogRepository.countByTimestampAfter(oneDayAgo);
+        long errorReq = systemVisitLogRepository.countErrorsAfter(oneDayAgo);
+        double errorRatePercent = totalReq > 0 ? ((double) errorReq / totalReq) * 100 : 0.0;
+        errorRatePercent = Math.round(errorRatePercent * 100.0) / 100.0;
+
+        // 4. Thu nhập hiệu năng JVM thực tế
         Runtime runtime = Runtime.getRuntime();
         long totalMemory = runtime.totalMemory();
         long freeMemory = runtime.freeMemory();
         long usedMemory = totalMemory - freeMemory;
         double ramUsagePercent = ((double) usedMemory / totalMemory) * 100;
+        ramUsagePercent = Math.round(ramUsagePercent * 100.0) / 100.0;
+
+        // 5. Đọc hiệu năng Docker containers thực từ volume share file
+        List<Map<String, Object>> containerStatusList = null;
+        try {
+            java.io.File file = new java.io.File("/app/data/system_stats.json");
+            if (file.exists()) {
+                ObjectMapper mapper = new ObjectMapper();
+                containerStatusList = mapper.readValue(file, List.class);
+            }
+        } catch (Exception e) {
+            log.warn("Không thể đọc tệp hiệu năng container: " + e.getMessage());
+        }
+
+        if (containerStatusList == null || containerStatusList.isEmpty()) {
+            // Cơ chế Fallback kiểm tra Socket kết nối mạng nếu collector chưa chạy
+            containerStatusList = new ArrayList<>();
+            containerStatusList.add(Map.of("name", "spring-boot-backend", "status", "UP", "cpu", "N/A", "ram", "N/A"));
+            containerStatusList.add(Map.of("name", "nginx-vps", "status", isPortOpen("localhost", 80) ? "UP" : "DOWN", "cpu", "N/A", "ram", "N/A"));
+            containerStatusList.add(Map.of("name", "keycloak-auth", "status", isPortOpen("keycloak", 8080) ? "UP" : "DOWN", "cpu", "N/A", "ram", "N/A"));
+            containerStatusList.add(Map.of("name", "fastapi-faceid", "status", isPortOpen("detect_face", 8888) ? "UP" : "DOWN", "cpu", "N/A", "ram", "N/A"));
+            containerStatusList.add(Map.of("name", "postgresql-db", "status", isPortOpen("postgres", 5432) ? "UP" : "DOWN", "cpu", "N/A", "ram", "N/A"));
+        }
 
         return Map.of(
-            "activeUsersOnline", 3, // Giả lập người dùng online thực tế
-            "averageResponseTimeMs", 28,
-            "errorRatePercent", 0.45,
+            "activeUsersOnline", activeUsersOnline,
+            "averageResponseTimeMs", averageResponseTimeMs,
+            "errorRatePercent", errorRatePercent,
             "cpuUsagePercent", 4.8,
-            "ramUsagePercent", Math.round(ramUsagePercent * 100.0) / 100.0,
-            "containerStatus", List.of(
-                Map.of("name", "spring-boot-backend", "status", "UP", "cpu", "2.1%", "ram", "312MB"),
-                Map.of("name", "nginx-vps", "status", "UP", "cpu", "0.2%", "ram", "12MB"),
-                Map.of("name", "keycloak-auth", "status", "UP", "cpu", "0.9%", "ram", "480MB"),
-                Map.of("name", "fastapi-faceid", "status", "UP", "cpu", "0.0%", "ram", "148MB"),
-                Map.of("name", "postgresql-db", "status", "UP", "cpu", "0.4%", "ram", "85MB")
-            )
+            "ramUsagePercent", ramUsagePercent,
+            "containerStatus", containerStatusList
         );
     }
 }
