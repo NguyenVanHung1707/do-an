@@ -137,6 +137,57 @@ export const keycloakLogin = async (username, password) => {
   return user;
 };
 
+export const keycloakExchangeCodeForToken = async (code) => {
+  const response = await fetch(KEYCLOAK_TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: 'graduation_thesis_ver2',
+      client_secret: 'Tj5zNU17UX9Ak1d4lLulx9VcXSSdHJwC',
+      code: code,
+      redirect_uri: window.location.origin + '/'
+    })
+  });
+
+  if (!response.ok) {
+    let errorDescription = 'Trao đổi mã xác thực Keycloak không thành công!';
+    try {
+      const errData = await response.json();
+      errorDescription = errData.error_description || errorDescription;
+    } catch (e) {}
+    throw new Error(errorDescription);
+  }
+
+  const data = await response.json();
+  const decoded = decodeJWT(data.access_token);
+  if (!decoded) {
+    throw new Error('Token JWT Keycloak không hợp lệ!');
+  }
+
+  let role = 'student';
+  if (decoded.realm_access?.roles?.includes('admin')) {
+    role = 'admin';
+  } else if (decoded.realm_access?.roles?.includes('teacher')) {
+    role = 'teacher';
+  }
+
+  const user = {
+    id: decoded.sub,
+    username: decoded.preferred_username,
+    code: decoded.preferred_username,
+    fullName: decoded.name || `${decoded.given_name || ''} ${decoded.family_name || ''}`.trim() || decoded.preferred_username,
+    email: decoded.email || '',
+    role,
+    token: data.access_token
+  };
+
+  localStorage.setItem('user', JSON.stringify(user));
+  return user;
+};
+
 export const keycloakRegister = async ({ username, email, fullName, code, password, role }) => {
   const nameParts = fullName.trim().split(/\s+/);
   const lastName = nameParts.pop() || '';

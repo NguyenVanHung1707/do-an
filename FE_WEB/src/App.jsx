@@ -30,7 +30,8 @@ import AnswerForm from './views/Student/AnswerForm';
 import CompleteProfile from './views/Student/CompleteProfile';
 
 // API
-import { getTeacherProfile, getStudentProfile } from './services/api';
+import { getTeacherProfile, getStudentProfile, keycloakExchangeCodeForToken } from './services/api';
+import { loginSuccess } from './store/authSlice';
 
 export default function App() {
   const { isAuthenticated, role } = useSelector((state) => state.auth);
@@ -48,6 +49,34 @@ export default function App() {
   // Student Profile status verification states
   const [studentProfile, setStudentProfile] = useState(null);
   const [loadingStudentProfile, setLoadingStudentProfile] = useState(false);
+
+  // Handle Keycloak OAuth2 callback (Google/Facebook code exchange)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) {
+      // Clean query parameters from address bar immediately to avoid multiple exchanges
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      window.history.replaceState({ path: newUrl }, '', newUrl);
+
+      // Exchange authorization code for token
+      keycloakExchangeCodeForToken(code)
+        .then((user) => {
+          dispatch(loginSuccess(user));
+          // Fetch student classes if role is student
+          if (user.role !== 'admin') {
+            dispatch(fetchClasses());
+            setCurrentView(user.role === 'teacher' ? 'dashboard' : 'my-courses');
+          } else {
+            setCurrentView('admin-dashboard');
+          }
+        })
+        .catch((err) => {
+          console.error("Lỗi trao đổi mã xác thực Social Login:", err);
+          alert("Đăng nhập bằng tài khoản liên kết thất bại: " + err.message);
+        });
+    }
+  }, [dispatch]);
 
   // Auto-set initial view and fetch classes based on role upon successful authentication
   useEffect(() => {

@@ -39,19 +39,24 @@ export default function LoginRegister() {
     dispatch(clearError());
     setSocialLoading(provider);
     
-    // Simulate real OAuth connection SDK handshake for premium feedback
-    setTimeout(() => {
-      const username = provider === 'google' ? 'google_student' : 'facebook_student';
-      dispatch(login({ username, password: 'password' }))
-        .unwrap()
-        .catch((err) => {
-          console.error(`Lỗi đăng nhập qua ${provider}:`, err);
-        })
-        .finally(() => {
-          setSocialLoading(provider === 'google' ? null : null); // safety reset
-          setSocialLoading(null);
-        });
-    }, 1200);
+    const host = window.location.hostname;
+    const protocol = window.location.protocol;
+    const authUrl = host === 'localhost'
+      ? 'http://localhost:9000/realms/hung2004/protocol/openid-connect/auth'
+      : `${protocol}//${host}/realms/hung2004/protocol/openid-connect/auth`;
+      
+    const redirectUri = window.location.origin + '/';
+    
+    const params = new URLSearchParams({
+      client_id: 'graduation_thesis_ver2',
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'openid',
+      kc_idp_hint: provider
+    });
+    
+    // Redirect browser to Keycloak Identity Provider broker
+    window.location.href = `${authUrl}?${params.toString()}`;
   };
 
   return (
