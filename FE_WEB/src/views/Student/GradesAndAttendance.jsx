@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Card from '../../components/Common/Card';
 import { getMyCourses, getMyAttendance, getCourseAssessments } from '../../services/api';
+import StudentAnalytics from '../../components/Student/StudentAnalytics';
 
 export default function GradesAndAttendance() {
   const { user } = useSelector((state) => state.auth);
@@ -178,12 +179,14 @@ export default function GradesAndAttendance() {
   return (
     <div className="space-y-6">
       {/* View Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Kết quả học tập & Chuyên cần</h1>
-        <p className="text-slate-500 text-sm mt-1">
+      <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/80 p-5 rounded-2xl shadow-sm transition">
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Kết quả học tập & Chuyên cần</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
           Xin chào sinh viên <strong className="text-primary font-semibold">{user?.fullName}</strong>. Dưới đây là thống kê điểm số và chuyên cần chi tiết của tất cả các môn học bạn tham gia trong học kỳ này.
         </p>
       </div>
+
+      {courses.length > 0 && <StudentAnalytics />}
 
       {courses.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-400 space-y-3 shadow-sm">

@@ -8,6 +8,7 @@ import DiscussionBoard from '../../components/Common/DiscussionBoard';
 import AssessmentManagement from './AssessmentManagement';
 import GradeAssessment from './GradeAssessment';
 import ClassDocuments from '../../components/Common/ClassDocuments';
+import TeacherClassAnalytics from '../../components/Teacher/TeacherClassAnalytics';
 
 export default function ClassDetail({ classId, onBack }) {
   const { classesList } = useSelector((state) => state.classes);
@@ -200,6 +201,16 @@ export default function ClassDetail({ classId, onBack }) {
         >
           Tài liệu lớp học
         </button>
+        <button
+          onClick={() => setActiveTab('analytics')}
+          className={`py-3 px-6 text-sm font-bold border-b-2 transition duration-200 ${
+            activeTab === 'analytics'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Phân tích học lực
+        </button>
       </div>
 
       {activeTab === 'attendance' ? (
@@ -289,6 +300,8 @@ export default function ClassDetail({ classId, onBack }) {
         <DiscussionBoard courseId={classId} />
       ) : activeTab === 'documents' ? (
         <ClassDocuments classId={classId} isTeacher={true} />
+      ) : activeTab === 'analytics' ? (
+        <TeacherClassAnalytics classId={classId} />
       ) : (
         <div>
           {assessmentViewState === 'list' ? (

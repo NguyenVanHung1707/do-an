@@ -317,3 +317,12 @@ export const getMyClassPermission = async (classId) => {
   return await apiFetch(`/documents/class/${classId}/my-permissions`);
 };
 
+export const getStudentAnalyticsSummary = async () => {
+  return await apiFetch('/analytics/student/summary');
+};
+
+export const getTeacherClassAnalyticsSummary = async (courseId) => {
+  return await apiFetch(`/analytics/teacher/class/${courseId}`);
+};
+
+

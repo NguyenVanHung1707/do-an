@@ -4,6 +4,7 @@ import com.example.backend.dto.*;
 import com.example.backend.entity.*;
 import com.example.backend.repository.*;
 import com.example.backend.service.AssessmentService;
+import com.example.backend.service.NotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ public class AssessmentServiceImplement implements AssessmentService {
     private final CourseRepository courseRepository;
     private final StudentRepository studentRepository;
     private final ObjectMapper objectMapper;
+    private final NotificationService notificationService;
 
     public AssessmentServiceImplement(
             AssessmentRepository assessmentRepository,
@@ -31,7 +33,8 @@ public class AssessmentServiceImplement implements AssessmentService {
             StudentAnswerRepository studentAnswerRepository,
             CourseRepository courseRepository,
             StudentRepository studentRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            NotificationService notificationService) {
         this.assessmentRepository = assessmentRepository;
         this.questionRepository = questionRepository;
         this.submissionRepository = submissionRepository;
@@ -39,6 +42,7 @@ public class AssessmentServiceImplement implements AssessmentService {
         this.courseRepository = courseRepository;
         this.studentRepository = studentRepository;
         this.objectMapper = objectMapper;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -116,6 +120,17 @@ public class AssessmentServiceImplement implements AssessmentService {
 
         sub.setFinalScore(finalScore);
         StudentSubmission saved = submissionRepository.save(sub);
+        
+        try {
+            notificationService.sendPushNotification(
+                sub.getStudentId(), 
+                "Kết quả học tập mới", 
+                "Bài thi/Bài tập '" + sub.getAssessment().getTitle() + "' đã được chấm điểm. Điểm số: " + finalScore + "/" + sub.getAssessment().getMaxScore()
+            );
+        } catch (Exception e) {
+            // Ignore notification errors
+        }
+
         return getSubmissionDto(saved);
     }
 
@@ -263,6 +278,19 @@ public class AssessmentServiceImplement implements AssessmentService {
         }
 
         StudentSubmission saved = submissionRepository.save(sub);
+
+        if ("GRADED".equals(saved.getStatus())) {
+            try {
+                notificationService.sendPushNotification(
+                    sub.getStudentId(), 
+                    "Kết quả học tập mới", 
+                    "Bài thi/Bài tập '" + sub.getAssessment().getTitle() + "' đã tự động chấm xong. Điểm số: " + calculatedScore + "/" + sub.getAssessment().getMaxScore()
+                );
+            } catch (Exception e) {
+                // Ignore notification errors
+            }
+        }
+
         return getSubmissionDto(saved);
     }
 
