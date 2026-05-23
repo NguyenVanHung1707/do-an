@@ -29,17 +29,19 @@ public class StudentServiceImplement implements StudentService {
     private final CourseRepository courseRepository;
     private final AttendanceLogRepository attendanceLogRepository;
     private final AnswerRepository answerRepository;
+    private final FormSubmissionRepository formSubmissionRepository;
 
     @Value("${app.upload.dir:E:\\Data\\student_faces}")
     private String uploadDir;
 
-    public StudentServiceImplement(StudentRepository studentRepository, FormRepository formRepository, RegisterRepository registerRepository, CourseRepository courseRepository, AttendanceLogRepository attendanceLogRepository, AnswerRepository answerRepository) {
+    public StudentServiceImplement(StudentRepository studentRepository, FormRepository formRepository, RegisterRepository registerRepository, CourseRepository courseRepository, AttendanceLogRepository attendanceLogRepository, AnswerRepository answerRepository, FormSubmissionRepository formSubmissionRepository) {
         this.studentRepository = studentRepository;
         this.formRepository = formRepository;
         this.registerRepository = registerRepository;
         this.courseRepository = courseRepository;
         this.attendanceLogRepository = attendanceLogRepository;
         this.answerRepository = answerRepository;
+        this.formSubmissionRepository = formSubmissionRepository;
     }
 
 
@@ -264,30 +266,44 @@ public class StudentServiceImplement implements StudentService {
                 break;
             }
         }
-        //delete old attendance log
+        // Save or update FormSubmission
+        FormSubmission submission = formSubmissionRepository.findByStudentAndForm(student.get(), form.get())
+                .orElse(new FormSubmission());
+        submission.setStudent(student.get());
+        submission.setForm(form.get());
+        submission.setIsCorrect(isCorrect);
+        submission.setSubmittedAt(OffsetDateTime.now());
+        formSubmissionRepository.save(submission);
+
+        // Calculate overall attendance for this session based on "at least 1 successful form" default rule
+        List<Form> formsInSession = formRepository.findByCourseAndLectureNumber(course, form.get().getLectureNumber());
+        boolean hasPassedAtLeastOneForm = false;
+        for (Form f : formsInSession) {
+            Optional<FormSubmission> subOpt = formSubmissionRepository.findByStudentAndForm(student.get(), f);
+            if (subOpt.isPresent() && Boolean.TRUE.equals(subOpt.get().getIsCorrect())) {
+                hasPassedAtLeastOneForm = true;
+                break;
+            }
+        }
+
+        // delete old attendance log
         List<AttendanceLog> oldAttendanceLog = attendanceLogRepository.findByStudentAndCourseAndLectureNumber(student.get(), course, form.get().getLectureNumber());
         attendanceLogRepository.deleteAll(oldAttendanceLog);
-
-        if(!isCorrect){
-            AttendanceLog attendanceLog = new AttendanceLog();
-            attendanceLog.setStudent(student.get());
-            attendanceLog.setCourse(course);
-            attendanceLog.setIsAttendance(false);
-            attendanceLog.setLectureNumber(form.get().getLectureNumber());
-            attendanceLog.setAttendanceTime(OffsetDateTime.now());
-            attendanceLogRepository.save(attendanceLog);
-            registerRepository.updateAttendanceCount(course.getId(), student.get().getId());
-            throw new CustomException("Answer is not correct", HttpStatus.BAD_REQUEST);
-        }
 
         AttendanceLog attendanceLog = new AttendanceLog();
         attendanceLog.setStudent(student.get());
         attendanceLog.setCourse(course);
-        attendanceLog.setIsAttendance(true);
+        attendanceLog.setIsAttendance(hasPassedAtLeastOneForm);
         attendanceLog.setLectureNumber(form.get().getLectureNumber());
         attendanceLog.setAttendanceTime(OffsetDateTime.now());
         attendanceLogRepository.save(attendanceLog);
+
         registerRepository.updateAttendanceCount(course.getId(), student.get().getId());
+
+        if (!isCorrect) {
+            throw new CustomException("Answer is not correct", HttpStatus.BAD_REQUEST);
+        }
+
         return attendanceLog;
     }
 

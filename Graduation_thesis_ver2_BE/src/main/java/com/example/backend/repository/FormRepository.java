@@ -16,4 +16,5 @@ public interface FormRepository extends JpaRepository<Form, Long> {
   Optional<Form> findByCourse(Course course);
   Optional<Form> findFirstByCourse(Course course);
   Optional<Form> findFirstByCode(String code);
+  java.util.List<Form> findByCourseAndLectureNumber(Course course, Integer lectureNumber);
 }

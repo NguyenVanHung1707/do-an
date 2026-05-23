@@ -26,10 +26,9 @@ public class TeacherServiceImplement implements TeacherService {
     private final QuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
     private final FormRepository formRepository;
+    private final FormSubmissionRepository formSubmissionRepository;
 
-
-
-    public TeacherServiceImplement(TeacherRepository teacherRepository, CourseRepository courseRepository, StudentRepository studentRepository, RegisterRepository registerRepository, AttendanceLogRepository attendanceLogRepository, QuestionRepository questionRepository, AnswerRepository answerRepository, FormRepository formRepository) {
+    public TeacherServiceImplement(TeacherRepository teacherRepository, CourseRepository courseRepository, StudentRepository studentRepository, RegisterRepository registerRepository, AttendanceLogRepository attendanceLogRepository, QuestionRepository questionRepository, AnswerRepository answerRepository, FormRepository formRepository, FormSubmissionRepository formSubmissionRepository) {
         this.teacherRepository = teacherRepository;
         this.courseRepository = courseRepository;
         this.studentRepository = studentRepository;
@@ -38,6 +37,7 @@ public class TeacherServiceImplement implements TeacherService {
         this.questionRepository = questionRepository;
         this.answerRepository = answerRepository;
         this.formRepository = formRepository;
+        this.formSubmissionRepository = formSubmissionRepository;
     }
     @Override
     public Teacher createTeacher(TeacherDto teacherDto) {
@@ -428,9 +428,6 @@ public class TeacherServiceImplement implements TeacherService {
         if(!course.get().getTeacher().equals(teacher.get())){
             throw new CustomException("Course is not yours", HttpStatus.BAD_REQUEST);
         }
-        //check if course has form
-        Optional<Form> formOptional = formRepository.findFirstByCourse(course.get());
-        formOptional.ifPresent(form -> formRepository.deleteById(form.getId()));
         Form form = new Form();
         form.setLectureNumber(formDto.getLectureNumber());
         //set expiredAt = now + timeOfPeriod (unit: second)
@@ -574,5 +571,145 @@ public class TeacherServiceImplement implements TeacherService {
     public Teacher getTeacherByKeycloakId(String keycloakId) {
         return teacherRepository.findByKeycloakId(keycloakId)
                 .orElseThrow(() -> new CustomException("Teacher not found with keycloak id: " + keycloakId, HttpStatus.NOT_FOUND));
+    }
+
+    @Override
+    public List<FormWithSubmissionsDto> getFormsBySession(Long courseId, Integer lectureNumber, String sub) {
+        Optional<Course> courseOpt = courseRepository.findById(courseId);
+        if (courseOpt.isEmpty()) {
+            throw new CustomException("Course not found", HttpStatus.NOT_FOUND);
+        }
+        Optional<Teacher> teacherOpt = teacherRepository.findByKeycloakId(sub);
+        if (teacherOpt.isEmpty()) {
+            throw new CustomException("Teacher not found", HttpStatus.NOT_FOUND);
+        }
+        if (!courseOpt.get().getTeacher().equals(teacherOpt.get())) {
+            throw new CustomException("Course is not yours", HttpStatus.BAD_REQUEST);
+        }
+
+        List<Form> forms = formRepository.findByCourseAndLectureNumber(courseOpt.get(), lectureNumber);
+        List<FormWithSubmissionsDto> result = new ArrayList<>();
+
+        for (Form form : forms) {
+            FormWithSubmissionsDto dto = new FormWithSubmissionsDto();
+            dto.setId(form.getId());
+            dto.setCode(form.getCode());
+            dto.setLectureNumber(form.getLectureNumber());
+            dto.setExpiredAt(form.getExpiredAt());
+            dto.setCreatedAt(form.getCreatedAt());
+            dto.setLatitude(form.getLatitude());
+            dto.setLongitude(form.getLongitude());
+
+            // Get questions
+            List<QuestionDto> questionDtos = new ArrayList<>();
+            List<Question> questions = questionRepository.findByForm(form);
+            for (Question question : questions) {
+                QuestionDto questionDto = new QuestionDto();
+                questionDto.setId(question.getId());
+                questionDto.setContent(question.getContent());
+                List<AnswerDto> answerDtos = new ArrayList<>();
+                List<Answer> answers = answerRepository.findByQuestion(question);
+                for (Answer answer : answers) {
+                    AnswerDto answerDto = new AnswerDto();
+                    answerDto.setId(answer.getId());
+                    answerDto.setContent(answer.getContent());
+                    answerDto.setIsTrue(answer.getIsTrue());
+                    answerDtos.add(answerDto);
+                }
+                questionDto.setAnswers(answerDtos);
+                questionDtos.add(questionDto);
+            }
+            dto.setQuestions(questionDtos);
+
+            // Get successful students
+            List<FormSubmission> submissions = formSubmissionRepository.findByFormAndIsCorrect(form, true);
+            List<StudentInCourseDto> studentDtos = new ArrayList<>();
+            for (FormSubmission subRecord : submissions) {
+                Student s = subRecord.getStudent();
+                StudentInCourseDto sDto = new StudentInCourseDto();
+                sDto.setId(s.getId());
+                sDto.setStudentCode(s.getStudentCode());
+                sDto.setName(s.getName());
+                studentDtos.add(sDto);
+            }
+            dto.setSuccessfulStudents(studentDtos);
+
+            result.add(dto);
+        }
+        return result;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void applyAttendanceRule(Long courseId, Integer lectureNumber, Integer minFormsRequired, String sub) {
+        Optional<Course> courseOpt = courseRepository.findById(courseId);
+        if (courseOpt.isEmpty()) {
+            throw new CustomException("Course not found", HttpStatus.NOT_FOUND);
+        }
+        Optional<Teacher> teacherOpt = teacherRepository.findByKeycloakId(sub);
+        if (teacherOpt.isEmpty()) {
+            throw new CustomException("Teacher not found", HttpStatus.NOT_FOUND);
+        }
+        if (!courseOpt.get().getTeacher().equals(teacherOpt.get())) {
+            throw new CustomException("Course is not yours", HttpStatus.BAD_REQUEST);
+        }
+
+        Course course = courseOpt.get();
+        List<Form> forms = formRepository.findByCourseAndLectureNumber(course, lectureNumber);
+        if (forms.isEmpty()) {
+            throw new CustomException("No forms found for this session", HttpStatus.BAD_REQUEST);
+        }
+
+        // Get all students registered in this course
+        List<Register> registers = registerRepository.findByIdCourse(course);
+        for (Register reg : registers) {
+            Student student = reg.getId().getStudent();
+            
+            // Count successful submissions
+            int successfulCount = 0;
+            for (Form form : forms) {
+                Optional<FormSubmission> submissionOpt = formSubmissionRepository.findByStudentAndForm(student, form);
+                if (submissionOpt.isPresent() && Boolean.TRUE.equals(submissionOpt.get().getIsCorrect())) {
+                    successfulCount++;
+                }
+            }
+
+            boolean isAttendance = successfulCount >= minFormsRequired;
+
+            // Delete old attendance log for this session and student
+            List<AttendanceLog> oldLogs = attendanceLogRepository.findByStudentAndCourseAndLectureNumber(student, course, lectureNumber);
+            attendanceLogRepository.deleteAll(oldLogs);
+
+            // Create new attendance log
+            AttendanceLog log = new AttendanceLog();
+            log.setStudent(student);
+            log.setCourse(course);
+            log.setLectureNumber(lectureNumber);
+            log.setIsAttendance(isAttendance);
+            log.setAttendanceTime(OffsetDateTime.now());
+            attendanceLogRepository.save(log);
+
+            // Update registration attendance count (uses stored procedure)
+            registerRepository.updateAttendanceCount(course.getId(), student.getId());
+        }
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteFormById(Long formId, String sub) {
+        Optional<Form> formOpt = formRepository.findById(formId);
+        if (formOpt.isEmpty()) {
+            throw new CustomException("Form not found", HttpStatus.NOT_FOUND);
+        }
+        Course course = formOpt.get().getCourse();
+        Optional<Teacher> teacherOpt = teacherRepository.findByKeycloakId(sub);
+        if (teacherOpt.isEmpty()) {
+            throw new CustomException("Teacher not found", HttpStatus.NOT_FOUND);
+        }
+        if (!course.getTeacher().equals(teacherOpt.get())) {
+            throw new CustomException("Course is not yours", HttpStatus.BAD_REQUEST);
+        }
+
+        formRepository.deleteById(formId);
     }
 }

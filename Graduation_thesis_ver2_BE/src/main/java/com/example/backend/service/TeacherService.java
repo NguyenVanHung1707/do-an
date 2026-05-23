@@ -56,6 +56,12 @@ public interface TeacherService {
 
     void deleteForm(Long courseId, String sub);
 
+    List<FormWithSubmissionsDto> getFormsBySession(Long courseId, Integer lectureNumber, String sub);
+
+    void applyAttendanceRule(Long courseId, Integer lectureNumber, Integer minFormsRequired, String sub);
+
+    void deleteFormById(Long formId, String sub);
+
     List<BarChartDto> getMyClassChart(String sub);
 
     List<?> getRateOfMyClassChart(String sub);

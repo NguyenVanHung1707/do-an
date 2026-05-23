@@ -119,6 +119,20 @@ public class TeacherController {
         teacherService.deleteForm(courseId, jwt.getClaimAsString("sub"));
         return ResponseEntity.ok("Form deleted successfully");
     }
+    @GetMapping("/get-forms-by-session")
+    public ResponseEntity<?> getFormsBySession(@RequestParam Long courseId, @RequestParam Integer lectureNumber, @AuthenticationPrincipal Jwt jwt){
+        return ResponseEntity.ok(teacherService.getFormsBySession(courseId, lectureNumber, jwt.getClaimAsString("sub")));
+    }
+    @PostMapping("/apply-attendance-rule")
+    public ResponseEntity<?> applyAttendanceRule(@RequestParam Long courseId, @RequestParam Integer lectureNumber, @RequestParam Integer minFormsRequired, @AuthenticationPrincipal Jwt jwt){
+        teacherService.applyAttendanceRule(courseId, lectureNumber, minFormsRequired, jwt.getClaimAsString("sub"));
+        return ResponseEntity.ok("Attendance rule applied successfully");
+    }
+    @DeleteMapping("/delete-form")
+    public ResponseEntity<?> deleteFormById(@RequestParam Long formId, @AuthenticationPrincipal Jwt jwt){
+        teacherService.deleteFormById(formId, jwt.getClaimAsString("sub"));
+        return ResponseEntity.ok("Form deleted successfully");
+    }
     @GetMapping("/get-my-class-chart")
     public ResponseEntity<List<?>> getMyClassChart(@AuthenticationPrincipal Jwt jwt){
         return ResponseEntity.ok(teacherService.getMyClassChart(jwt.getClaimAsString("sub")));
