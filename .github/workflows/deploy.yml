@@ -148,7 +148,6 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           command_timeout: 30m
-          script_stop: true
           script: |
             set -euo pipefail
 
@@ -190,18 +189,7 @@ jobs:
             EOF
             sed -i 's/^[[:space:]]*//' .env.next
 
-            for key in \
-              POSTGRES_DB \
-              POSTGRES_USER \
-              POSTGRES_PASSWORD \
-              KC_DB_USERNAME \
-              KC_DB_PASSWORD \
-              KEYCLOAK_REALM \
-              KEYCLOAK_ADMIN \
-              KEYCLOAK_ADMIN_PASSWORD \
-              KEYCLOAK_ADMIN_CLIENT_ID \
-              DATA_PATH
-            do
+            for key in POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD KC_DB_USERNAME KC_DB_PASSWORD KEYCLOAK_REALM KEYCLOAK_ADMIN KEYCLOAK_ADMIN_PASSWORD KEYCLOAK_ADMIN_CLIENT_ID DATA_PATH; do
               value="$(grep -E "^${key}=" .env.next | cut -d= -f2-)"
               if [ -z "$value" ]; then
                 echo "Missing required production env: $key"
