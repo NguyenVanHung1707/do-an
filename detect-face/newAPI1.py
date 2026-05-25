@@ -5,9 +5,9 @@ import os
 from deepface import DeepFace
 from retinaface import RetinaFace
 import shutil
-from fastapi import FastAPI, UploadFile, File, Form
+import traceback
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from typing import List
-
 
 app = FastAPI()
 
@@ -22,6 +22,10 @@ app.add_middleware(
 
 
 def getImagePaths(ids):
+    connection = None
+    if not ids:
+        print("getImagePaths: ids list is empty, returning empty dict.")
+        return {}
     try:
         connection = psycopg2.connect(
             user=os.getenv("DB_USER", "postgres"),
@@ -35,70 +39,120 @@ def getImagePaths(ids):
         rows = cursor.fetchall()
         return {row[0]: row[1] for row in rows}
 
-    except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
+    except Exception as error:
+        print("Error while connecting to PostgreSQL:", error)
+        return {}
     finally:
         if connection:
             cursor.close()
             connection.close()
             print("PostgreSQL connection is closed")
 
+
 def checkAttendence(imagePath, listID):
-    image = cv2.imread(imagePath)
+    if not listID:
+        print("checkAttendence: listID is empty.")
+        return []
+
     os.makedirs('tamthoi', exist_ok=True)
-    
-    start_time_x = time.time()  # Bắt đầu đo thời gian
-    faces = RetinaFace.extract_faces(img_path=imagePath, align=True)
-    for i, face in enumerate(faces):
-        output_filename = f'tamthoi/face_{i + 1}.jpg'
-        cv2.imwrite(output_filename, face)
+    try:
+        image = cv2.imread(imagePath)
+        if image is None:
+            print(f"Error: Could not read image at {imagePath}")
+            faces = []
+        else:
+            try:
+                start_time_x = time.time()  # Bắt đầu đo thời gian
+                faces = RetinaFace.extract_faces(img_path=imagePath, align=True)
+                end_time_x = time.time()  # Kết thúc đo thời gian
+                print(f"Time taken to extract faces: {end_time_x - start_time_x:.2f} seconds")  # In ra thời gian chạy
+            except Exception as e:
+                print(f"Error extracting faces with RetinaFace: {e}")
+                faces = []
 
-    image_paths = getImagePaths(listID)
-    results = []
-    end_time_x = time.time()  # Kết thúc đo thời gian
-    print(f"Time taken to extract faces: {end_time_x - start_time_x:.2f} seconds")  # In ra thời gian chạy
+        for i, face in enumerate(faces):
+            output_filename = f'tamthoi/face_{i + 1}.jpg'
+            cv2.imwrite(output_filename, face)
 
-    for id in listID:
-        ip = image_paths.get(id)
-        if ip is None:
-            results.append({'id': id, 'isAttendance': False})
-            continue
+        image_paths = getImagePaths(listID)
+        results = []
 
-        ss = False
-        try:
-            ss = any(
-                DeepFace.verify(os.path.join('tamthoi', filename), ip, model_name='ArcFace', detector_backend='retinaface', enforce_detection=False)['verified']
-                for filename in os.listdir('tamthoi')
-                if filename.endswith('.jpg') or filename.endswith('.JPG')
-            )
-        except Exception as e:
-            print(f"Error verifying student {id}: {e}")
+        for id in listID:
+            ip = image_paths.get(id)
+            if not ip:
+                print(f"Student {id}: No registered image path found in DB.")
+                results.append({'id': id, 'isAttendance': False})
+                continue
+
+            if not os.path.exists(ip):
+                print(f"Student {id}: Registered image at {ip} does not exist on disk.")
+                results.append({'id': id, 'isAttendance': False})
+                continue
+
             ss = False
+            try:
+                face_files = [
+                    filename for filename in os.listdir('tamthoi')
+                    if filename.lower().endswith(('.jpg', '.jpeg', '.png'))
+                ]
+                if face_files:
+                    ss = any(
+                        DeepFace.verify(
+                            os.path.join('tamthoi', filename), 
+                            ip, 
+                            model_name='ArcFace', 
+                            detector_backend='retinaface', 
+                            enforce_detection=False
+                        )['verified']
+                        for filename in face_files
+                    )
+            except Exception as e:
+                print(f"Error verifying student {id}: {e}")
+                ss = False
 
-        results.append({'id': id, 'isAttendance': ss})
+            results.append({'id': id, 'isAttendance': ss})
 
-    shutil.rmtree('tamthoi')
-    return results
+        return results
+
+    finally:
+        if os.path.exists('tamthoi'):
+            try:
+                shutil.rmtree('tamthoi')
+            except Exception as e:
+                print(f"Error removing 'tamthoi' directory: {e}")
+
 
 @app.post("/attendance")
 async def attendance(image_ids: List[str] = Form(...), image_file: UploadFile = File(...)):
     start_time = time.time()  # Bắt đầu đo thời gian
-
-    numbers_str = image_ids[0].split(',')
-    numbers_int = [int(num) for num in numbers_str]
-
-    os.makedirs('./temp', exist_ok=True)
-    file_path = f"./temp/{image_file.filename}"
     try:
-        with open(file_path, "wb") as buffer:
-            buffer.write(await image_file.read())
-        results = checkAttendence(file_path, numbers_int)
-    finally:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-    
-    end_time = time.time()  # Kết thúc đo thời gian
-    elapsed_time = end_time - start_time  # Tính toán thời gian chạy
+        try:
+            numbers_str = image_ids[0].split(',')
+            numbers_int = [int(num) for num in numbers_str if num.strip()]
+        except Exception as e:
+            print(f"Error parsing image_ids: {e}")
+            numbers_int = []
 
-    print(f"Time taken to process attendance: {elapsed_time:.2f} seconds")  # In ra thời gian chạy
-    return results
+        if not numbers_int:
+            print("Warning: Parsed numbers_int is empty.")
+            return []
+
+        os.makedirs('./temp', exist_ok=True)
+        file_path = f"./temp/{image_file.filename}"
+        
+        try:
+            with open(file_path, "wb") as buffer:
+                buffer.write(await image_file.read())
+            results = checkAttendence(file_path, numbers_int)
+        finally:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        
+        elapsed_time = time.time() - start_time  # Tính toán thời gian chạy
+        print(f"Time taken to process attendance: {elapsed_time:.2f} seconds")  # In ra thời gian chạy
+        return results
+
+    except Exception as e:
+        print("CRITICAL ERROR in /attendance endpoint:")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"AI Face Recognition Service Error: {str(e)}")
