@@ -368,12 +368,60 @@ export const getMyClassPermission = async (classId) => {
   return await apiFetch(`/documents/class/${classId}/my-permissions`);
 };
 
-export const getStudentAnalyticsSummary = async () => {
-  return await apiFetch('/analytics/student/summary');
+export const getStudentAnalyticsSummary = async (semesterId = null) => {
+  const query = semesterId ? `?semesterId=${semesterId}` : '';
+  return await apiFetch(`/analytics/student/summary${query}`);
 };
 
 export const getTeacherClassAnalyticsSummary = async (courseId) => {
   return await apiFetch(`/analytics/teacher/class/${courseId}`);
+};
+
+// ==========================================
+// ACADEMIC SEMESTER & TIME TABLE MANAGEMENT APIS
+// ==========================================
+
+export const getSemesters = async () => {
+  return await apiFetch('/semesters');
+};
+
+export const getActiveSemester = async () => {
+  return await apiFetch('/semesters/active');
+};
+
+export const getSemesterWeeks = async (semesterId) => {
+  return await apiFetch(`/semesters/${semesterId}/weeks`);
+};
+
+export const createSemester = async (payload) => {
+  return await apiFetch('/admin/semesters', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+};
+
+export const updateSemester = async (id, payload) => {
+  return await apiFetch(`/admin/semesters/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload)
+  });
+};
+
+export const setActiveSemester = async (id) => {
+  return await apiFetch(`/admin/semesters/${id}/active`, {
+    method: 'POST'
+  });
+};
+
+export const getCourseSchedules = async (courseId) => {
+  return await apiFetch(`/teacher/courses/${courseId}/schedules`);
+};
+
+export const setCourseSchedules = async (courseId, schedules) => {
+  return await apiFetch(`/teacher/courses/${courseId}/schedules`, {
+    method: 'POST',
+    body: JSON.stringify(schedules)
+  });
 };
 
 

@@ -13,10 +13,11 @@ import {
   Percent, 
   Frown, 
   Smile, 
-  ListOrdered 
+  ListOrdered,
+  History
 } from 'lucide-react';
 import Card from '../../components/Common/Card';
-import { getMyCourses, getMyAttendance, getCourseAssessments } from '../../services/api';
+import { getMyCourses, getMyAttendance, getCourseAssessments, getSemesters } from '../../services/api';
 import StudentAnalytics from '../../components/Student/StudentAnalytics';
 
 export default function GradesAndAttendance() {
@@ -34,10 +35,26 @@ export default function GradesAndAttendance() {
   // Track active tab for each course: { [courseId]: 'grades' | 'absences' }
   const [courseActiveTabs, setCourseActiveTabs] = useState({});
 
-  // Stats
-  const [totalClasses, setTotalClasses] = useState(0);
-  const [averageAttendance, setAverageAttendance] = useState(100);
-  const [totalAbsences, setTotalAbsences] = useState(0);
+  // Semester filtering states
+  const [semesters, setSemesters] = useState([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState('');
+  const [loadingSemesters, setLoadingSemesters] = useState(false);
+
+  useEffect(() => {
+    setLoadingSemesters(true);
+    getSemesters()
+      .then(data => {
+        setSemesters(data || []);
+        const activeSem = data?.find(s => s.isActive);
+        if (activeSem) {
+          setSelectedSemesterId(activeSem.id);
+        } else if (data?.length > 0) {
+          setSelectedSemesterId(data[0].id);
+        }
+      })
+      .catch(err => console.error("Lỗi lấy danh sách học kỳ:", err))
+      .finally(() => setLoadingSemesters(false));
+  }, []);
 
   useEffect(() => {
     fetchInitialData();
@@ -50,7 +67,6 @@ export default function GradesAndAttendance() {
       // 1. Fetch all student's enrolled courses
       const courseList = await getMyCourses();
       setCourses(courseList);
-      setTotalClasses(courseList.length);
 
       if (courseList.length === 0) {
         setLoading(false);
@@ -115,11 +131,6 @@ export default function GradesAndAttendance() {
       );
 
       setCourseDetails(details);
-      
-      // Calculate overall statistics
-      const avgRate = courseList.length > 0 ? Math.round(totalRateSum / courseList.length) : 100;
-      setAverageAttendance(avgRate);
-      setTotalAbsences(totalAbsCount);
 
       // Initialize default active tabs
       const initialTabs = {};
@@ -176,19 +187,70 @@ export default function GradesAndAttendance() {
     );
   }
 
+  // Filter courses by selected semester
+  const filteredCourses = selectedSemesterId
+    ? courses.filter(c => c.semesterId === parseInt(selectedSemesterId))
+    : courses;
+
+  // Dynamically calculate overall statistics for selected semester
+  const totalClasses = filteredCourses.length;
+  
+  let totalAbsCount = 0;
+  let totalRateSum = 0;
+  filteredCourses.forEach(c => {
+    const detail = courseDetails[c.id];
+    if (detail) {
+      totalAbsCount += detail.absences || 0;
+      totalRateSum += detail.attendanceRate || 100;
+    }
+  });
+  const averageAttendance = totalClasses > 0 ? Math.round(totalRateSum / totalClasses) : 100;
+  const totalAbsences = totalAbsCount;
+
   return (
     <div className="space-y-6">
       {/* View Header */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/80 p-5 rounded-2xl shadow-sm transition">
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Kết quả học tập & Chuyên cần</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          Xin chào sinh viên <strong className="text-primary font-semibold">{user?.fullName}</strong>. Dưới đây là thống kê điểm số và chuyên cần chi tiết của tất cả các môn học bạn tham gia trong học kỳ này.
-        </p>
+      <div className="bg-white dark:bg-slate-900 border border-slate-155 dark:border-slate-800/80 p-6 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Kết quả học tập & Chuyên cần</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+            Xin chào sinh viên <strong className="text-primary font-semibold">{user?.fullName}</strong>. Dưới đây là thống kê điểm số và chuyên cần chi tiết của tất cả các môn học bạn tham gia.
+          </p>
+        </div>
+
+        {/* Semester Selection Dropdown */}
+        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl shrink-0">
+          <History className="w-4 h-4 text-slate-500 shrink-0" />
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">Học Kỳ</span>
+            <select
+              value={selectedSemesterId}
+              onChange={(e) => setSelectedSemesterId(e.target.value)}
+              disabled={loadingSemesters}
+              className="bg-transparent border-none p-0 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none cursor-pointer mt-1 focus:ring-0"
+            >
+              {loadingSemesters ? (
+                <option>Đang tải...</option>
+              ) : semesters.length === 0 ? (
+                <option>Không có học kỳ</option>
+              ) : (
+                <>
+                  <option value="">Tất cả học kỳ</option>
+                  {semesters.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      Học kỳ {s.code} {s.isActive ? '(Hiện hành)' : ''}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+          </div>
+        </div>
       </div>
 
-      {courses.length > 0 && <StudentAnalytics />}
+      {filteredCourses.length > 0 && <StudentAnalytics semesterId={selectedSemesterId} />}
 
-      {courses.length === 0 ? (
+      {filteredCourses.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-400 space-y-3 shadow-sm">
           <BookOpen className="w-12 h-12 stroke-[1.5] mx-auto text-slate-300" />
           <p className="font-semibold text-slate-500 text-lg">Bạn chưa tham gia lớp học nào</p>
@@ -241,7 +303,7 @@ export default function GradesAndAttendance() {
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-slate-800">Danh sách môn học chi tiết</h2>
 
-            {courses.map((course) => {
+            {filteredCourses.map((course) => {
               const detail = courseDetails[course.id] || {
                 attendanceRate: 100,
                 absences: 0,

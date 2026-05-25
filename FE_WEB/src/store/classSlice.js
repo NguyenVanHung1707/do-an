@@ -105,11 +105,11 @@ export const fetchClasses = createAsyncThunk(
 // Add Class
 export const addClass = createAsyncThunk(
   'classes/addClass',
-  async ({ courseCode, subject, description }, { dispatch, rejectWithValue }) => {
+  async ({ courseCode, subject, description, semesterId }, { dispatch, rejectWithValue }) => {
     try {
       await apiFetch('/teacher/create-course', {
         method: 'POST',
-        body: JSON.stringify({ courseCode, subject, description })
+        body: JSON.stringify({ courseCode, subject, description, semesterId })
       });
       dispatch(fetchClasses());
       return true;
@@ -122,11 +122,11 @@ export const addClass = createAsyncThunk(
 // Edit Class
 export const editClass = createAsyncThunk(
   'classes/editClass',
-  async ({ id, courseCode, subject, description }, { dispatch, rejectWithValue }) => {
+  async ({ id, courseCode, subject, description, semesterId }, { dispatch, rejectWithValue }) => {
     try {
       await apiFetch(`/teacher/update-course?courseId=${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ courseCode, subject, description })
+        body: JSON.stringify({ courseCode, subject, description, semesterId })
       });
       dispatch(fetchClasses());
       return true;

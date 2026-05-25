@@ -17,10 +17,11 @@ public class AnalyticsController {
     }
 
     @GetMapping("/student/summary")
-    public ResponseEntity<?> getStudentSummary(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<?> getStudentSummary(@AuthenticationPrincipal Jwt jwt,
+                                               @RequestParam(required = false) Long semesterId) {
         try {
             String keycloakId = jwt.getClaimAsString("sub");
-            return ResponseEntity.ok(analyticsService.getStudentSummary(keycloakId));
+            return ResponseEntity.ok(analyticsService.getStudentSummary(keycloakId, semesterId));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

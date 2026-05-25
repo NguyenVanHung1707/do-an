@@ -27,8 +27,9 @@ public class TeacherServiceImplement implements TeacherService {
     private final AnswerRepository answerRepository;
     private final FormRepository formRepository;
     private final FormSubmissionRepository formSubmissionRepository;
+    private final SemesterRepository semesterRepository;
 
-    public TeacherServiceImplement(TeacherRepository teacherRepository, CourseRepository courseRepository, StudentRepository studentRepository, RegisterRepository registerRepository, AttendanceLogRepository attendanceLogRepository, QuestionRepository questionRepository, AnswerRepository answerRepository, FormRepository formRepository, FormSubmissionRepository formSubmissionRepository) {
+    public TeacherServiceImplement(TeacherRepository teacherRepository, CourseRepository courseRepository, StudentRepository studentRepository, RegisterRepository registerRepository, AttendanceLogRepository attendanceLogRepository, QuestionRepository questionRepository, AnswerRepository answerRepository, FormRepository formRepository, FormSubmissionRepository formSubmissionRepository, SemesterRepository semesterRepository) {
         this.teacherRepository = teacherRepository;
         this.courseRepository = courseRepository;
         this.studentRepository = studentRepository;
@@ -38,6 +39,7 @@ public class TeacherServiceImplement implements TeacherService {
         this.answerRepository = answerRepository;
         this.formRepository = formRepository;
         this.formSubmissionRepository = formSubmissionRepository;
+        this.semesterRepository = semesterRepository;
     }
     @Override
     public Teacher createTeacher(TeacherDto teacherDto) {
@@ -113,6 +115,14 @@ public class TeacherServiceImplement implements TeacherService {
         course.setUpdatedAt(OffsetDateTime.now());
         course.setDescription(courseDto.getDescription());
         course.setIsActive(true);
+
+        if (courseDto.getSemesterId() != null) {
+            Optional<Semester> semester = semesterRepository.findById(courseDto.getSemesterId());
+            if (semester.isPresent()) {
+                course.setSemester(semester.get());
+            }
+        }
+
         courseRepository.save(course);
     }
 
@@ -208,6 +218,7 @@ public class TeacherServiceImplement implements TeacherService {
             courseWithoutTeacher.setUpdatedAt(course.getUpdatedAt());
             courseWithoutTeacher.setIsActive(course.getIsActive());
             courseWithoutTeacher.setDescription(course.getDescription());
+            courseWithoutTeacher.setSemester(course.getSemester());
             response.add(courseWithoutTeacher);
         }
         return response;
@@ -384,6 +395,18 @@ public class TeacherServiceImplement implements TeacherService {
         }
         course.get().setDescription(courseDto.getDescription());
         course.get().setUpdatedAt(OffsetDateTime.now());
+
+        if (courseDto.getSemesterId() != null) {
+            Optional<Semester> semester = semesterRepository.findById(courseDto.getSemesterId());
+            if (semester.isPresent()) {
+                course.get().setSemester(semester.get());
+            } else {
+                course.get().setSemester(null);
+            }
+        } else {
+            course.get().setSemester(null);
+        }
+
         courseRepository.save(course.get());
     }
 

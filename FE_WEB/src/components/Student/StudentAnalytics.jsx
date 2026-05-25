@@ -2,20 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { getStudentAnalyticsSummary } from '../../services/api';
 import { Award, Calendar, CheckCircle2, AlertTriangle, TrendingUp, BarChart3, Activity } from 'lucide-react';
 
-export default function StudentAnalytics() {
+export default function StudentAnalytics({ semesterId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchAnalytics();
-  }, []);
+  }, [semesterId]);
 
   const fetchAnalytics = async () => {
     setLoading(true);
     setError(null);
     try {
-      const summary = await getStudentAnalyticsSummary();
+      const summary = await getStudentAnalyticsSummary(semesterId);
       setData(summary);
     } catch (err) {
       console.error('Error fetching student analytics:', err);

@@ -192,6 +192,9 @@ public class StudentServiceImplement implements StudentService {
             courseDto.setCourseCode(course.getCourseCode());
             courseDto.setSubject(course.getSubject());
             courseDto.setDescription(course.getDescription());
+            if (course.getSemester() != null) {
+                courseDto.setSemesterId(course.getSemester().getId());
+            }
             response.add(courseDto);
         }
         return response;

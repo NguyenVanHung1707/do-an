@@ -21,6 +21,7 @@ import PendingApproval from './views/Teacher/PendingApproval';
 // Admin Views
 import AdminDashboard from './views/Admin/AdminDashboard';
 import TeacherApproval from './views/Admin/TeacherApproval';
+import SemesterManagement from './views/Admin/SemesterManagement';
 
 // Student Views
 import MyCourses from './views/Student/MyCourses';
@@ -28,6 +29,7 @@ import GradesAndAttendance from './views/Student/GradesAndAttendance';
 import FaceUpload from './views/Student/FaceUpload';
 import AnswerForm from './views/Student/AnswerForm';
 import CompleteProfile from './views/Student/CompleteProfile';
+import Timetable from './views/Student/Timetable';
 
 // API
 import { getTeacherProfile, getStudentProfile, keycloakExchangeCodeForToken } from './services/api';
@@ -166,6 +168,8 @@ export default function App() {
           return <AdminDashboard />;
         case 'teacher-approval':
           return <TeacherApproval />;
+        case 'semester-management':
+          return <SemesterManagement />;
         case 'profile':
           return <Profile />;
         default:
@@ -204,6 +208,8 @@ export default function App() {
       switch (currentView) {
         case 'my-courses':
           return <MyCourses />;
+        case 'student-timetable':
+          return <Timetable />;
         case 'grades-attendance':
           return <GradesAndAttendance />;
         case 'face-upload':

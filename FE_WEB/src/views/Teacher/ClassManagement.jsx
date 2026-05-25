@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { addClass, editClass, deleteClass } from '../../store/classSlice';
 import Card from '../../components/Common/Card';
 import { Plus, Edit2, Trash2, Search, ArrowRight, BookOpen } from 'lucide-react';
+import { getSemesters } from '../../services/api';
 
 export default function ClassManagement({ onSelectClass }) {
   const { classesList } = useSelector((state) => state.classes);
@@ -16,6 +17,14 @@ export default function ClassManagement({ onSelectClass }) {
   const [courseCode, setCourseCode] = useState('');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
+  const [semesters, setSemesters] = useState([]);
+  const [semesterId, setSemesterId] = useState('');
+
+  React.useEffect(() => {
+    getSemesters()
+      .then(data => setSemesters(data || []))
+      .catch(err => console.error("Lỗi lấy danh sách học kỳ:", err));
+  }, []);
 
   const filteredClasses = classesList.filter(
     (c) =>
@@ -28,6 +37,8 @@ export default function ClassManagement({ onSelectClass }) {
     setCourseCode('');
     setSubject('');
     setDescription('');
+    const activeSem = semesters.find(s => s.isActive);
+    setSemesterId(activeSem ? activeSem.id : '');
     setIsModalOpen(true);
   };
 
@@ -36,6 +47,7 @@ export default function ClassManagement({ onSelectClass }) {
     setCourseCode(c.courseCode);
     setSubject(c.subject);
     setDescription(c.description);
+    setSemesterId(c.semester?.id || '');
     setIsModalOpen(true);
   };
 
@@ -52,10 +64,17 @@ export default function ClassManagement({ onSelectClass }) {
       return;
     }
 
+    const payload = {
+      courseCode,
+      subject,
+      description,
+      semesterId: semesterId ? parseInt(semesterId) : null
+    };
+
     if (editingId) {
-      dispatch(editClass({ id: editingId, courseCode, subject, description }));
+      dispatch(editClass({ id: editingId, ...payload }));
     } else {
-      dispatch(addClass({ courseCode, subject, description }));
+      dispatch(addClass(payload));
     }
     setIsModalOpen(false);
   };
@@ -187,6 +206,23 @@ export default function ClassManagement({ onSelectClass }) {
                   placeholder="VD: Nhận dạng khuôn mặt & AI"
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none transition"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Chọn Học kỳ *</label>
+                <select
+                  value={semesterId}
+                  onChange={(e) => setSemesterId(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none transition"
+                >
+                  <option value="">-- Chọn Học kỳ --</option>
+                  {semesters.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      Học kỳ {s.code} {s.isActive ? '(Đang hoạt động)' : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

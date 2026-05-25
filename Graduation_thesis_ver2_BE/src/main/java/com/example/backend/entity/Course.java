@@ -41,4 +41,8 @@ public class Course {
 
     @Column(name = "is_active")
     private Boolean isActive;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "semester_id")
+    private Semester semester;
 }

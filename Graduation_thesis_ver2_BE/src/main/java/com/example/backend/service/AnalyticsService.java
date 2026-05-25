@@ -32,7 +32,7 @@ public class AnalyticsService {
         this.assessmentRepository = assessmentRepository;
     }
 
-    public Map<String, Object> getStudentSummary(String keycloakId) {
+    public Map<String, Object> getStudentSummary(String keycloakId, Long semesterId) {
         Map<String, Object> summary = new HashMap<>();
 
         Optional<Student> studentOpt = studentRepository.findByKeycloakId(keycloakId);
@@ -43,6 +43,14 @@ public class AnalyticsService {
 
         // 1. Fetch registered courses
         List<Register> registrations = registerRepository.findByIdStudent(student);
+
+        if (semesterId != null) {
+            registrations = registrations.stream()
+                .filter(reg -> reg.getId().getCourse() != null && 
+                               reg.getId().getCourse().getSemester() != null && 
+                               reg.getId().getCourse().getSemester().getId().equals(semesterId))
+                .collect(Collectors.toList());
+        }
 
         int totalCourses = registrations.size();
         summary.put("totalCourses", totalCourses);

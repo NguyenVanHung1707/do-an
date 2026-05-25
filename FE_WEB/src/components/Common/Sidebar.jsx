@@ -10,6 +10,7 @@ import {
   Smile,
   ShieldCheck,
   Award,
+  Calendar,
   X
 } from 'lucide-react';
 
@@ -26,6 +27,7 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
 
   const studentItems = [
     { id: 'my-courses', label: 'Lớp học của tôi', icon: BookOpen },
+    { id: 'student-timetable', label: 'Thời khóa biểu tuần', icon: Calendar },
     { id: 'grades-attendance', label: 'Kết quả học tập', icon: Award },
     { id: 'face-upload', label: 'Upload khuôn mặt', icon: Smile },
     { id: 'answer-form', label: 'Trả lời điểm danh', icon: ShieldCheck },
@@ -35,6 +37,7 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
   const adminItems = [
     { id: 'admin-dashboard', label: 'Dashboard Hệ thống', icon: LayoutDashboard },
     { id: 'teacher-approval', label: 'Phê duyệt tài khoản', icon: ShieldCheck },
+    { id: 'semester-management', label: 'Quản lý Học kỳ', icon: History },
     { id: 'profile', label: 'Thông tin cá nhân', icon: User }
   ];
 

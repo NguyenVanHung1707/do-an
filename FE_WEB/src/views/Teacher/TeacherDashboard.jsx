@@ -1,34 +1,68 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import Card from '../../components/Common/Card';
 import BarChart from '../../components/Charts/BarChart';
-import { GraduationCap, Users, Calendar, TrendingUp } from 'lucide-react';
+import { getSemesters } from '../../services/api';
+import { 
+  GraduationCap, 
+  Users, 
+  Calendar, 
+  TrendingUp, 
+  History,
+  Loader2
+} from 'lucide-react';
 
 export default function TeacherDashboard() {
   const { classesList } = useSelector((state) => state.classes);
   const { user } = useSelector((state) => state.auth);
 
-  // Compute stats
-  const totalClasses = classesList.length;
-  const totalStudents = classesList.reduce((sum, c) => sum + c.studentsCount, 0);
+  // Semester filtering states
+  const [semesters, setSemesters] = useState([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState('');
+  const [loadingSemesters, setLoadingSemesters] = useState(false);
+
+  useEffect(() => {
+    setLoadingSemesters(true);
+    getSemesters()
+      .then(data => {
+        setSemesters(data || []);
+        const activeSem = data?.find(s => s.isActive);
+        if (activeSem) {
+          setSelectedSemesterId(activeSem.id);
+        } else if (data?.length > 0) {
+          setSelectedSemesterId(data[0].id);
+        }
+      })
+      .catch(err => console.error("Lỗi lấy danh sách học kỳ:", err))
+      .finally(() => setLoadingSemesters(false));
+  }, []);
+
+  // Filter classes by selected semester
+  const filteredClasses = selectedSemesterId
+    ? classesList.filter(c => c.semester?.id === parseInt(selectedSemesterId))
+    : classesList;
+
+  // Compute stats based on filtered classes
+  const totalClasses = filteredClasses.length;
+  const totalStudents = filteredClasses.reduce((sum, c) => sum + c.studentsCount, 0);
   const avgAttendance = totalClasses > 0
-    ? Math.round(classesList.reduce((sum, c) => sum + c.attendanceRate, 0) / totalClasses)
+    ? Math.round(filteredClasses.reduce((sum, c) => sum + c.attendanceRate, 0) / totalClasses)
     : 0;
 
-  // Prepare chart datasets
-  const studentsChartData = classesList.map((c) => ({
+  // Prepare chart datasets based on filtered classes
+  const studentsChartData = filteredClasses.map((c) => ({
     label: c.courseCode,
     value: c.studentsCount
   }));
 
-  const attendanceChartData = classesList.map((c) => ({
+  const attendanceChartData = filteredClasses.map((c) => ({
     label: c.courseCode,
     value: c.attendanceRate
   }));
 
   return (
     <div className="space-y-6 py-4">
-      {/* Welcome Banner */}
+      {/* Welcome Banner and Filter Row */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-800">
@@ -38,8 +72,34 @@ export default function TeacherDashboard() {
             Chào mừng bạn đến với Hệ thống hỗ trợ điểm danh học tập và Quản lý lớp chuyên nghiệp.
           </p>
         </div>
-        <div className="text-xs font-semibold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-lg w-fit font-mono">
-          Cập nhật: {new Date().toLocaleDateString('vi-VN')}
+        
+        {/* Semester Selection Dropdown */}
+        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl shrink-0">
+          <History className="w-4 h-4 text-slate-500 shrink-0" />
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">Học Kỳ Báo Cáo</span>
+            <select
+              value={selectedSemesterId}
+              onChange={(e) => setSelectedSemesterId(e.target.value)}
+              disabled={loadingSemesters}
+              className="bg-transparent border-none p-0 text-xs font-bold text-slate-700 outline-none cursor-pointer mt-1 focus:ring-0"
+            >
+              {loadingSemesters ? (
+                <option>Đang tải...</option>
+              ) : semesters.length === 0 ? (
+                <option>Không có học kỳ</option>
+              ) : (
+                <>
+                  <option value="">Tất cả học kỳ</option>
+                  {semesters.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      Học kỳ {s.code} {s.isActive ? '(Hiện hành)' : ''}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -50,7 +110,7 @@ export default function TeacherDashboard() {
             <GraduationCap className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Tổng số Lớp học</p>
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Lớp học học kỳ này</p>
             <p className="text-2xl font-black text-slate-800 mt-1">{totalClasses}</p>
           </div>
         </div>
@@ -83,7 +143,7 @@ export default function TeacherDashboard() {
             <BarChart data={studentsChartData} yLabel="Sinh viên" maxVal={60} suffix="" />
           ) : (
             <div className="text-center py-12 text-slate-400">
-              Không có dữ liệu lớp học để hiển thị biểu đồ!
+              Không có dữ liệu lớp học để hiển thị biểu đồ trong học kỳ đã chọn!
             </div>
           )}
         </Card>
@@ -93,7 +153,7 @@ export default function TeacherDashboard() {
             <BarChart data={attendanceChartData} yLabel="Tỷ lệ (%)" maxVal={100} suffix="%" />
           ) : (
             <div className="text-center py-12 text-slate-400">
-              Không có dữ liệu lớp học để hiển thị biểu đồ!
+              Không có dữ liệu lớp học để hiển thị biểu đồ trong học kỳ đã chọn!
             </div>
           )}
         </Card>

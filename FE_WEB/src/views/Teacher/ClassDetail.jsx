@@ -1,9 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { addStudentToClass, addManualAttendance } from '../../store/classSlice';
 import Card from '../../components/Common/Card';
-import { ArrowLeft, UserPlus, FileEdit, GraduationCap, CheckCircle2, AlertTriangle, Search, MessageSquare } from 'lucide-react';
-import { apiFetch } from '../../services/api';
+import { 
+  ArrowLeft, 
+  UserPlus, 
+  FileEdit, 
+  GraduationCap, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Search, 
+  MessageSquare,
+  Calendar,
+  Clock,
+  Trash2,
+  Plus,
+  Check,
+  Loader2,
+  Tag
+} from 'lucide-react';
+import { apiFetch, getCourseSchedules, setCourseSchedules } from '../../services/api';
 import DiscussionBoard from '../../components/Common/DiscussionBoard';
 import AssessmentManagement from './AssessmentManagement';
 import GradeAssessment from './GradeAssessment';
@@ -38,6 +54,37 @@ export default function ClassDetail({ classId, onBack }) {
   // Manual attendance form state
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [attendanceStatus, setAttendanceStatus] = useState('present'); // present or absent
+
+  // Weekly Recurring Schedules States
+  const [schedules, setSchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [savingSchedules, setSavingSchedules] = useState(false);
+  const [scheduleSuccess, setScheduleSuccess] = useState(null);
+  const [scheduleError, setScheduleError] = useState(null);
+
+  useEffect(() => {
+    if (activeTab === 'timetable') {
+      setLoadingSchedules(true);
+      setScheduleSuccess(null);
+      setScheduleError(null);
+      getCourseSchedules(classId)
+        .then(data => {
+          const mapped = (data || []).map(s => ({
+            id: s.id,
+            dayOfWeek: s.dayOfWeek,
+            startTime: s.startTime.substring(0, 5), // 'hh:mm:ss' -> 'hh:mm'
+            endTime: s.endTime.substring(0, 5),
+            roomName: s.roomName || ''
+          }));
+          setSchedules(mapped);
+        })
+        .catch(err => {
+          console.error("Lỗi lấy thời khóa biểu:", err);
+          setScheduleError(err.message || 'Không thể lấy thời khóa biểu của lớp.');
+        })
+        .finally(() => setLoadingSchedules(false));
+    }
+  }, [activeTab, classId]);
 
   if (!currentClass) {
     return (
@@ -112,6 +159,60 @@ export default function ClassDetail({ classId, onBack }) {
     dispatch(addManualAttendance({ classId, studentId: selectedStudentId, status: attendanceStatus }));
     setIsManualAttendanceOpen(false);
     setSelectedStudentId('');
+  };
+
+  const handleAddScheduleSlot = () => {
+    setSchedules([...schedules, { dayOfWeek: 1, startTime: '06:45', endTime: '08:25', roomName: '' }]);
+  };
+
+  const handleRemoveScheduleSlot = (index) => {
+    const updated = [...schedules];
+    updated.splice(index, 1);
+    setSchedules(updated);
+  };
+
+  const handleUpdateScheduleSlot = (index, field, value) => {
+    const updated = [...schedules];
+    updated[index] = {
+      ...updated[index],
+      [field]: field === 'dayOfWeek' ? parseInt(value) || 1 : value
+    };
+    setSchedules(updated);
+  };
+
+  const handleSaveSchedules = async () => {
+    setSavingSchedules(true);
+    setScheduleSuccess(null);
+    setScheduleError(null);
+
+    // Validate slots
+    for (const s of schedules) {
+      if (!s.dayOfWeek || !s.startTime || !s.endTime) {
+        setScheduleError('Vui lòng điền đầy đủ Thứ, Giờ bắt đầu và Giờ kết thúc cho tất cả các ca học!');
+        setSavingSchedules(false);
+        return;
+      }
+      if (s.startTime >= s.endTime) {
+        setScheduleError('Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!');
+        setSavingSchedules(false);
+        return;
+      }
+    }
+
+    try {
+      const payload = schedules.map(s => ({
+        dayOfWeek: parseInt(s.dayOfWeek),
+        startTime: s.startTime + ':00', // 'hh:mm' -> 'hh:mm:ss'
+        endTime: s.endTime + ':00',
+        roomName: s.roomName || ''
+      }));
+      await setCourseSchedules(classId, payload);
+      setScheduleSuccess('Đã lưu thời khóa biểu định kỳ thành công!');
+    } catch (err) {
+      setScheduleError(err.message || 'Không thể lưu thời khóa biểu.');
+    } finally {
+      setSavingSchedules(false);
+    }
   };
 
   return (
@@ -211,6 +312,16 @@ export default function ClassDetail({ classId, onBack }) {
         >
           Phân tích học lực
         </button>
+        <button
+          onClick={() => setActiveTab('timetable')}
+          className={`py-3 px-6 text-sm font-bold border-b-2 transition duration-200 ${
+            activeTab === 'timetable'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Thời khóa biểu định kỳ
+        </button>
       </div>
 
       {activeTab === 'attendance' ? (
@@ -292,6 +403,140 @@ export default function ClassDetail({ classId, onBack }) {
                 <GraduationCap className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <p className="text-sm font-medium">Chưa có sinh viên nào đăng ký tham gia lớp học này.</p>
                 <p className="text-xs text-slate-400 mt-1">Bấm nút "Thêm sinh viên" phía trên để điền danh sách.</p>
+              </div>
+            )}
+          </Card>
+        </div>
+      ) : activeTab === 'timetable' ? (
+        <div className="space-y-6">
+          <Card 
+            title="Cấu hình lịch học định kỳ" 
+            subtitle="Cài đặt lịch ca học định kỳ trong tuần của môn học này"
+            icon={<Calendar className="w-5 h-5 text-primary" />}
+            action={
+              <button
+                onClick={handleAddScheduleSlot}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold transition shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Thêm ca học
+              </button>
+            }
+          >
+            {scheduleSuccess && (
+              <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-xs flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>{scheduleSuccess}</span>
+              </div>
+            )}
+
+            {scheduleError && (
+              <div className="mb-4 bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                <span>{scheduleError}</span>
+              </div>
+            )}
+
+            {loadingSchedules ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-2">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                <p className="text-slate-400 text-xs">Đang tải lịch học định kỳ...</p>
+              </div>
+            ) : schedules.length === 0 ? (
+              <div className="text-center py-12 text-slate-400">
+                <Clock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-sm font-semibold">Chưa thiết lập ca học định kỳ nào</p>
+                <p className="text-xs text-slate-400 mt-1">Bấm nút "Thêm ca học" ở góc trên bên phải để bắt đầu thiết lập lịch học.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {schedules.map((slot, index) => (
+                    <div key={index} className="p-4 border border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300 rounded-xl transition flex flex-col gap-3 relative shadow-sm">
+                      <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
+                        <span className="text-xs font-black text-slate-700 uppercase flex items-center gap-1.5">
+                          <Tag className="w-3.5 h-3.5 text-primary" />
+                          Ca học số {index + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveScheduleSlot(index)}
+                          className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 transition shrink-0"
+                          title="Xóa ca học"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Thứ trong tuần</label>
+                          <select
+                            value={slot.dayOfWeek}
+                            onChange={(e) => handleUpdateScheduleSlot(index, 'dayOfWeek', e.target.value)}
+                            className="w-full text-xs border border-slate-200 rounded-lg p-2 text-slate-700 bg-white"
+                          >
+                            <option value="1">Thứ 2</option>
+                            <option value="2">Thứ 3</option>
+                            <option value="3">Thứ 4</option>
+                            <option value="4">Thứ 5</option>
+                            <option value="5">Thứ 6</option>
+                            <option value="6">Thứ 7</option>
+                            <option value="7">Chủ Nhật</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Phòng học</label>
+                          <input
+                            type="text"
+                            placeholder="Ví dụ: A1-401"
+                            value={slot.roomName}
+                            onChange={(e) => handleUpdateScheduleSlot(index, 'roomName', e.target.value)}
+                            className="w-full text-xs border border-slate-200 rounded-lg p-2 text-slate-700 bg-white placeholder-slate-400 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Giờ học bắt đầu</label>
+                          <input
+                            type="time"
+                            value={slot.startTime}
+                            onChange={(e) => handleUpdateScheduleSlot(index, 'startTime', e.target.value)}
+                            className="w-full text-xs border border-slate-200 rounded-lg p-2 text-slate-700 bg-white outline-none"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Giờ học kết thúc</label>
+                          <input
+                            type="time"
+                            value={slot.endTime}
+                            onChange={(e) => handleUpdateScheduleSlot(index, 'endTime', e.target.value)}
+                            className="w-full text-xs border border-slate-200 rounded-lg p-2 text-slate-700 bg-white outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-end border-t border-slate-100 pt-4 mt-6">
+                  <button
+                    onClick={handleSaveSchedules}
+                    disabled={savingSchedules}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                  >
+                    {savingSchedules ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5" />
+                    )}
+                    Lưu lịch học định kỳ
+                  </button>
+                </div>
               </div>
             )}
           </Card>
