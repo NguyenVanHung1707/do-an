@@ -3,6 +3,7 @@ package com.example.backend.service.implement;
 import com.example.backend.dto.*;
 import com.example.backend.entity.*;
 import com.example.backend.exception.CustomException;
+import com.example.backend.exception.ScheduleConflictException;
 import com.example.backend.repository.*;
 import com.example.backend.service.TeacherService;
 import com.example.backend.service.Utility;
@@ -21,8 +22,10 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class TeacherServiceImplement implements TeacherService {
@@ -36,8 +39,9 @@ public class TeacherServiceImplement implements TeacherService {
     private final FormRepository formRepository;
     private final FormSubmissionRepository formSubmissionRepository;
     private final SemesterRepository semesterRepository;
+    private final CourseScheduleRepository courseScheduleRepository;
 
-    public TeacherServiceImplement(TeacherRepository teacherRepository, CourseRepository courseRepository, StudentRepository studentRepository, RegisterRepository registerRepository, AttendanceLogRepository attendanceLogRepository, QuestionRepository questionRepository, AnswerRepository answerRepository, FormRepository formRepository, FormSubmissionRepository formSubmissionRepository, SemesterRepository semesterRepository) {
+    public TeacherServiceImplement(TeacherRepository teacherRepository, CourseRepository courseRepository, StudentRepository studentRepository, RegisterRepository registerRepository, AttendanceLogRepository attendanceLogRepository, QuestionRepository questionRepository, AnswerRepository answerRepository, FormRepository formRepository, FormSubmissionRepository formSubmissionRepository, SemesterRepository semesterRepository, CourseScheduleRepository courseScheduleRepository) {
         this.teacherRepository = teacherRepository;
         this.courseRepository = courseRepository;
         this.studentRepository = studentRepository;
@@ -48,6 +52,7 @@ public class TeacherServiceImplement implements TeacherService {
         this.formRepository = formRepository;
         this.formSubmissionRepository = formSubmissionRepository;
         this.semesterRepository = semesterRepository;
+        this.courseScheduleRepository = courseScheduleRepository;
     }
     @Override
     public Teacher createTeacher(TeacherDto teacherDto) {
@@ -151,13 +156,56 @@ public class TeacherServiceImplement implements TeacherService {
         if(registerOptional.isPresent()){
             throw new CustomException("Student already registered to this course", HttpStatus.BAD_REQUEST);
         }
-        //check if course is mine
+        // check if course is mine
         Optional<Teacher> teacher = teacherRepository.findByKeycloakId(teacherKeycloakId);
         if(teacher.isEmpty()){
             throw new CustomException("Teacher not found", HttpStatus.NOT_FOUND);
         }
         if(!course.get().getTeacher().equals(teacher.get())){
             throw new CustomException("Course is not yours", HttpStatus.BAD_REQUEST);
+        }
+
+        // Verify timetable conflicts for the student
+        Course targetCourse = course.get();
+        if (targetCourse.getSemester() != null) {
+            Long semesterId = targetCourse.getSemester().getId();
+            List<CourseSchedule> targetSchedules = courseScheduleRepository.findByCourseId(courseId);
+            List<Object[]> rawStudentSchedules = courseScheduleRepository.findStudentsSchedulesWithStudentId(
+                    List.of(studentId),
+                    semesterId
+            );
+            List<CourseSchedule> studentSchedules = new ArrayList<>();
+            for (Object[] row : rawStudentSchedules) {
+                studentSchedules.add((CourseSchedule) row[1]);
+            }
+
+            List<ConflictDetailDto> conflicts = new ArrayList<>();
+            for (CourseSchedule targetSched : targetSchedules) {
+                for (CourseSchedule existingSched : studentSchedules) {
+                    if (existingSched.getDayOfWeek().equals(targetSched.getDayOfWeek()) &&
+                        existingSched.getStartTime().isBefore(targetSched.getEndTime()) &&
+                        existingSched.getEndTime().isAfter(targetSched.getStartTime())) {
+
+                        String dayName = getDayOfWeekName(targetSched.getDayOfWeek());
+                        ConflictDetailDto conflict = new ConflictDetailDto(
+                                student.get().getStudentCode(),
+                                student.get().getName(),
+                                existingSched.getCourse().getSubject(),
+                                String.format("%s, %s - %s", dayName, existingSched.getStartTime(), existingSched.getEndTime()),
+                                targetCourse.getSubject(),
+                                String.format("%s, %s - %s", dayName, targetSched.getStartTime(), targetSched.getEndTime())
+                        );
+                        conflicts.add(conflict);
+                    }
+                }
+            }
+
+            if (!conflicts.isEmpty()) {
+                throw new ScheduleConflictException(
+                        "Sinh viên bị trùng lịch học trong Học kỳ này!",
+                        conflicts
+                );
+            }
         }
 
         // Add student to course
@@ -168,6 +216,19 @@ public class TeacherServiceImplement implements TeacherService {
         register.setCanDownloadDocuments(true);
         register.setCanUploadDocuments(false);
         registerRepository.save(register);
+    }
+
+    private String getDayOfWeekName(int dayOfWeek) {
+        return switch (dayOfWeek) {
+            case 1 -> "Thứ Hai";
+            case 2 -> "Thứ Ba";
+            case 3 -> "Thứ Tư";
+            case 4 -> "Thứ Năm";
+            case 5 -> "Thứ Sáu";
+            case 6 -> "Thứ Bảy";
+            case 7 -> "Chủ Nhật";
+            default -> "Thứ " + dayOfWeek;
+        };
     }
 
     @Override
@@ -695,7 +756,7 @@ public class TeacherServiceImplement implements TeacherService {
         List<Register> registers = registerRepository.findByIdCourse(course);
         for (Register reg : registers) {
             Student student = reg.getId().getStudent();
-            
+
             // Count successful submissions
             int successfulCount = 0;
             for (Form form : forms) {
@@ -767,7 +828,7 @@ public class TeacherServiceImplement implements TeacherService {
 
         for (Register reg : registers) {
             Student student = reg.getId().getStudent();
-            
+
             // Current status
             List<AttendanceLog> currentLogs = attendanceLogRepository.findByStudentAndCourseAndLectureNumber(student, course, lectureNumber);
             String currentStatus = "N/A";
@@ -818,7 +879,7 @@ public class TeacherServiceImplement implements TeacherService {
 
         for (Register reg : registers) {
             Student student = reg.getId().getStudent();
-            
+
             // Current status
             List<AttendanceLog> currentLogs = attendanceLogRepository.findByStudentAndCourseAndLectureNumber(student, course, lectureNumber);
             String currentStatus = "N/A";
@@ -886,20 +947,20 @@ public class TeacherServiceImplement implements TeacherService {
     public byte[] getStudentImportTemplate() throws Exception {
         try (Workbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            
+
             Sheet sheet = workbook.createSheet("Danh sách sinh viên mẫu");
-            
+
             // Header styling
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
             headerFont.setColor(IndexedColors.WHITE.getIndex());
-            
+
             CellStyle headerStyle = workbook.createCellStyle();
             headerStyle.setFont(headerFont);
             headerStyle.setFillForegroundColor(IndexedColors.INDIGO.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
             headerStyle.setAlignment(HorizontalAlignment.CENTER);
-            
+
             // Create headers row
             Row headerRow = sheet.createRow(0);
             String[] columns = {"STT", "Mã sinh viên", "Họ và tên", "Email"};
@@ -908,13 +969,13 @@ public class TeacherServiceImplement implements TeacherService {
                 cell.setCellValue(columns[i]);
                 cell.setCellStyle(headerStyle);
             }
-            
+
             // Create 2 mock data rows
             Object[][] mockData = {
                 {1, "st0005", "Nguyễn Văn A", "studenta@sis.hust.edu.vn"},
                 {2, "st0006", "Trần Thị B", "studentb@sis.hust.edu.vn"}
             };
-            
+
             for (int r = 0; r < mockData.length; r++) {
                 Row row = sheet.createRow(r + 1);
                 for (int c = 0; c < mockData[r].length; c++) {
@@ -927,26 +988,26 @@ public class TeacherServiceImplement implements TeacherService {
                     }
                 }
             }
-            
+
             // Auto size columns
             for (int i = 0; i < columns.length; i++) {
                 sheet.autoSizeColumn(i);
             }
-            
+
             workbook.write(out);
             return out.toByteArray();
         }
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.transaction.annotation.Transactional(noRollbackFor = ScheduleConflictException.class)
     public Map<String, Object> importStudentsFromExcel(Long courseId, MultipartFile file, String teacherKeycloakId) throws Exception {
         Optional<Course> courseOpt = courseRepository.findById(courseId);
         if (courseOpt.isEmpty()) {
             throw new CustomException("Không tìm thấy lớp học", HttpStatus.NOT_FOUND);
         }
         Course course = courseOpt.get();
-        
+
         Optional<Teacher> teacherOpt = teacherRepository.findByKeycloakId(teacherKeycloakId);
         if (teacherOpt.isEmpty()) {
             throw new CustomException("Không tìm thấy thông tin giảng viên", HttpStatus.NOT_FOUND);
@@ -954,21 +1015,20 @@ public class TeacherServiceImplement implements TeacherService {
         if (!course.getTeacher().equals(teacherOpt.get())) {
             throw new CustomException("Lớp học này không thuộc về bạn", HttpStatus.BAD_REQUEST);
         }
-        
-        int successCount = 0;
-        int duplicateCount = 0;
+
+        List<Student> studentsToRegister = new ArrayList<>();
         List<String> notFoundCodes = new ArrayList<>();
-        List<String> successfullyAdded = new ArrayList<>();
-        
+        int duplicateCount = 0;
+
         try (InputStream is = file.getInputStream();
              Workbook workbook = new XSSFWorkbook(is)) {
-            
+
             Sheet sheet = workbook.getSheetAt(0);
             Row headerRow = sheet.getRow(0);
             if (headerRow == null) {
                 throw new CustomException("File Excel rỗng hoặc không có dòng tiêu đề", HttpStatus.BAD_REQUEST);
             }
-            
+
             // Find student code column (default to index 1 or first found)
             int studentCodeColIndex = -1;
             for (int c = 0; c < headerRow.getLastCellNum(); c++) {
@@ -981,21 +1041,21 @@ public class TeacherServiceImplement implements TeacherService {
                     }
                 }
             }
-            
+
             // Fallback: If not found by name, check first column
             if (studentCodeColIndex == -1) {
                 studentCodeColIndex = 0;
             }
-            
+
             // Process data rows
             int lastRowNum = sheet.getLastRowNum();
             for (int r = 1; r <= lastRowNum; r++) {
                 Row row = sheet.getRow(r);
                 if (row == null) continue;
-                
+
                 Cell studentCodeCell = row.getCell(studentCodeColIndex);
                 if (studentCodeCell == null) continue;
-                
+
                 String studentCode = "";
                 if (studentCodeCell.getCellType() == CellType.STRING) {
                     studentCode = studentCodeCell.getStringCellValue().trim();
@@ -1003,48 +1063,116 @@ public class TeacherServiceImplement implements TeacherService {
                     // Excel sometimes reads numbers as numeric types
                     studentCode = String.format("%.0f", studentCodeCell.getNumericCellValue()).trim();
                 }
-                
+
                 if (studentCode.isEmpty()) continue;
-                
+
                 Optional<Student> studentOpt = studentRepository.findByStudentCode(studentCode);
                 if (studentOpt.isEmpty()) {
                     notFoundCodes.add(studentCode);
                     continue;
                 }
-                
+
                 Student student = studentOpt.get();
-                
+
                 // Check if student is already registered to the course
                 RegisterId registerId = new RegisterId();
                 registerId.setStudent(student);
                 registerId.setCourse(course);
-                
+
                 Optional<Register> registerOpt = registerRepository.findById(registerId);
                 if (registerOpt.isPresent()) {
                     duplicateCount++;
                     continue;
                 }
-                
-                // Add student to course
-                Register register = new Register();
-                register.setId(registerId);
-                register.setRegisterTime(OffsetDateTime.now());
-                register.setNumberOfAbsence(0);
-                register.setNumberOfAttendance(0);
-                register.setCanUploadDocuments(false);
-                register.setCanDownloadDocuments(true);
-                registerRepository.save(register);
-                
-                successfullyAdded.add(student.getName() + " (" + studentCode + ")");
-                successCount++;
+
+                studentsToRegister.add(student);
             }
         }
-        
+
+        // 2. Perform bulk schedule conflict check
+        List<ConflictDetailDto> conflicts = new ArrayList<>();
+        Set<Long> conflictedStudentIds = new HashSet<>();
+        if (course.getSemester() != null && !studentsToRegister.isEmpty()) {
+            Long semesterId = course.getSemester().getId();
+            List<Long> studentIds = studentsToRegister.stream().map(Student::getId).toList();
+            List<CourseSchedule> targetSchedules = courseScheduleRepository.findByCourseId(courseId);
+
+            List<Object[]> rawStudentSchedules = courseScheduleRepository.findStudentsSchedulesWithStudentId(studentIds, semesterId);
+
+            // Map student ID to their existing schedules
+            Map<Long, List<CourseSchedule>> studentSchedulesMap = new HashMap<>();
+            for (Object[] row : rawStudentSchedules) {
+                Long sid = (Long) row[0];
+                CourseSchedule cs = (CourseSchedule) row[1];
+                studentSchedulesMap.computeIfAbsent(sid, k -> new ArrayList<>()).add(cs);
+            }
+
+            for (Student student : studentsToRegister) {
+                List<CourseSchedule> studentScheds = studentSchedulesMap.getOrDefault(student.getId(), new ArrayList<>());
+
+                for (CourseSchedule targetSched : targetSchedules) {
+                    for (CourseSchedule existingSched : studentScheds) {
+                        if (existingSched.getDayOfWeek().equals(targetSched.getDayOfWeek()) &&
+                            existingSched.getStartTime().isBefore(targetSched.getEndTime()) &&
+                            existingSched.getEndTime().isAfter(targetSched.getStartTime())) {
+
+                            String dayName = getDayOfWeekName(targetSched.getDayOfWeek());
+                            ConflictDetailDto conflict = new ConflictDetailDto(
+                                    student.getStudentCode(),
+                                    student.getName(),
+                                    existingSched.getCourse().getSubject(),
+                                    String.format("%s, %s - %s", dayName, existingSched.getStartTime(), existingSched.getEndTime()),
+                                    course.getSubject(),
+                                    String.format("%s, %s - %s", dayName, targetSched.getStartTime(), targetSched.getEndTime())
+                            );
+                            conflicts.add(conflict);
+                            conflictedStudentIds.add(student.getId());
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Register students if no conflicts found
+        int successCount = 0;
+        List<String> successfullyAdded = new ArrayList<>();
+        for (Student student : studentsToRegister) {
+            if (conflictedStudentIds.contains(student.getId())) {
+                continue;
+            }
+
+            RegisterId registerId = new RegisterId();
+            registerId.setStudent(student);
+            registerId.setCourse(course);
+
+            Register register = new Register();
+            register.setId(registerId);
+            register.setRegisterTime(OffsetDateTime.now());
+            register.setNumberOfAbsence(0);
+            register.setNumberOfAttendance(0);
+            register.setCanUploadDocuments(false);
+            register.setCanDownloadDocuments(true);
+            registerRepository.save(register);
+
+            successfullyAdded.add(student.getName() + " (" + student.getStudentCode() + ")");
+            successCount++;
+        }
+
         Map<String, Object> report = new HashMap<>();
         report.put("successCount", successCount);
         report.put("duplicateCount", duplicateCount);
         report.put("notFoundCodes", notFoundCodes);
         report.put("successfullyAdded", successfullyAdded);
+        report.put("conflictCount", conflicts.size());
+
+        if (!conflicts.isEmpty()) {
+            throw new ScheduleConflictException(
+                    "Some students were skipped because their timetable conflicts with this course.",
+                    conflicts,
+                    report
+            );
+        }
+
         return report;
     }
 }

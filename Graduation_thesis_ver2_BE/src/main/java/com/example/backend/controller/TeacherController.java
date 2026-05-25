@@ -4,6 +4,7 @@ import com.example.backend.dto.AttendanceLogDto;
 import com.example.backend.dto.CourseDto;
 import com.example.backend.dto.FormDto;
 import com.example.backend.dto.QuestionDto;
+import com.example.backend.exception.ScheduleConflictException;
 import com.example.backend.service.TeacherService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -185,6 +186,8 @@ public class TeacherController {
             String teacherKeycloakId = jwt.getClaimAsString("sub");
             Map<String, Object> result = teacherService.importStudentsFromExcel(courseId, file, teacherKeycloakId);
             return ResponseEntity.ok(result);
+        } catch (ScheduleConflictException e) {
+            throw e;
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }

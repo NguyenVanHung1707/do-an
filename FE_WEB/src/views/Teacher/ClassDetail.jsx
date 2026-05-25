@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { addStudentToClass, addManualAttendance, fetchClasses } from '../../store/classSlice';
 import Card from '../../components/Common/Card';
-import { 
-  ArrowLeft, 
-  UserPlus, 
-  FileEdit, 
-  GraduationCap, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Search, 
+import {
+  ArrowLeft,
+  UserPlus,
+  UserMinus,
+  FileEdit,
+  GraduationCap,
+  CheckCircle2,
+  AlertTriangle,
+  Search,
   MessageSquare,
   Calendar,
   Clock,
@@ -22,12 +23,12 @@ import {
   Download,
   Upload
 } from 'lucide-react';
-import { 
-  apiFetch, 
-  getCourseSchedules, 
-  setCourseSchedules, 
-  downloadStudentImportTemplate, 
-  importStudentsFromExcel 
+import {
+  apiFetch,
+  getCourseSchedules,
+  setCourseSchedules,
+  downloadStudentImportTemplate,
+  importStudentsFromExcel
 } from '../../services/api';
 import DiscussionBoard from '../../components/Common/DiscussionBoard';
 import AssessmentManagement from './AssessmentManagement';
@@ -77,6 +78,10 @@ export default function ClassDetail({ classId, onBack }) {
   const [importingExcel, setImportingExcel] = useState(false);
   const [excelError, setExcelError] = useState(null);
   const [excelReport, setExcelReport] = useState(null); // { successCount, duplicateCount, notFoundCodes, successfullyAdded }
+
+  // Conflict Resolution States
+  const [isConflictOpen, setIsConflictOpen] = useState(false);
+  const [conflictData, setConflictData] = useState(null);
 
   useEffect(() => {
     if (activeTab === 'timetable') {
@@ -162,7 +167,13 @@ export default function ClassDetail({ classId, onBack }) {
         closeAddStudentModal();
       })
       .catch((err) => {
-        alert(err || 'Không thể thêm sinh viên vào lớp!');
+        if (err && err.status === 409 && err.conflicts) {
+          closeAddStudentModal();
+          setConflictData(err);
+          setIsConflictOpen(true);
+        } else {
+          alert(err.message || err || 'Không thể thêm sinh viên vào lớp!');
+        }
       });
   };
 
@@ -211,7 +222,16 @@ export default function ClassDetail({ classId, onBack }) {
       dispatch(fetchClasses());
     } catch (err) {
       console.error(err);
-      setExcelError(err.message || 'Nhập danh sách học sinh từ file Excel thất bại.');
+      if (err && err.status === 409 && err.conflicts) {
+        setIsExcelImportOpen(false);
+        setExcelFile(null);
+        setExcelError(null);
+        setConflictData(err);
+        setIsConflictOpen(true);
+        dispatch(fetchClasses());
+      } else {
+        setExcelError(err.message || 'Nhập danh sách học sinh từ file Excel thất bại.');
+      }
     } finally {
       setImportingExcel(false);
     }
@@ -479,8 +499,8 @@ export default function ClassDetail({ classId, onBack }) {
         </div>
       ) : activeTab === 'timetable' ? (
         <div className="space-y-6">
-          <Card 
-            title="Cấu hình lịch học định kỳ" 
+          <Card
+            title="Cấu hình lịch học định kỳ"
             subtitle="Cài đặt lịch ca học định kỳ trong tuần của môn học này"
             icon={<Calendar className="w-5 h-5 text-primary" />}
             action={
@@ -822,7 +842,7 @@ export default function ClassDetail({ classId, onBack }) {
                 &times;
               </button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto space-y-5 flex-1">
               {/* File Template Instructions Card */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
@@ -880,18 +900,18 @@ export default function ClassDetail({ classId, onBack }) {
               <form onSubmit={handleExcelImportSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-2 uppercase">Chọn tệp Excel tệp nguồn (.xlsx)</label>
-                  <div 
+                  <div
                     onClick={() => document.getElementById('excelFileInput').click()}
                     className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
-                      excelFile 
-                        ? 'border-emerald-500 bg-emerald-50/30' 
+                      excelFile
+                        ? 'border-emerald-500 bg-emerald-50/30'
                         : 'border-slate-300 hover:border-emerald-500 bg-slate-50/50 hover:bg-slate-50'
                     }`}
                   >
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       id="excelFileInput"
-                      className="hidden" 
+                      className="hidden"
                       accept=".xlsx, .xls"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
@@ -901,7 +921,7 @@ export default function ClassDetail({ classId, onBack }) {
                         }
                       }}
                     />
-                    
+
                     {excelFile ? (
                       <>
                         <FileSpreadsheet className="w-10 h-10 text-emerald-600" />
@@ -1019,6 +1039,114 @@ export default function ClassDetail({ classId, onBack }) {
                 </div>
               </form>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Conflict Resolver Modal */}
+      {isConflictOpen && conflictData && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden border border-rose-100 flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+
+            {/* Header */}
+            <div className="px-6 py-5 bg-rose-50 border-b border-rose-100 flex items-center gap-3 shrink-0">
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+                <AlertTriangle className="w-5.5 h-5.5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-base">Phát Hiện Trùng Lịch Học!</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {conflictData.successCount > 0
+                    ? `Phát hiện ${conflictData.conflicts.length} sinh viên có thời khóa biểu bị xung đột. ${conflictData.successCount} sinh viên hợp lệ đã được thêm vào lớp.`
+                    : `Phát hiện ${conflictData.conflicts.length} sinh viên có thời khóa biểu bị xung đột trong Học kỳ này. Thao tác thêm học viên đã bị chặn để bảo đảm lịch học.`}
+                </p>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1 bg-slate-50/50">
+              {(conflictData.successCount > 0 || conflictData.duplicateCount > 0 || conflictData.notFoundCodes?.length > 0) && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                    <div className="text-lg font-black text-emerald-700">{conflictData.successCount || 0}</div>
+                    <div className="text-[10px] font-bold text-emerald-600 uppercase mt-0.5">Đã thêm</div>
+                  </div>
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+                    <div className="text-lg font-black text-amber-700">{conflictData.duplicateCount || 0}</div>
+                    <div className="text-[10px] font-bold text-amber-600 uppercase mt-0.5">Đã có trong lớp</div>
+                  </div>
+                  <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-center">
+                    <div className="text-lg font-black text-rose-700">{conflictData.notFoundCodes?.length || 0}</div>
+                    <div className="text-[10px] font-bold text-rose-600 uppercase mt-0.5">Không tìm thấy</div>
+                  </div>
+                </div>
+              )}
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Chi tiết các ca trùng lịch:
+              </div>
+
+              <div className="space-y-3">
+                {conflictData.conflicts.map((conflict, idx) => (
+                  <div key={idx} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-slate-800 text-sm">{conflict.studentName}</span>
+                        <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 rounded-md font-mono text-[10px] font-bold">
+                          {conflict.studentCode}
+                        </span>
+                      </div>
+
+                      {/* Conflict details */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                          <span className="w-2 h-2 rounded-full bg-slate-300" />
+                          <span>Lớp định thêm: <strong className="text-slate-700">{conflict.newSubject}</strong></span>
+                        </div>
+                        <div className="text-slate-400 pl-3.5 sm:pl-0 font-medium">
+                          Lịch học mới: <span className="font-semibold text-slate-600">{conflict.newSchedule}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-rose-500 font-medium">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                          <span>Bị trùng với môn: <strong className="text-rose-700">{conflict.existingSubject}</strong></span>
+                        </div>
+                        <div className="text-rose-500 pl-3.5 sm:pl-0 font-semibold">
+                          Lịch học hiện tại: {conflict.existingSchedule}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex items-center gap-2">
+                      <span className="px-3 py-1.5 bg-rose-50 text-rose-700 text-[11px] font-bold rounded-lg border border-rose-100 flex items-center gap-1">
+                        <UserMinus className="w-3.5 h-3.5" />
+                        <span>Chặn đăng ký</span>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-4 bg-emerald-50/60 border border-emerald-100 rounded-xl text-xs text-emerald-800 flex items-start gap-2.5">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="font-bold">Lưu ý:</strong> Để đảm bảo tính toàn vẹn của dữ liệu và tránh việc sinh viên đăng ký học hai lớp trong cùng một thời điểm, hệ thống không cho phép xếp lịch trùng. Vui lòng liên hệ với sinh viên hoặc điều chỉnh lịch ca học.
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0 bg-white">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsConflictOpen(false);
+                  setConflictData(null);
+                }}
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-md transition"
+              >
+                Đóng và Điều chỉnh
+              </button>
+            </div>
+
           </div>
         </div>
       )}

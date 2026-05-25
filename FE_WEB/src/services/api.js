@@ -57,8 +57,9 @@ export const apiFetch = async (endpoint, options = {}) => {
 
   if (!response.ok) {
     let errMsg = 'Có lỗi xảy ra!';
+    let errData = null;
     try {
-      const errData = await response.json();
+      errData = await response.json();
       errMsg = errData.message || errData.error || errMsg;
     } catch (e) {
       try {
@@ -66,7 +67,15 @@ export const apiFetch = async (endpoint, options = {}) => {
         errMsg = text || errMsg;
       } catch (e2) {}
     }
-    throw new Error(errMsg);
+    const error = new Error(errMsg);
+    error.status = response.status;
+    if (errData) {
+      error.payload = errData;
+      Object.assign(error, errData);
+      error.conflicts = errData.conflicts || null;
+      error.details = errData.details || null;
+    }
+    throw error;
   }
 
   // Handle empty or void responses (like HTTP 204 or delete responses)

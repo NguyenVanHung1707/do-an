@@ -163,7 +163,11 @@ export const addStudentToClass = createAsyncThunk(
       dispatch(fetchClasses());
       return true;
     } catch (err) {
-      return rejectWithValue(err.message || 'Không thể thêm sinh viên vào lớp!');
+      return rejectWithValue({
+        message: err.message || 'Không thể thêm sinh viên vào lớp!',
+        status: err.status || null,
+        conflicts: err.conflicts || null
+      });
     }
   }
 );

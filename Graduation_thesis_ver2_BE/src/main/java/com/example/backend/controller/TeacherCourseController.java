@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.CourseScheduleDto;
 import com.example.backend.entity.CourseSchedule;
+import com.example.backend.exception.ScheduleConflictException;
 import com.example.backend.service.CourseScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,8 @@ public class TeacherCourseController {
         try {
             List<CourseSchedule> savedSchedules = courseScheduleService.setCourseSchedules(courseId, schedules);
             return ResponseEntity.ok(savedSchedules);
+        } catch (ScheduleConflictException e) {
+            throw e;
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", e.getMessage()));
