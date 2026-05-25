@@ -424,4 +424,23 @@ export const setCourseSchedules = async (courseId, schedules) => {
   });
 };
 
+export const downloadStudentImportTemplate = async () => {
+  const response = await fetch(`${BASE_API_URL}/teacher/courses/import-template`, {
+    headers: getAuthHeader()
+  });
+  if (!response.ok) {
+    throw new Error('Không thể tải file mẫu Excel');
+  }
+  return await response.blob();
+};
+
+export const importStudentsFromExcel = async (courseId, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return await apiFetch(`/teacher/courses/${courseId}/import-students`, {
+    method: 'POST',
+    body: formData
+  });
+};
+
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { addStudentToClass, addManualAttendance } from '../../store/classSlice';
+import { addStudentToClass, addManualAttendance, fetchClasses } from '../../store/classSlice';
 import Card from '../../components/Common/Card';
 import { 
   ArrowLeft, 
@@ -17,9 +17,18 @@ import {
   Plus,
   Check,
   Loader2,
-  Tag
+  Tag,
+  FileSpreadsheet,
+  Download,
+  Upload
 } from 'lucide-react';
-import { apiFetch, getCourseSchedules, setCourseSchedules } from '../../services/api';
+import { 
+  apiFetch, 
+  getCourseSchedules, 
+  setCourseSchedules, 
+  downloadStudentImportTemplate, 
+  importStudentsFromExcel 
+} from '../../services/api';
 import DiscussionBoard from '../../components/Common/DiscussionBoard';
 import AssessmentManagement from './AssessmentManagement';
 import GradeAssessment from './GradeAssessment';
@@ -61,6 +70,13 @@ export default function ClassDetail({ classId, onBack }) {
   const [savingSchedules, setSavingSchedules] = useState(false);
   const [scheduleSuccess, setScheduleSuccess] = useState(null);
   const [scheduleError, setScheduleError] = useState(null);
+
+  // Excel Import States
+  const [isExcelImportOpen, setIsExcelImportOpen] = useState(false);
+  const [excelFile, setExcelFile] = useState(null);
+  const [importingExcel, setImportingExcel] = useState(false);
+  const [excelError, setExcelError] = useState(null);
+  const [excelReport, setExcelReport] = useState(null); // { successCount, duplicateCount, notFoundCodes, successfullyAdded }
 
   useEffect(() => {
     if (activeTab === 'timetable') {
@@ -159,6 +175,53 @@ export default function ClassDetail({ classId, onBack }) {
     dispatch(addManualAttendance({ classId, studentId: selectedStudentId, status: attendanceStatus }));
     setIsManualAttendanceOpen(false);
     setSelectedStudentId('');
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const blob = await downloadStudentImportTemplate();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'student_import_template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Không thể tải file mẫu Excel');
+    }
+  };
+
+  const handleExcelImportSubmit = async (e) => {
+    e.preventDefault();
+    if (!excelFile) {
+      setExcelError('Vui lòng chọn file Excel trước!');
+      return;
+    }
+
+    setImportingExcel(true);
+    setExcelError(null);
+    setExcelReport(null);
+
+    try {
+      const report = await importStudentsFromExcel(classId, excelFile);
+      setExcelReport(report);
+      // Refresh redux state to show new student list & attendance metrics!
+      dispatch(fetchClasses());
+    } catch (err) {
+      console.error(err);
+      setExcelError(err.message || 'Nhập danh sách học sinh từ file Excel thất bại.');
+    } finally {
+      setImportingExcel(false);
+    }
+  };
+
+  const closeExcelImportModal = () => {
+    setIsExcelImportOpen(false);
+    setExcelFile(null);
+    setExcelError(null);
+    setExcelReport(null);
   };
 
   const handleAddScheduleSlot = () => {
@@ -338,6 +401,13 @@ export default function ClassDetail({ classId, onBack }) {
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>Thêm sinh viên</span>
+                </button>
+                <button
+                  onClick={() => setIsExcelImportOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Nhập từ Excel</span>
                 </button>
                 <button
                   onClick={() => setIsManualAttendanceOpen(true)}
@@ -735,6 +805,220 @@ export default function ClassDetail({ classId, onBack }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Excel Import Modal */}
+      {isExcelImportOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-bold text-slate-800 text-base">Nhập danh sách sinh viên từ Excel</h3>
+              </div>
+              <button onClick={closeExcelImportModal} className="text-slate-400 hover:text-slate-600 text-lg font-bold">
+                &times;
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-5 flex-1">
+              {/* File Template Instructions Card */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 className="font-bold text-slate-700 text-sm">Cấu trúc file Excel mẫu</h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      File Excel tải lên cần định dạng cột đúng thứ tự sau. Cột **Mã sinh viên** là bắt buộc để khớp thông tin sinh viên đã đăng ký tài khoản trong hệ thống.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold transition border border-emerald-200 shrink-0"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Tải file mẫu</span>
+                  </button>
+                </div>
+
+                {/* Simulated table preview of Excel template */}
+                <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
+                        <th className="py-2 px-3">STT</th>
+                        <th className="py-2 px-3 border-l border-slate-200">Mã sinh viên *</th>
+                        <th className="py-2 px-3 border-l border-slate-200">Họ và tên</th>
+                        <th className="py-2 px-3 border-l border-slate-200">Email</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-slate-600">
+                      <tr>
+                        <td className="py-1.5 px-3">1</td>
+                        <td className="py-1.5 px-3 border-l border-slate-200 font-mono font-bold text-slate-700">st0001</td>
+                        <td className="py-1.5 px-3 border-l border-slate-200">Nguyễn Văn A</td>
+                        <td className="py-1.5 px-3 border-l border-slate-200">nva@example.com</td>
+                      </tr>
+                      <tr>
+                        <td className="py-1.5 px-3">2</td>
+                        <td className="py-1.5 px-3 border-l border-slate-200 font-mono font-bold text-slate-700">st0002</td>
+                        <td className="py-1.5 px-3 border-l border-slate-200">Trần Thị B</td>
+                        <td className="py-1.5 px-3 border-l border-slate-200">ttb@example.com</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-rose-500 font-medium">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Lưu ý: Chỉ những sinh viên đã đăng ký tài khoản trên hệ thống mới được thêm vào lớp học.</span>
+                </div>
+              </div>
+
+              {/* Upload drag & drop zone */}
+              <form onSubmit={handleExcelImportSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-2 uppercase">Chọn tệp Excel tệp nguồn (.xlsx)</label>
+                  <div 
+                    onClick={() => document.getElementById('excelFileInput').click()}
+                    className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
+                      excelFile 
+                        ? 'border-emerald-500 bg-emerald-50/30' 
+                        : 'border-slate-300 hover:border-emerald-500 bg-slate-50/50 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input 
+                      type="file" 
+                      id="excelFileInput"
+                      className="hidden" 
+                      accept=".xlsx, .xls"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setExcelFile(e.target.files[0]);
+                          setExcelError(null);
+                          setExcelReport(null);
+                        }
+                      }}
+                    />
+                    
+                    {excelFile ? (
+                      <>
+                        <FileSpreadsheet className="w-10 h-10 text-emerald-600" />
+                        <div>
+                          <p className="text-sm font-bold text-slate-700 max-w-[300px] truncate">{excelFile.name}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{(excelFile.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExcelFile(null);
+                          }}
+                          className="mt-1 px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-600 text-[10px] font-bold rounded-lg transition"
+                        >
+                          Chọn tệp khác
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-10 h-10 text-slate-400" />
+                        <div className="space-y-1">
+                          <p className="text-sm font-bold text-slate-600">Nhấp để chọn tệp hoặc kéo & thả vào đây</p>
+                          <p className="text-xs text-slate-400">Hỗ trợ tệp định dạng .xlsx, .xls</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {excelError && (
+                  <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                    <span className="font-semibold">{excelError}</span>
+                  </div>
+                )}
+
+                {/* Import Report Result visualization */}
+                {excelReport && (
+                  <div className="space-y-3.5 border-t border-slate-100 pt-4">
+                    <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Kết quả nhập danh sách</h4>
+                    <div className="grid grid-cols-3 gap-2.5">
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                        <div className="text-lg font-black text-emerald-700">{excelReport.successCount || 0}</div>
+                        <div className="text-[10px] font-bold text-emerald-600 uppercase mt-0.5">Thành công</div>
+                      </div>
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+                        <div className="text-lg font-black text-amber-700">{excelReport.duplicateCount || 0}</div>
+                        <div className="text-[10px] font-bold text-amber-600 uppercase mt-0.5">Đã ở trong lớp</div>
+                      </div>
+                      <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-center">
+                        <div className="text-lg font-black text-rose-700">{excelReport.notFoundCodes?.length || 0}</div>
+                        <div className="text-[10px] font-bold text-rose-600 uppercase mt-0.5">Lỗi mã số</div>
+                      </div>
+                    </div>
+
+                    {/* Successfully added students chips */}
+                    {excelReport.successfullyAdded && excelReport.successfullyAdded.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-bold text-slate-500 uppercase">Thêm mới thành công ({excelReport.successfullyAdded.length}):</div>
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 bg-slate-50 border border-slate-100 rounded-lg">
+                          {excelReport.successfullyAdded.map((name, idx) => (
+                            <span key={idx} className="inline-flex items-center px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-medium rounded-full">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Errors warnings on not found codes */}
+                    {excelReport.notFoundCodes && excelReport.notFoundCodes.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-bold text-rose-500 uppercase flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          <span>Sinh viên không tồn tại trong hệ thống ({excelReport.notFoundCodes.length}):</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 bg-rose-50/50 border border-rose-100 rounded-lg">
+                          {excelReport.notFoundCodes.map((code, idx) => (
+                            <span key={idx} className="inline-flex items-center px-2 py-0.5 bg-rose-100 text-rose-800 text-xs font-mono font-bold rounded-full">
+                              {code}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-slate-500 italic">
+                          * Hãy yêu cầu các sinh viên này đăng ký tài khoản trên hệ thống trước khi thêm vào lớp.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 shrink-0">
+                  <button
+                    type="button"
+                    onClick={closeExcelImportModal}
+                    className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 transition"
+                  >
+                    {excelReport ? 'Đóng' : 'Hủy'}
+                  </button>
+                  {!excelReport && (
+                    <button
+                      type="submit"
+                      disabled={!excelFile || importingExcel}
+                      className={`flex items-center gap-1.5 px-5 py-2 rounded-xl font-bold text-xs transition ${
+                        excelFile && !importingExcel
+                          ? 'bg-primary hover:bg-primary-hover text-white cursor-pointer'
+                          : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {importingExcel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      <span>{importingExcel ? 'Đang nhập...' : 'Nhập danh sách'}</span>
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

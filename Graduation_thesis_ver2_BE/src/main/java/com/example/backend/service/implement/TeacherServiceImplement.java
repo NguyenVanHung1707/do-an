@@ -16,6 +16,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.web.multipart.MultipartFile;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 public class TeacherServiceImplement implements TeacherService {
     private final TeacherRepository teacherRepository;
@@ -872,5 +880,170 @@ public class TeacherServiceImplement implements TeacherService {
             // Update registration attendance count (uses stored procedure)
             registerRepository.updateAttendanceCount(course.getId(), student.getId());
         }
+    }
+
+    @Override
+    public byte[] getStudentImportTemplate() throws Exception {
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            
+            Sheet sheet = workbook.createSheet("Danh sách sinh viên mẫu");
+            
+            // Header styling
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+            
+            CellStyle headerStyle = workbook.createCellStyle();
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.INDIGO.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            
+            // Create headers row
+            Row headerRow = sheet.createRow(0);
+            String[] columns = {"STT", "Mã sinh viên", "Họ và tên", "Email"};
+            for (int i = 0; i < columns.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(columns[i]);
+                cell.setCellStyle(headerStyle);
+            }
+            
+            // Create 2 mock data rows
+            Object[][] mockData = {
+                {1, "st0005", "Nguyễn Văn A", "studenta@sis.hust.edu.vn"},
+                {2, "st0006", "Trần Thị B", "studentb@sis.hust.edu.vn"}
+            };
+            
+            for (int r = 0; r < mockData.length; r++) {
+                Row row = sheet.createRow(r + 1);
+                for (int c = 0; c < mockData[r].length; c++) {
+                    Cell cell = row.createCell(c);
+                    Object val = mockData[r][c];
+                    if (val instanceof Integer) {
+                        cell.setCellValue((Integer) val);
+                    } else {
+                        cell.setCellValue((String) val);
+                    }
+                }
+            }
+            
+            // Auto size columns
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+            
+            workbook.write(out);
+            return out.toByteArray();
+        }
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public Map<String, Object> importStudentsFromExcel(Long courseId, MultipartFile file, String teacherKeycloakId) throws Exception {
+        Optional<Course> courseOpt = courseRepository.findById(courseId);
+        if (courseOpt.isEmpty()) {
+            throw new CustomException("Không tìm thấy lớp học", HttpStatus.NOT_FOUND);
+        }
+        Course course = courseOpt.get();
+        
+        Optional<Teacher> teacherOpt = teacherRepository.findByKeycloakId(teacherKeycloakId);
+        if (teacherOpt.isEmpty()) {
+            throw new CustomException("Không tìm thấy thông tin giảng viên", HttpStatus.NOT_FOUND);
+        }
+        if (!course.getTeacher().equals(teacherOpt.get())) {
+            throw new CustomException("Lớp học này không thuộc về bạn", HttpStatus.BAD_REQUEST);
+        }
+        
+        int successCount = 0;
+        int duplicateCount = 0;
+        List<String> notFoundCodes = new ArrayList<>();
+        List<String> successfullyAdded = new ArrayList<>();
+        
+        try (InputStream is = file.getInputStream();
+             Workbook workbook = new XSSFWorkbook(is)) {
+            
+            Sheet sheet = workbook.getSheetAt(0);
+            Row headerRow = sheet.getRow(0);
+            if (headerRow == null) {
+                throw new CustomException("File Excel rỗng hoặc không có dòng tiêu đề", HttpStatus.BAD_REQUEST);
+            }
+            
+            // Find student code column (default to index 1 or first found)
+            int studentCodeColIndex = -1;
+            for (int c = 0; c < headerRow.getLastCellNum(); c++) {
+                Cell cell = headerRow.getCell(c);
+                if (cell != null) {
+                    String headerVal = cell.getStringCellValue().trim().toLowerCase();
+                    if (headerVal.contains("mã sinh viên") || headerVal.contains("mssv") || headerVal.contains("student code") || headerVal.contains("student_code")) {
+                        studentCodeColIndex = c;
+                        break;
+                    }
+                }
+            }
+            
+            // Fallback: If not found by name, check first column
+            if (studentCodeColIndex == -1) {
+                studentCodeColIndex = 0;
+            }
+            
+            // Process data rows
+            int lastRowNum = sheet.getLastRowNum();
+            for (int r = 1; r <= lastRowNum; r++) {
+                Row row = sheet.getRow(r);
+                if (row == null) continue;
+                
+                Cell studentCodeCell = row.getCell(studentCodeColIndex);
+                if (studentCodeCell == null) continue;
+                
+                String studentCode = "";
+                if (studentCodeCell.getCellType() == CellType.STRING) {
+                    studentCode = studentCodeCell.getStringCellValue().trim();
+                } else if (studentCodeCell.getCellType() == CellType.NUMERIC) {
+                    // Excel sometimes reads numbers as numeric types
+                    studentCode = String.format("%.0f", studentCodeCell.getNumericCellValue()).trim();
+                }
+                
+                if (studentCode.isEmpty()) continue;
+                
+                Optional<Student> studentOpt = studentRepository.findByStudentCode(studentCode);
+                if (studentOpt.isEmpty()) {
+                    notFoundCodes.add(studentCode);
+                    continue;
+                }
+                
+                Student student = studentOpt.get();
+                
+                // Check if student is already registered to the course
+                RegisterId registerId = new RegisterId();
+                registerId.setStudent(student);
+                registerId.setCourse(course);
+                
+                Optional<Register> registerOpt = registerRepository.findById(registerId);
+                if (registerOpt.isPresent()) {
+                    duplicateCount++;
+                    continue;
+                }
+                
+                // Add student to course
+                Register register = new Register();
+                register.setId(registerId);
+                register.setCreatedAt(OffsetDateTime.now());
+                register.setUpdatedAt(OffsetDateTime.now());
+                register.setAbsences(0);
+                register.setPresences(0);
+                registerRepository.save(register);
+                
+                successfullyAdded.add(student.getName() + " (" + studentCode + ")");
+                successCount++;
+            }
+        }
+        
+        Map<String, Object> report = new HashMap<>();
+        report.put("successCount", successCount);
+        report.put("duplicateCount", duplicateCount);
+        report.put("notFoundCodes", notFoundCodes);
+        report.put("successfullyAdded", successfullyAdded);
+        return report;
     }
 }

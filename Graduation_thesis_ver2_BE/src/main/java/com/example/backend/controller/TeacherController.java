@@ -5,12 +5,16 @@ import com.example.backend.dto.CourseDto;
 import com.example.backend.dto.FormDto;
 import com.example.backend.dto.QuestionDto;
 import com.example.backend.service.TeacherService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/teacher")
@@ -158,5 +162,31 @@ public class TeacherController {
     @GetMapping("/profile")
     public ResponseEntity<?> getTeacherProfile(@AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(teacherService.getTeacherByKeycloakId(jwt.getClaimAsString("sub")));
+    }
+
+    @GetMapping("/courses/import-template")
+    public ResponseEntity<byte[]> downloadImportTemplate() {
+        try {
+            byte[] data = teacherService.getStudentImportTemplate();
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"student_import_template.xlsx\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    @PostMapping("/courses/{courseId}/import-students")
+    public ResponseEntity<?> importStudentsFromExcel(@PathVariable Long courseId,
+                                                     @RequestParam("file") MultipartFile file,
+                                                     @AuthenticationPrincipal Jwt jwt) {
+        try {
+            String teacherKeycloakId = jwt.getClaimAsString("sub");
+            Map<String, Object> result = teacherService.importStudentsFromExcel(courseId, file, teacherKeycloakId);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 }
