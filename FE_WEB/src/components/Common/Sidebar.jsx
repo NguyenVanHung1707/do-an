@@ -20,6 +20,7 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
   const teacherItems = [
     { id: 'dashboard', label: 'Bảng thống kê', icon: LayoutDashboard },
     { id: 'class-management', label: 'Quản lý lớp học', icon: BookOpen },
+    { id: 'teacher-timetable', label: 'Thời khóa biểu', icon: Calendar },
     { id: 'photo-attendance', label: 'Chụp ảnh điểm danh', icon: Camera },
     { id: 'create-form', label: 'Tạo Form trắc nghiệm', icon: FileSpreadsheet },
     { id: 'profile', label: 'Thông tin cá nhân', icon: User }

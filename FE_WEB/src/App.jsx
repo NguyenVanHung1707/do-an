@@ -195,6 +195,8 @@ export default function App() {
                onBack={() => setCurrentView('class-management')}
             />
           );
+        case 'teacher-timetable':
+          return <Timetable />;
         case 'photo-attendance':
           return <PhotoAttendance />;
         case 'create-form':

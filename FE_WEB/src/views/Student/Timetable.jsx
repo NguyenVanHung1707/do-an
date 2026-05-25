@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { 
-  getSemesters, 
-  getActiveSemester, 
-  getSemesterWeeks, 
-  getMyCourses, 
-  getCourseSchedules 
+import {
+  getSemesters,
+  getSemesterWeeks,
+  getTimetable
 } from '../../services/api';
-import Card from '../../components/Common/Card';
 import { 
   Calendar, 
   Clock, 
@@ -17,12 +14,11 @@ import {
   BookOpen, 
   History,
   Info,
-  Loader2,
-  Tag
+  Loader2
 } from 'lucide-react';
 
 export default function Timetable() {
-  const { user } = useSelector((state) => state.auth);
+  const { role } = useSelector((state) => state.auth);
 
   const [semesters, setSemesters] = useState([]);
   const [selectedSemesterId, setSelectedSemesterId] = useState('');
@@ -32,7 +28,6 @@ export default function Timetable() {
   const [selectedWeekIndex, setSelectedWeekIndex] = useState(-1); // Index in the weeks array
   const [loadingWeeks, setLoadingWeeks] = useState(false);
 
-  const [courses, setCourses] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
 
@@ -106,46 +101,33 @@ export default function Timetable() {
     loadWeeks();
   }, [selectedSemesterId]);
 
-  // 3. Load Student Courses and all course schedules once when semester changes
+  // 3. Load timetable from backend when semester/week changes
   useEffect(() => {
-    if (!selectedSemesterId) return;
+    if (!selectedSemesterId || selectedWeekIndex < 0 || !weeks[selectedWeekIndex]) return;
 
-    const loadCoursesAndSchedules = async () => {
+    const loadTimetable = async () => {
       setLoadingSchedules(true);
-      setCourses([]);
       setSchedules([]);
       try {
-        const myCourses = await getMyCourses();
-        // Filter student courses belonging to selected semester
-        const semesterCourses = myCourses.filter(c => c.semesterId === parseInt(selectedSemesterId));
-        setCourses(semesterCourses);
-
-        // Fetch schedules for all courses in parallel
-        const allSchedules = [];
-        await Promise.all(
-          semesterCourses.map(async (course) => {
-            try {
-              const courseSchedules = await getCourseSchedules(course.id);
-              if (courseSchedules && Array.isArray(courseSchedules)) {
-                courseSchedules.forEach(slot => {
-                  allSchedules.push({
-                    id: slot.id,
-                    dayOfWeek: slot.dayOfWeek, // 1 = Monday ... 7 = Sunday
-                    startTime: slot.startTime.substring(0, 5),
-                    endTime: slot.endTime.substring(0, 5),
-                    roomName: slot.roomName || 'Chưa xếp phòng',
-                    courseCode: course.courseCode,
-                    subject: course.subject,
-                    courseId: course.id
-                  });
-                });
-              }
-            } catch (err) {
-              console.error(`Lỗi tải lịch cho lớp ${course.id}:`, err);
-            }
-          })
-        );
-        setSchedules(allSchedules);
+        const activeWeek = weeks[selectedWeekIndex];
+        const response = await getTimetable({
+          semesterId: selectedSemesterId,
+          weekNumber: activeWeek.weekNumber
+        });
+        const mappedSchedules = (response?.items || []).map((slot) => ({
+          id: slot.scheduleId,
+          dayOfWeek: slot.dayOfWeek,
+          date: slot.date,
+          startTime: slot.startTime?.substring(0, 5),
+          endTime: slot.endTime?.substring(0, 5),
+          roomName: slot.roomName || 'Chưa xếp phòng',
+          courseCode: slot.courseCode,
+          subject: slot.subject,
+          courseId: slot.courseId,
+          teacherName: slot.teacherName,
+          status: slot.status
+        }));
+        setSchedules(mappedSchedules);
       } catch (err) {
         console.error("Lỗi tải thời khóa biểu:", err);
         setError("Không thể tải danh sách thời khóa biểu môn học.");
@@ -154,8 +136,8 @@ export default function Timetable() {
       }
     };
 
-    loadCoursesAndSchedules();
-  }, [selectedSemesterId]);
+    loadTimetable();
+  }, [selectedSemesterId, selectedWeekIndex, weeks]);
 
   // Handle navigating week index
   const handlePrevWeek = () => {
@@ -261,9 +243,23 @@ export default function Timetable() {
 
           <div className="flex flex-col items-center text-center">
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-slate-800 dark:text-slate-100 text-sm md:text-base">
-                Tuần {activeWeek.weekNumber}
-              </span>
+              <select
+                value={activeWeek.weekNumber}
+                onChange={(event) => {
+                  const nextWeekNumber = Number(event.target.value);
+                  const nextIndex = weeks.findIndex((week) => week.weekNumber === nextWeekNumber);
+                  if (nextIndex >= 0) {
+                    setSelectedWeekIndex(nextIndex);
+                  }
+                }}
+                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-extrabold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                {weeks.map((week) => (
+                  <option key={week.weekNumber} value={week.weekNumber}>
+                    Tuần {week.weekNumber}
+                  </option>
+                ))}
+              </select>
               {getWeekTypeBadge(activeWeek.weekType)}
             </div>
             <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
@@ -377,6 +373,12 @@ export default function Timetable() {
                               <MapPin className="w-3.5 h-3.5 text-slate-400" />
                               <span className="line-clamp-1">{slot.roomName}</span>
                             </div>
+                            {slot.teacherName && role === 'student' && (
+                              <div className="flex items-center gap-1">
+                                <BookOpen className="w-3.5 h-3.5 text-slate-400" />
+                                <span className="line-clamp-1">{slot.teacherName}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))

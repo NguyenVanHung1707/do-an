@@ -395,6 +395,32 @@ export const getSemesterWeeks = async (semesterId) => {
   return await apiFetch(`/semesters/${semesterId}/weeks`);
 };
 
+export const getTimetable = async ({ semesterId = null, weekNumber = null } = {}) => {
+  const params = new URLSearchParams();
+  if (semesterId) {
+    params.set('semester_id', semesterId);
+  }
+  if (weekNumber) {
+    params.set('week_number', weekNumber);
+  }
+  const query = params.toString();
+  return await apiFetch(`/timetable${query ? `?${query}` : ''}`);
+};
+
+export const registerDeviceToken = async ({ fcmToken, deviceType = 'ANDROID', deviceId = null }) => {
+  return await apiFetch('/users/device-token', {
+    method: 'POST',
+    body: JSON.stringify({ fcmToken, deviceType, deviceId })
+  });
+};
+
+export const deleteDeviceToken = async ({ fcmToken }) => {
+  return await apiFetch('/users/device-token', {
+    method: 'DELETE',
+    body: JSON.stringify({ fcmToken })
+  });
+};
+
 export const createSemester = async (payload) => {
   return await apiFetch('/admin/semesters', {
     method: 'POST',

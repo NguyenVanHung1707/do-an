@@ -56,6 +56,7 @@ services:
       APP_UPLOAD_DIR: /app/data/student_faces
       APP_DOCUMENT_DIR: /app/data/document
       APP_AI_PROCTOR_URL: http://ai_proctor:8000
+      APP_TIMEZONE: Asia/Ho_Chi_Minh
       TZ: Asia/Ho_Chi_Minh
     volumes:
       - ${DATA_PATH:-./data}:/app/data

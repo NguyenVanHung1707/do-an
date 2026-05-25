@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -37,5 +38,46 @@ public interface CourseScheduleRepository extends JpaRepository<CourseSchedule, 
     List<Object[]> findStudentsSchedulesWithStudentId(
         @Param("studentIds") List<Long> studentIds,
         @Param("semesterId") Long semesterId
+    );
+
+    @Query("SELECT cs FROM CourseSchedule cs " +
+           "JOIN FETCH cs.course c " +
+           "JOIN FETCH c.teacher t " +
+           "JOIN FETCH c.semester s " +
+           "WHERE s.id = :semesterId " +
+           "  AND t.id = :teacherId " +
+           "  AND (c.isActive IS NULL OR c.isActive = true)")
+    List<CourseSchedule> findTeacherTimetableSchedules(
+        @Param("teacherId") Long teacherId,
+        @Param("semesterId") Long semesterId
+    );
+
+    @Query("SELECT cs FROM CourseSchedule cs " +
+           "JOIN FETCH cs.course c " +
+           "JOIN FETCH c.teacher t " +
+           "JOIN FETCH c.semester s " +
+           "WHERE s.id = :semesterId " +
+           "  AND c IN (SELECT r.id.course FROM Register r WHERE r.id.student.id = :studentId) " +
+           "  AND (c.isActive IS NULL OR c.isActive = true)")
+    List<CourseSchedule> findStudentTimetableSchedules(
+        @Param("studentId") Long studentId,
+        @Param("semesterId") Long semesterId
+    );
+
+    @Query("SELECT cs FROM CourseSchedule cs " +
+           "JOIN FETCH cs.course c " +
+           "JOIN FETCH c.teacher t " +
+           "JOIN FETCH c.semester s " +
+           "WHERE s.startDate <= :scheduleDate " +
+           "  AND s.endDate >= :scheduleDate " +
+           "  AND cs.dayOfWeek = :dayOfWeek " +
+           "  AND cs.startTime >= :windowStart " +
+           "  AND cs.startTime < :windowEnd " +
+           "  AND (c.isActive IS NULL OR c.isActive = true)")
+    List<CourseSchedule> findSchedulesStartingInWindow(
+        @Param("scheduleDate") LocalDate scheduleDate,
+        @Param("dayOfWeek") Integer dayOfWeek,
+        @Param("windowStart") LocalTime windowStart,
+        @Param("windowEnd") LocalTime windowEnd
     );
 }
