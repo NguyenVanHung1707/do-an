@@ -107,6 +107,39 @@ jobs:
     needs: build-images
     runs-on: ubuntu-latest
     steps:
+      - name: Validate Production Secrets
+        env:
+          PROD_POSTGRES_DB: ${{ secrets.PROD_POSTGRES_DB }}
+          PROD_POSTGRES_USER: ${{ secrets.PROD_POSTGRES_USER }}
+          PROD_POSTGRES_PASSWORD: ${{ secrets.PROD_POSTGRES_PASSWORD }}
+          PROD_KC_DB_USERNAME: ${{ secrets.PROD_KC_DB_USERNAME }}
+          PROD_KC_DB_PASSWORD: ${{ secrets.PROD_KC_DB_PASSWORD }}
+          PROD_KEYCLOAK_REALM: ${{ secrets.PROD_KEYCLOAK_REALM }}
+          PROD_KEYCLOAK_ADMIN: ${{ secrets.PROD_KEYCLOAK_ADMIN }}
+          PROD_KEYCLOAK_ADMIN_PASSWORD: ${{ secrets.PROD_KEYCLOAK_ADMIN_PASSWORD }}
+          PROD_KEYCLOAK_ADMIN_CLIENT_ID: ${{ secrets.PROD_KEYCLOAK_ADMIN_CLIENT_ID }}
+          PROD_DATA_PATH: ${{ secrets.PROD_DATA_PATH }}
+        run: |
+          missing=0
+          for key in \
+            PROD_POSTGRES_DB \
+            PROD_POSTGRES_USER \
+            PROD_POSTGRES_PASSWORD \
+            PROD_KC_DB_USERNAME \
+            PROD_KC_DB_PASSWORD \
+            PROD_KEYCLOAK_REALM \
+            PROD_KEYCLOAK_ADMIN \
+            PROD_KEYCLOAK_ADMIN_PASSWORD \
+            PROD_KEYCLOAK_ADMIN_CLIENT_ID \
+            PROD_DATA_PATH
+          do
+            if [ -z "${!key}" ]; then
+              echo "::error::$key is required for production deploy"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -115,7 +148,10 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           command_timeout: 30m
+          script_stop: true
           script: |
+            set -euo pipefail
+
             echo "=== BẮT ĐẦU QUY TRÌNH DEPLOY CAO CẤP ==="
             
             # Di chuyển vào thư mục dự án
@@ -133,7 +169,7 @@ jobs:
             cd Graduation_thesis_ver2_BE
 
             # Ghi cấu hình production từ GitHub Secrets. Các secret đã lộ cần được rotate trước khi deploy.
-            cat > .env <<'EOF'
+            cat > .env.next <<'EOF'
             POSTGRES_DB=${{ secrets.PROD_POSTGRES_DB }}
             POSTGRES_USER=${{ secrets.PROD_POSTGRES_USER }}
             POSTGRES_PASSWORD=${{ secrets.PROD_POSTGRES_PASSWORD }}
@@ -152,7 +188,29 @@ jobs:
             APP_BOOTSTRAP_ADMIN_PASSWORD=${{ secrets.PROD_BOOTSTRAP_ADMIN_PASSWORD }}
             DATA_PATH=${{ secrets.PROD_DATA_PATH }}
             EOF
-            sed -i 's/^[[:space:]]*//' .env
+            sed -i 's/^[[:space:]]*//' .env.next
+
+            for key in \
+              POSTGRES_DB \
+              POSTGRES_USER \
+              POSTGRES_PASSWORD \
+              KC_DB_USERNAME \
+              KC_DB_PASSWORD \
+              KEYCLOAK_REALM \
+              KEYCLOAK_ADMIN \
+              KEYCLOAK_ADMIN_PASSWORD \
+              KEYCLOAK_ADMIN_CLIENT_ID \
+              DATA_PATH
+            do
+              value="$(grep -E "^${key}=" .env.next | cut -d= -f2-)"
+              if [ -z "$value" ]; then
+                echo "Missing required production env: $key"
+                rm -f .env.next
+                exit 1
+              fi
+            done
+
+            mv .env.next .env
             chmod 600 .env
 
             echo "Kiểm tra cấu hình Docker Compose production..."
