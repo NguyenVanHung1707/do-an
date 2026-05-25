@@ -64,11 +64,17 @@ def checkAttendence(imagePath, listID):
             results.append({'id': id, 'isAttendance': False})
             continue
 
-        ss = any(
-            DeepFace.verify(os.path.join('tamthoi', filename), ip, model_name='ArcFace', detector_backend='retinaface')['verified']
-            for filename in os.listdir('tamthoi')
-            if filename.endswith('.jpg') or filename.endswith('.JPG')
-        )
+        ss = False
+        try:
+            ss = any(
+                DeepFace.verify(os.path.join('tamthoi', filename), ip, model_name='ArcFace', detector_backend='retinaface', enforce_detection=False)['verified']
+                for filename in os.listdir('tamthoi')
+                if filename.endswith('.jpg') or filename.endswith('.JPG')
+            )
+        except Exception as e:
+            print(f"Error verifying student {id}: {e}")
+            ss = False
+
         results.append({'id': id, 'isAttendance': ss})
 
     shutil.rmtree('tamthoi')
