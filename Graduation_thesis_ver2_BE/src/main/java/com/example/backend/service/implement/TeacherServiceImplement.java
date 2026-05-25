@@ -1028,10 +1028,11 @@ public class TeacherServiceImplement implements TeacherService {
                 // Add student to course
                 Register register = new Register();
                 register.setId(registerId);
-                register.setCreatedAt(OffsetDateTime.now());
-                register.setUpdatedAt(OffsetDateTime.now());
-                register.setAbsences(0);
-                register.setPresences(0);
+                register.setRegisterTime(OffsetDateTime.now());
+                register.setNumberOfAbsence(0);
+                register.setNumberOfAttendance(0);
+                register.setCanUploadDocuments(false);
+                register.setCanDownloadDocuments(true);
                 registerRepository.save(register);
                 
                 successfullyAdded.add(student.getName() + " (" + studentCode + ")");
