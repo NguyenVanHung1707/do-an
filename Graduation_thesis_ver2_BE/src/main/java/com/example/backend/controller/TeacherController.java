@@ -133,6 +133,19 @@ public class TeacherController {
         teacherService.deleteFormById(formId, jwt.getClaimAsString("sub"));
         return ResponseEntity.ok("Form deleted successfully");
     }
+    @GetMapping("/preview-attendance-rule")
+    public ResponseEntity<?> previewAttendanceRule(@RequestParam Long courseId, @RequestParam Integer lectureNumber, @RequestParam Integer minFormsRequired, @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(teacherService.previewAttendanceRule(courseId, lectureNumber, minFormsRequired, jwt.getClaimAsString("sub")));
+    }
+    @GetMapping("/preview-attendance-face")
+    public ResponseEntity<?> previewAttendanceFace(@RequestParam Long courseId, @RequestParam Integer lectureNumber, @RequestParam List<Long> recognizedStudentIds, @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(teacherService.previewAttendanceFace(courseId, lectureNumber, recognizedStudentIds, jwt.getClaimAsString("sub")));
+    }
+    @PostMapping("/confirm-attendance-changes")
+    public ResponseEntity<?> confirmAttendanceChanges(@RequestBody com.example.backend.dto.ConfirmAttendanceChangesDto dto, @AuthenticationPrincipal Jwt jwt) {
+        teacherService.confirmAttendanceChanges(dto, jwt.getClaimAsString("sub"));
+        return ResponseEntity.ok("Attendance changes confirmed successfully");
+    }
     @GetMapping("/get-my-class-chart")
     public ResponseEntity<List<?>> getMyClassChart(@AuthenticationPrincipal Jwt jwt){
         return ResponseEntity.ok(teacherService.getMyClassChart(jwt.getClaimAsString("sub")));

@@ -1,10 +1,21 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { detectGroupFaceAttendance, clearPhotoResult } from '../../store/attendanceSlice';
-import { addManualAttendance } from '../../store/classSlice';
+import { apiFetch } from '../../services/api';
 import Card from '../../components/Common/Card';
 import WebcamCapture from '../../components/Webcam/WebcamCapture';
-import { Camera, Upload, ArrowRight, UserCheck, AlertCircle, RefreshCcw, Smile } from 'lucide-react';
+import {
+  Camera,
+  Upload,
+  ArrowRight,
+  UserCheck,
+  AlertCircle,
+  RefreshCcw,
+  Smile,
+  X,
+  Users,
+  Check
+} from 'lucide-react';
 
 export default function PhotoAttendance() {
   const { classesList } = useSelector((state) => state.classes);
@@ -16,6 +27,11 @@ export default function PhotoAttendance() {
   const [attendanceMethod, setAttendanceMethod] = useState('webcam'); // webcam or upload
   const [uploadedImage, setUploadedImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // States for Preview & Confirmation Modal
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewStudents, setPreviewStudents] = useState([]);
+  const [isSavingChanges, setIsSavingChanges] = useState(false);
 
   const selectedClass = classesList.find((c) => String(c.id) === String(selectedClassId));
 
@@ -63,36 +79,75 @@ export default function PhotoAttendance() {
       });
   };
 
-  const handleConfirmAttendance = () => {
+  // Fetch changes and open review modal
+  const handleOpenPreviewModal = async () => {
     if (!selectedClass || !photoAttendanceResult) return;
 
     setIsProcessing(true);
-    // Parallelize all student attendance updates
-    const promises = selectedClass.students.map((s) => {
-      const isPresent = photoAttendanceResult.recognizedStudents.includes(s.id);
-      return dispatch(addManualAttendance({
-        classId: selectedClass.id,
-        studentId: s.id,
-        status: isPresent ? 'present' : 'absent',
-        lectureNumber: parseInt(lectureNumber) || 1
-      })).unwrap();
-    });
+    try {
+      const recognizedIds = photoAttendanceResult.recognizedStudents.join(',');
+      const data = await apiFetch(`/teacher/preview-attendance-face?courseId=${selectedClass.id}&lectureNumber=${lectureNumber}&recognizedStudentIds=${recognizedIds}`);
+      
+      // Filter to show only students whose status is changing
+      const changed = (data || []).filter(s => s.currentStatus !== s.proposedStatus);
+      setPreviewStudents(changed);
+      setShowPreviewModal(true);
+    } catch (err) {
+      alert(err.message || 'Không thể lấy thông tin xem trước chuyên cần từ ảnh!');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-    Promise.all(promises)
-      .then(() => {
-        setIsProcessing(false);
-        alert('Đã lưu dữ liệu điểm danh bằng nhận diện khuôn mặt thành công vào cơ sở dữ liệu!');
-        handleReset();
-      })
-      .catch((err) => {
-        setIsProcessing(false);
-        alert(err || 'Đã xảy ra lỗi khi lưu kết quả điểm danh!');
+  // Toggle proposed status inside preview popup
+  const handleTogglePreviewStatus = (studentId) => {
+    setPreviewStudents(prev => prev.map(s => {
+      if (s.studentId === studentId) {
+        return {
+          ...s,
+          proposedStatus: s.proposedStatus === 'PRESENT' ? 'ABSENT' : 'PRESENT'
+        };
+      }
+      return s;
+    }));
+  };
+
+  // Confirm changes and save to CSDL
+  const handleConfirmAttendance = async () => {
+    if (!selectedClass) return;
+    setIsSavingChanges(true);
+    try {
+      const payload = {
+        courseId: parseInt(selectedClass.id),
+        lectureNumber: parseInt(lectureNumber),
+        changes: previewStudents.map(s => ({
+          studentId: s.studentId,
+          isAttendance: s.proposedStatus === 'PRESENT'
+        }))
+      };
+      await apiFetch('/teacher/confirm-attendance-changes', {
+        method: 'POST',
+        body: JSON.stringify(payload)
       });
+      setShowPreviewModal(false);
+      alert(`Đã cập nhật chuyên cần thành công từ ảnh nhận dạng khuôn mặt cho ${previewStudents.length} sinh viên có thay đổi!`);
+      handleReset();
+    } catch (err) {
+      alert(err.message || 'Đã xảy ra lỗi khi lưu kết quả điểm danh!');
+    } finally {
+      setIsSavingChanges(false);
+    }
   };
 
   const handleReset = () => {
     setUploadedImage(null);
     dispatch(clearPhotoResult());
+  };
+
+  const translateStatus = (status) => {
+    if (status === 'PRESENT') return 'Có mặt';
+    if (status === 'ABSENT') return 'Vắng mặt';
+    return 'Chưa điểm danh (N/A)';
   };
 
   return (
@@ -321,17 +376,17 @@ export default function PhotoAttendance() {
 
                 <div className="flex items-center gap-2 text-[11px] leading-relaxed text-amber-600 bg-amber-50 p-3 rounded-xl border border-amber-200">
                   <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>Xác nhận lưu để ghi nhận {photoAttendanceResult.recognizedStudents.length} buổi Có mặt và các buổi Vắng mặt tương ứng lên CSDL.</span>
+                  <span>Bạn bắt buộc phải nhấn nút dưới để rà soát thay đổi và phê duyệt kết quả điểm danh.</span>
                 </div>
 
                 {/* Action buttons */}
                 <div className="space-y-3 pt-2">
                   <button
-                    onClick={handleConfirmAttendance}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl font-bold shadow-md shadow-emerald-600/20 transition duration-150 text-sm"
+                    onClick={handleOpenPreviewModal}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl font-bold shadow-md shadow-emerald-600/20 transition duration-150 text-sm animate-pulse"
                   >
                     <UserCheck className="w-4 h-4" />
-                    <span>Lưu kết quả điểm danh</span>
+                    <span>Lưu kết quả điểm danh khuôn mặt</span>
                   </button>
                   <button
                     onClick={handleReset}
@@ -356,6 +411,111 @@ export default function PhotoAttendance() {
         </div>
 
       </div>
+
+      {/* DETAILED INTERACTIVE PREVIEW & ADJUSTMENT DIALOG */}
+      {showPreviewModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full shadow-2xl p-6 relative overflow-hidden animate-scaleIn">
+            <button
+              onClick={() => setShowPreviewModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-1.5 bg-primary/10 rounded-xl text-primary shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                Rà soát thay đổi chuyên cần (Khuôn mặt)
+              </h3>
+            </div>
+
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+              Hệ thống phát hiện các sinh viên dưới đây có sự thay đổi về trạng thái chuyên cần dựa trên phân tích hình ảnh AI so với CSDL hiện tại. Bạn có thể điều chỉnh thủ công trực tiếp trước khi bấm <strong>Xác nhận</strong>.
+            </p>
+
+            {previewStudents.length === 0 ? (
+              <div className="border border-dashed border-slate-200 rounded-2xl p-8 text-center text-slate-400 my-4 space-y-2">
+                <Check className="w-8 h-8 mx-auto text-emerald-500" />
+                <p className="text-sm font-semibold text-slate-700">Không có thay đổi nào!</p>
+                <p className="text-xs text-slate-400">Trạng thái chuyên cần hiện tại của cả lớp đã trùng khớp hoàn toàn với kết quả nhận dạng khuôn mặt.</p>
+              </div>
+            ) : (
+              <div className="max-h-80 overflow-y-auto pr-1 my-4 space-y-3">
+                {previewStudents.map((student) => (
+                  <div
+                    key={student.studentId}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-850 border border-slate-150 dark:border-slate-800 p-3.5 rounded-2xl transition hover:shadow-sm"
+                  >
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                        {student.name}
+                      </h4>
+                      <p className="text-[11px] font-mono text-slate-450 mt-0.5">
+                        Mã SV: {student.studentCode}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Current Status Badge */}
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase border ${
+                        student.currentStatus === 'PRESENT'
+                          ? 'bg-emerald-50/70 border-emerald-100 text-emerald-700'
+                          : student.currentStatus === 'ABSENT'
+                          ? 'bg-rose-50/70 border-rose-100 text-rose-700'
+                          : 'bg-slate-100 border-slate-200 text-slate-500'
+                      }`}>
+                        {translateStatus(student.currentStatus)}
+                      </span>
+
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+
+                      {/* Interactive adjustment toggle */}
+                      <button
+                        onClick={() => handleTogglePreviewStatus(student.studentId)}
+                        className={`text-xs font-extrabold px-4 py-2 rounded-xl transition duration-150 select-none shadow-sm ${
+                          student.proposedStatus === 'PRESENT'
+                            ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/10'
+                            : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/10'
+                        }`}
+                      >
+                        {translateStatus(student.proposedStatus)}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <button
+                onClick={() => setShowPreviewModal(false)}
+                className="bg-white hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2.5 rounded-xl border border-slate-200 text-xs transition duration-200"
+              >
+                Hủy
+              </button>
+              {previewStudents.length > 0 && (
+                <button
+                  onClick={handleConfirmAttendance}
+                  disabled={isSavingChanges}
+                  className="bg-primary hover:bg-[#0056b3] active:bg-[#004080] text-white font-bold px-6 py-2.5 rounded-xl text-xs transition duration-200 shadow-md shadow-primary/10 flex items-center gap-1.5"
+                >
+                  {isSavingChanges ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                  )}
+                  <span>Xác nhận cập nhật</span>
+                </button>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

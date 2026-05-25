@@ -275,36 +275,18 @@ public class StudentServiceImplement implements StudentService {
         submission.setSubmittedAt(OffsetDateTime.now());
         formSubmissionRepository.save(submission);
 
-        // Calculate overall attendance for this session based on "at least 1 successful form" default rule
-        List<Form> formsInSession = formRepository.findByCourseAndLectureNumber(course, form.get().getLectureNumber());
-        boolean hasPassedAtLeastOneForm = false;
-        for (Form f : formsInSession) {
-            Optional<FormSubmission> subOpt = formSubmissionRepository.findByStudentAndForm(student.get(), f);
-            if (subOpt.isPresent() && Boolean.TRUE.equals(subOpt.get().getIsCorrect())) {
-                hasPassedAtLeastOneForm = true;
-                break;
-            }
-        }
-
-        // delete old attendance log
-        List<AttendanceLog> oldAttendanceLog = attendanceLogRepository.findByStudentAndCourseAndLectureNumber(student.get(), course, form.get().getLectureNumber());
-        attendanceLogRepository.deleteAll(oldAttendanceLog);
-
-        AttendanceLog attendanceLog = new AttendanceLog();
-        attendanceLog.setStudent(student.get());
-        attendanceLog.setCourse(course);
-        attendanceLog.setIsAttendance(hasPassedAtLeastOneForm);
-        attendanceLog.setLectureNumber(form.get().getLectureNumber());
-        attendanceLog.setAttendanceTime(OffsetDateTime.now());
-        attendanceLogRepository.save(attendanceLog);
-
-        registerRepository.updateAttendanceCount(course.getId(), student.get().getId());
-
         if (!isCorrect) {
             throw new CustomException("Answer is not correct", HttpStatus.BAD_REQUEST);
         }
 
-        return attendanceLog;
+        // Return a dummy AttendanceLog to satisfy the method signature without creating a DB record
+        AttendanceLog dummyLog = new AttendanceLog();
+        dummyLog.setStudent(student.get());
+        dummyLog.setCourse(course);
+        dummyLog.setIsAttendance(true);
+        dummyLog.setLectureNumber(form.get().getLectureNumber());
+        dummyLog.setAttendanceTime(OffsetDateTime.now());
+        return dummyLog;
     }
 
     @Override

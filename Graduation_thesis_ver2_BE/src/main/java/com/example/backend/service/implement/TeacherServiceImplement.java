@@ -712,4 +712,142 @@ public class TeacherServiceImplement implements TeacherService {
 
         formRepository.deleteById(formId);
     }
+
+    @Override
+    public List<StudentAttendancePreviewDto> previewAttendanceRule(Long courseId, Integer lectureNumber, Integer minFormsRequired, String sub) {
+        Optional<Course> courseOpt = courseRepository.findById(courseId);
+        if (courseOpt.isEmpty()) {
+            throw new CustomException("Course not found", HttpStatus.NOT_FOUND);
+        }
+        Optional<Teacher> teacherOpt = teacherRepository.findByKeycloakId(sub);
+        if (teacherOpt.isEmpty()) {
+            throw new CustomException("Teacher not found", HttpStatus.NOT_FOUND);
+        }
+        if (!courseOpt.get().getTeacher().equals(teacherOpt.get())) {
+            throw new CustomException("Course is not yours", HttpStatus.BAD_REQUEST);
+        }
+
+        Course course = courseOpt.get();
+        List<Form> forms = formRepository.findByCourseAndLectureNumber(course, lectureNumber);
+
+        // Get all students registered in this course
+        List<Register> registers = registerRepository.findByIdCourse(course);
+        List<StudentAttendancePreviewDto> previewList = new ArrayList<>();
+
+        for (Register reg : registers) {
+            Student student = reg.getId().getStudent();
+            
+            // Current status
+            List<AttendanceLog> currentLogs = attendanceLogRepository.findByStudentAndCourseAndLectureNumber(student, course, lectureNumber);
+            String currentStatus = "N/A";
+            if (!currentLogs.isEmpty()) {
+                currentStatus = currentLogs.get(0).getIsAttendance() ? "PRESENT" : "ABSENT";
+            }
+
+            // Proposed status
+            int successfulCount = 0;
+            for (Form form : forms) {
+                Optional<FormSubmission> submissionOpt = formSubmissionRepository.findByStudentAndForm(student, form);
+                if (submissionOpt.isPresent() && Boolean.TRUE.equals(submissionOpt.get().getIsCorrect())) {
+                    successfulCount++;
+                }
+            }
+            String proposedStatus = (successfulCount >= minFormsRequired) ? "PRESENT" : "ABSENT";
+
+            StudentAttendancePreviewDto dto = new StudentAttendancePreviewDto();
+            dto.setStudentId(student.getId());
+            dto.setStudentCode(student.getStudentCode());
+            dto.setName(student.getName());
+            dto.setCurrentStatus(currentStatus);
+            dto.setProposedStatus(proposedStatus);
+            previewList.add(dto);
+        }
+        return previewList;
+    }
+
+    @Override
+    public List<StudentAttendancePreviewDto> previewAttendanceFace(Long courseId, Integer lectureNumber, List<Long> recognizedStudentIds, String sub) {
+        Optional<Course> courseOpt = courseRepository.findById(courseId);
+        if (courseOpt.isEmpty()) {
+            throw new CustomException("Course not found", HttpStatus.NOT_FOUND);
+        }
+        Optional<Teacher> teacherOpt = teacherRepository.findByKeycloakId(sub);
+        if (teacherOpt.isEmpty()) {
+            throw new CustomException("Teacher not found", HttpStatus.NOT_FOUND);
+        }
+        if (!courseOpt.get().getTeacher().equals(teacherOpt.get())) {
+            throw new CustomException("Course is not yours", HttpStatus.BAD_REQUEST);
+        }
+
+        Course course = courseOpt.get();
+
+        // Get all students registered in this course
+        List<Register> registers = registerRepository.findByIdCourse(course);
+        List<StudentAttendancePreviewDto> previewList = new ArrayList<>();
+
+        for (Register reg : registers) {
+            Student student = reg.getId().getStudent();
+            
+            // Current status
+            List<AttendanceLog> currentLogs = attendanceLogRepository.findByStudentAndCourseAndLectureNumber(student, course, lectureNumber);
+            String currentStatus = "N/A";
+            if (!currentLogs.isEmpty()) {
+                currentStatus = currentLogs.get(0).getIsAttendance() ? "PRESENT" : "ABSENT";
+            }
+
+            // Proposed status
+            String proposedStatus = recognizedStudentIds.contains(student.getId()) ? "PRESENT" : "ABSENT";
+
+            StudentAttendancePreviewDto dto = new StudentAttendancePreviewDto();
+            dto.setStudentId(student.getId());
+            dto.setStudentCode(student.getStudentCode());
+            dto.setName(student.getName());
+            dto.setCurrentStatus(currentStatus);
+            dto.setProposedStatus(proposedStatus);
+            previewList.add(dto);
+        }
+        return previewList;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void confirmAttendanceChanges(ConfirmAttendanceChangesDto dto, String sub) {
+        Optional<Course> courseOpt = courseRepository.findById(dto.getCourseId());
+        if (courseOpt.isEmpty()) {
+            throw new CustomException("Course not found", HttpStatus.NOT_FOUND);
+        }
+        Optional<Teacher> teacherOpt = teacherRepository.findByKeycloakId(sub);
+        if (teacherOpt.isEmpty()) {
+            throw new CustomException("Teacher not found", HttpStatus.NOT_FOUND);
+        }
+        if (!courseOpt.get().getTeacher().equals(teacherOpt.get())) {
+            throw new CustomException("Course is not yours", HttpStatus.BAD_REQUEST);
+        }
+
+        Course course = courseOpt.get();
+
+        for (StudentAttendanceChangeDto change : dto.getChanges()) {
+            Optional<Student> studentOpt = studentRepository.findById(change.getStudentId());
+            if (studentOpt.isEmpty()) {
+                continue;
+            }
+            Student student = studentOpt.get();
+
+            // Delete old attendance log for this session and student
+            List<AttendanceLog> oldLogs = attendanceLogRepository.findByStudentAndCourseAndLectureNumber(student, course, dto.getLectureNumber());
+            attendanceLogRepository.deleteAll(oldLogs);
+
+            // Create new attendance log
+            AttendanceLog log = new AttendanceLog();
+            log.setStudent(student);
+            log.setCourse(course);
+            log.setLectureNumber(dto.getLectureNumber());
+            log.setIsAttendance(change.getIsAttendance());
+            log.setAttendanceTime(OffsetDateTime.now());
+            attendanceLogRepository.save(log);
+
+            // Update registration attendance count (uses stored procedure)
+            registerRepository.updateAttendanceCount(course.getId(), student.getId());
+        }
+    }
 }

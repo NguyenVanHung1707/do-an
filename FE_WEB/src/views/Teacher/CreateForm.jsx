@@ -16,7 +16,10 @@ import {
   Award,
   Settings,
   Clock,
-  MapPin
+  MapPin,
+  ArrowRight,
+  UserCheck,
+  X
 } from 'lucide-react';
 import Card from '../../components/Common/Card';
 
@@ -43,6 +46,11 @@ export default function CreateForm() {
   const [minFormsRequired, setMinFormsRequired] = useState(1);
   const [expandedFormId, setExpandedFormId] = useState(null);
   const [ruleFeedback, setRuleFeedback] = useState('');
+
+  // States for Preview & Confirmation Modal
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewStudents, setPreviewStudents] = useState([]);
+  const [isSavingChanges, setIsSavingChanges] = useState(false);
 
   // Fetch all forms for the selected class and session number
   const fetchForms = async (classId, lecNum) => {
@@ -167,20 +175,62 @@ export default function CreateForm() {
     }
   };
 
-  // Apply overall session attendance rule
-  const handleApplyRule = async () => {
+  // Trigger preview rule and open Modal
+  const handlePreviewRule = async () => {
     if (!selectedClassId || !lectureNumber) return;
+    setLoadingForms(true);
     try {
-      await apiFetch(`/teacher/apply-attendance-rule?courseId=${selectedClassId}&lectureNumber=${lectureNumber}&minFormsRequired=${minFormsRequired}`, {
-        method: 'POST'
+      const data = await apiFetch(`/teacher/preview-attendance-rule?courseId=${selectedClassId}&lectureNumber=${lectureNumber}&minFormsRequired=${minFormsRequired}`);
+      // Show only students whose status is changing
+      const changed = (data || []).filter(s => s.currentStatus !== s.proposedStatus);
+      setPreviewStudents(changed);
+      setShowPreviewModal(true);
+    } catch (err) {
+      setErrorMsg(err.message || 'Không thể tính toán xem trước quy tắc chuyên cần!');
+      setTimeout(() => setErrorMsg(''), 4000);
+    } finally {
+      setLoadingForms(false);
+    }
+  };
+
+  // Toggle proposed status inside preview popup
+  const handleTogglePreviewStatus = (studentId) => {
+    setPreviewStudents(prev => prev.map(s => {
+      if (s.studentId === studentId) {
+        return {
+          ...s,
+          proposedStatus: s.proposedStatus === 'PRESENT' ? 'ABSENT' : 'PRESENT'
+        };
+      }
+      return s;
+    }));
+  };
+
+  // Save the adjusted attendance changes to DB
+  const handleConfirmPreviewChanges = async () => {
+    if (!selectedClassId || !lectureNumber) return;
+    setIsSavingChanges(true);
+    try {
+      const payload = {
+        courseId: parseInt(selectedClassId),
+        lectureNumber: parseInt(lectureNumber),
+        changes: previewStudents.map(s => ({
+          studentId: s.studentId,
+          isAttendance: s.proposedStatus === 'PRESENT'
+        }))
+      };
+      await apiFetch('/teacher/confirm-attendance-changes', {
+        method: 'POST',
+        body: JSON.stringify(payload)
       });
-      setRuleFeedback(`Áp dụng thành công! SV cần làm đúng ít nhất ${minFormsRequired}/${sessionForms.length} form.`);
-      setTimeout(() => setRuleFeedback(''), 4000);
-      // Refresh lists
+      setShowPreviewModal(false);
+      setRuleFeedback(`Đã cập nhật điểm danh thành công cho ${previewStudents.length} sinh viên thay đổi!`);
+      setTimeout(() => setRuleFeedback(''), 5000);
       fetchForms(selectedClassId, lectureNumber);
     } catch (err) {
-      setErrorMsg(err.message || 'Không thể áp dụng quy tắc chuyên cần!');
-      setTimeout(() => setErrorMsg(''), 4000);
+      alert(err.message || 'Đã xảy ra lỗi khi lưu kết quả điểm danh!');
+    } finally {
+      setIsSavingChanges(false);
     }
   };
 
@@ -201,6 +251,13 @@ export default function CreateForm() {
   const resetForm = () => {
     setGeneratedCode(null);
     setQuestions([{ id: 1, text: '', correctAnswer: 'true' }]);
+  };
+
+  // Helper translate status
+  const translateStatus = (status) => {
+    if (status === 'PRESENT') return 'Có mặt';
+    if (status === 'ABSENT') return 'Vắng mặt';
+    return 'Chưa điểm danh (N/A)';
   };
 
   return (
@@ -557,11 +614,11 @@ export default function CreateForm() {
                   <div className="p-1.5 bg-primary/10 rounded-xl text-primary">
                     <Award className="w-5 h-5" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-800">Thiết lập chuyên cần buổi học</h3>
+                  <h3 className="text-base font-bold text-slate-800">Cấu hình Quy tắc Chuyên cần</h3>
                 </div>
 
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Tính chuyên cần tổng hợp cho <strong>buổi học số {lectureNumber}</strong>. Sinh viên phải hoàn thành chính xác số form tối thiểu bên dưới để được hệ thống tính là <strong>Có mặt</strong> cho cả buổi học.
+                  Thiết lập số lượng form sinh viên cần làm đúng để tính chuyên cần. Nhấn <strong>Cập nhật Chuyên cần</strong> để xem trước danh sách thay đổi và xác nhận lưu.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white border border-slate-100 p-3 rounded-2xl">
@@ -583,11 +640,11 @@ export default function CreateForm() {
                   </div>
 
                   <button
-                    onClick={handleApplyRule}
-                    className="bg-primary hover:bg-[#0056b3] active:bg-[#004080] text-white text-xs font-bold px-5 py-3 rounded-xl transition duration-200 shadow-md shadow-primary/10 flex items-center justify-center gap-2 shrink-0 self-stretch sm:self-end"
+                    onClick={handlePreviewRule}
+                    className="bg-primary hover:bg-[#0056b3] active:bg-[#004080] text-white text-xs font-bold px-5 py-3 rounded-xl transition duration-200 shadow-md shadow-primary/10 flex items-center justify-center gap-2 shrink-0 self-stretch sm:self-end animate-pulse"
                   >
-                    <Check className="w-4 h-4 stroke-[2.5]" />
-                    <span>Áp dụng quy tắc</span>
+                    <UserCheck className="w-4 h-4 stroke-[2.5]" />
+                    <span>Cập nhật Chuyên cần từ Form</span>
                   </button>
                 </div>
 
@@ -603,6 +660,111 @@ export default function CreateForm() {
         </div>
 
       </div>
+
+      {/* DETAILED INTERACTIVE PREVIEW & ADJUSTMENT DIALOG */}
+      {showPreviewModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full shadow-2xl p-6 relative overflow-hidden animate-scaleIn">
+            <button
+              onClick={() => setShowPreviewModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-1.5 bg-primary/10 rounded-xl text-primary shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                Rà soát thay đổi chuyên cần
+              </h3>
+            </div>
+
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+              Hệ thống phát hiện các sinh viên dưới đây có sự thay đổi về trạng thái chuyên cần dựa trên quy tắc Form trắc nghiệm mới so với CSDL hiện tại. Bạn có thể điều chỉnh thủ công trực tiếp trước khi bấm <strong>Xác nhận</strong>.
+            </p>
+
+            {previewStudents.length === 0 ? (
+              <div className="border border-dashed border-slate-200 rounded-2xl p-8 text-center text-slate-400 my-4 space-y-2">
+                <Check className="w-8 h-8 mx-auto text-emerald-500" />
+                <p className="text-sm font-semibold text-slate-700">Không có thay đổi nào!</p>
+                <p className="text-xs text-slate-400">Trạng thái chuyên cần hiện tại của cả lớp đã hoàn toàn trùng khớp với quy tắc trắc nghiệm.</p>
+              </div>
+            ) : (
+              <div className="max-h-80 overflow-y-auto pr-1 my-4 space-y-3">
+                {previewStudents.map((student) => (
+                  <div
+                    key={student.studentId}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-850 border border-slate-150 dark:border-slate-800 p-3.5 rounded-2xl transition hover:shadow-sm"
+                  >
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                        {student.name}
+                      </h4>
+                      <p className="text-[11px] font-mono text-slate-450 mt-0.5">
+                        Mã SV: {student.studentCode}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Current Status Badge */}
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase border ${
+                        student.currentStatus === 'PRESENT'
+                          ? 'bg-emerald-50/70 border-emerald-100 text-emerald-700'
+                          : student.currentStatus === 'ABSENT'
+                          ? 'bg-rose-50/70 border-rose-100 text-rose-700'
+                          : 'bg-slate-100 border-slate-200 text-slate-500'
+                      }`}>
+                        {translateStatus(student.currentStatus)}
+                      </span>
+
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+
+                      {/* Interactive adjustment toggle */}
+                      <button
+                        onClick={() => handleTogglePreviewStatus(student.studentId)}
+                        className={`text-xs font-extrabold px-4 py-2 rounded-xl transition duration-150 select-none shadow-sm ${
+                          student.proposedStatus === 'PRESENT'
+                            ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/10'
+                            : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/10'
+                        }`}
+                      >
+                        {translateStatus(student.proposedStatus)}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <button
+                onClick={() => setShowPreviewModal(false)}
+                className="bg-white hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2.5 rounded-xl border border-slate-200 text-xs transition duration-200"
+              >
+                Hủy
+              </button>
+              {previewStudents.length > 0 && (
+                <button
+                  onClick={handleConfirmPreviewChanges}
+                  disabled={isSavingChanges}
+                  className="bg-primary hover:bg-[#0056b3] active:bg-[#004080] text-white font-bold px-6 py-2.5 rounded-xl text-xs transition duration-200 shadow-md shadow-primary/10 flex items-center gap-1.5"
+                >
+                  {isSavingChanges ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                  )}
+                  <span>Xác nhận cập nhật</span>
+                </button>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
