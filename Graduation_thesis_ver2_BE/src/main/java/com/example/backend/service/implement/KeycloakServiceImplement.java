@@ -59,7 +59,6 @@ public class KeycloakServiceImplement implements KeycloakService {
         user.setUsername(signUpDto.getUsername());
         user.setFirstName(signUpDto.getFirstName());
         user.setLastName(signUpDto.getLastName());
-        System.out.println(signUpDto.getEmail());
         user.setEmail(signUpDto.getEmail());
         user.setEmailVerified(false);
 
@@ -89,7 +88,7 @@ public class KeycloakServiceImplement implements KeycloakService {
         studentRepository.save(student);
 
         return new SignUpResponseDto(userId, signUpDto.getUsername(), signUpDto.getEmail(), signUpDto.getFirstName(),
-                signUpDto.getLastName(), "hung2004");
+                signUpDto.getLastName(), keycloakConfig.getRealm());
     }
 
     @Override
@@ -137,6 +136,6 @@ public class KeycloakServiceImplement implements KeycloakService {
         teacherRepository.save(teacher);
 
         return new SignUpResponseDto(userId, signUpDto.getUsername(), signUpDto.getEmail(), signUpDto.getFirstName(),
-                signUpDto.getLastName(), "hung2004");
+                signUpDto.getLastName(), keycloakConfig.getRealm());
     }
 }

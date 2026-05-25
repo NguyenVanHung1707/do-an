@@ -43,18 +43,13 @@
 									"type": "text"
 								},
 								{
-									"key": "client_secret",
-									"value": "Tj5zNU17UX9Ak1d4lLulx9VcXSSdHJwC",
-									"type": "text"
-								},
-								{
 									"key": "username",
-									"value": "keycloak_owner",
+									"value": "{{KEYCLOAK_ADMIN_USER}}",
 									"type": "text"
 								},
 								{
 									"key": "password",
-									"value": "keycloak_owner",
+									"value": "{{KEYCLOAK_ADMIN_PASSWORD}}",
 									"type": "text"
 								}
 							]
@@ -111,18 +106,13 @@
 									"type": "text"
 								},
 								{
-									"key": "client_secret",
-									"value": "Tj5zNU17UX9Ak1d4lLulx9VcXSSdHJwC",
-									"type": "text"
-								},
-								{
 									"key": "username",
-									"value": "te0003",
+									"value": "{{TEACHER_USERNAME}}",
 									"type": "text"
 								},
 								{
 									"key": "password",
-									"value": "te0003",
+									"value": "{{TEACHER_PASSWORD}}",
 									"type": "text"
 								}
 							]
@@ -179,18 +169,13 @@
 									"type": "text"
 								},
 								{
-									"key": "client_secret",
-									"value": "Tj5zNU17UX9Ak1d4lLulx9VcXSSdHJwC",
-									"type": "text"
-								},
-								{
 									"key": "username",
-									"value": "st0005",
+									"value": "{{STUDENT_USERNAME}}",
 									"type": "text"
 								},
 								{
 									"key": "password",
-									"value": "st0005",
+									"value": "{{STUDENT_PASSWORD}}",
 									"type": "text"
 								}
 							]
@@ -247,18 +232,13 @@
 									"type": "text"
 								},
 								{
-									"key": "client_secret",
-									"value": "Tj5zNU17UX9Ak1d4lLulx9VcXSSdHJwC",
-									"type": "text"
-								},
-								{
 									"key": "username",
-									"value": "anonymous",
+									"value": "{{ANONYMOUS_USERNAME}}",
 									"type": "text"
 								},
 								{
 									"key": "password",
-									"value": "anonymous",
+									"value": "{{ANONYMOUS_PASSWORD}}",
 									"type": "text"
 								}
 							]

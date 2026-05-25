@@ -1,6 +1,7 @@
 package com.example.backend.config;
 
 import jakarta.ws.rs.core.Response;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.OAuth2Constants;
@@ -11,10 +12,10 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
+import org.springframework.util.StringUtils;
 
 @Component
 @RequiredArgsConstructor
@@ -23,11 +24,38 @@ public class KeycloakInitializer implements CommandLineRunner {
 
     private final KeycloakConfig keycloakConfig;
 
+    @Value("${app.bootstrap.admin.enabled:false}")
+    private boolean bootstrapAdminEnabled;
+
+    @Value("${app.bootstrap.admin.username:admin}")
+    private String bootstrapAdminUsername;
+
+    @Value("${app.bootstrap.admin.email:admin_system@example.com}")
+    private String bootstrapAdminEmail;
+
+    @Value("${app.bootstrap.admin.first-name:System}")
+    private String bootstrapAdminFirstName;
+
+    @Value("${app.bootstrap.admin.last-name:Admin}")
+    private String bootstrapAdminLastName;
+
+    @Value("${app.bootstrap.admin.password:}")
+    private String bootstrapAdminPassword;
+
     @Override
-    public void run(String... args) throws Exception {
-        log.info("=== BẮT ĐẦU KIỂM TRA & KHỞI TẠO TÀI KHOẢN ADMIN TRÊN KEYCLOAK ===");
+    public void run(String... args) {
+        if (!bootstrapAdminEnabled) {
+            log.info("Keycloak bootstrap admin is disabled. Set APP_BOOTSTRAP_ADMIN_ENABLED=true to enable it.");
+            return;
+        }
+
+        if (!StringUtils.hasText(bootstrapAdminPassword)) {
+            log.warn("Keycloak bootstrap admin is enabled but APP_BOOTSTRAP_ADMIN_PASSWORD is empty. Skipping bootstrap.");
+            return;
+        }
+
+        log.info("Checking Keycloak bootstrap admin account.");
         try {
-            // Khởi tạo Keycloak Client kết nối tới Master Realm để quản lý User của Realm chính
             Keycloak keycloak = KeycloakBuilder.builder()
                     .serverUrl(keycloakConfig.getServerUrl())
                     .realm("master")
@@ -38,53 +66,48 @@ public class KeycloakInitializer implements CommandLineRunner {
                     .build();
 
             UsersResource usersResource = keycloak.realm(keycloakConfig.getRealm()).users();
-            
-            // Tìm kiếm xem đã có user tên 'admin' hay chưa
-            List<UserRepresentation> existing = usersResource.search("admin", true);
-            
+            List<UserRepresentation> existing = usersResource.search(bootstrapAdminUsername, true);
+
             if (existing.isEmpty()) {
-                log.info("Chưa tìm thấy tài khoản Admin trong realm: '{}'. Tiến hành tạo mới...", keycloakConfig.getRealm());
-                
+                log.info("Bootstrap admin '{}' was not found in realm '{}'. Creating it.",
+                        bootstrapAdminUsername,
+                        keycloakConfig.getRealm());
+
                 UserRepresentation adminUser = new UserRepresentation();
                 adminUser.setEnabled(true);
-                adminUser.setUsername("admin");
-                adminUser.setEmail("admin_system@example.com");
-                adminUser.setFirstName("System");
-                adminUser.setLastName("Admin");
+                adminUser.setUsername(bootstrapAdminUsername);
+                adminUser.setEmail(bootstrapAdminEmail);
+                adminUser.setFirstName(bootstrapAdminFirstName);
+                adminUser.setLastName(bootstrapAdminLastName);
                 adminUser.setEmailVerified(true);
 
-                // Cấu hình mật khẩu cố định
                 CredentialRepresentation credential = new CredentialRepresentation();
-                credential.setValue("Password123!");
+                credential.setValue(bootstrapAdminPassword);
                 credential.setTemporary(false);
                 credential.setType(CredentialRepresentation.PASSWORD);
                 adminUser.setCredentials(List.of(credential));
 
-                // Tạo User trên Keycloak
                 Response response = usersResource.create(adminUser);
-                
+
                 if (response.getStatus() == 201) {
                     String adminId = CreatedResponseUtil.getCreatedId(response);
-                    
-                    // Lấy Role đại diện cho 'admin' trong Realm
-                    RoleRepresentation adminRole = keycloak.realm(keycloakConfig.getRealm()).roles().get("admin").toRepresentation();
-                    
-                    // Gán quyền admin
+                    RoleRepresentation adminRole = keycloak.realm(keycloakConfig.getRealm())
+                            .roles()
+                            .get("admin")
+                            .toRepresentation();
+
                     usersResource.get(adminId).roles().realmLevel().add(List.of(adminRole));
-                    
-                    log.info("=== ĐÃ TẠO THÀNH CÔNG TÀI KHOẢN ADMIN: ===");
-                    log.info("Email: admin_system@example.com");
-                    log.info("Username: admin");
-                    log.info("Password: Password123!");
-                    log.info("Role: admin");
+                    log.info("Created Keycloak bootstrap admin '{}' with role 'admin'.", bootstrapAdminUsername);
                 } else {
-                    log.error("Tạo tài khoản Admin thất bại. Mã lỗi Keycloak: {}", response.getStatus());
+                    log.error("Failed to create Keycloak bootstrap admin. Keycloak status: {}", response.getStatus());
                 }
             } else {
-                log.info("Tài khoản Admin đã tồn tại trong realm: '{}'. Bỏ qua tự động khởi tạo.", keycloakConfig.getRealm());
+                log.info("Bootstrap admin '{}' already exists in realm '{}'. Skipping bootstrap.",
+                        bootstrapAdminUsername,
+                        keycloakConfig.getRealm());
             }
         } catch (Exception e) {
-            log.error("Không thể tự động khởi tạo tài khoản admin trên Keycloak (Có thể do Keycloak chưa được bật): {}", e.getMessage());
+            log.error("Could not bootstrap Keycloak admin account: {}", e.getMessage());
         }
     }
 }

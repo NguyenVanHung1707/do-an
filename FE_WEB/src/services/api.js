@@ -1,9 +1,16 @@
 const hostname = window.location.hostname;
 const protocol = window.location.protocol;
-const BASE_API_URL = hostname === 'localhost' ? 'http://localhost:8080/api' : `${protocol}//${hostname}/api`;
-const KEYCLOAK_TOKEN_URL = hostname === 'localhost' 
-  ? 'http://localhost:9000/realms/hung2004/protocol/openid-connect/token' 
-  : `${protocol}//${hostname}/realms/hung2004/protocol/openid-connect/token`;
+const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || 'hung2004';
+const KEYCLOAK_BASE_URL = import.meta.env.VITE_KEYCLOAK_URL
+  || (hostname === 'localhost' ? 'http://localhost:9000' : `${protocol}//${hostname}`);
+
+export const BASE_API_URL = import.meta.env.VITE_API_URL
+  || (hostname === 'localhost' ? 'http://localhost:8080/api' : `${protocol}//${hostname}/api`);
+export const KEYCLOAK_TOKEN_URL = import.meta.env.VITE_KEYCLOAK_TOKEN_URL
+  || `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`;
+export const KEYCLOAK_AUTH_URL = import.meta.env.VITE_KEYCLOAK_AUTH_URL
+  || `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/auth`;
+export const KEYCLOAK_CLIENT_ID = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'graduation_thesis_ver2';
 
 export const decodeJWT = (token) => {
   try {
@@ -75,18 +82,6 @@ export const apiFetch = async (endpoint, options = {}) => {
 };
 
 export const keycloakLogin = async (username, password) => {
-  // If user requests mock teacher/student bypass but we want real connection,
-  // we can map 'teacher1' -> 'te0003' and 'student1' -> 'st0005'
-  let realUsername = username;
-  let realPassword = password;
-  if (username === 'teacher1') {
-    realUsername = 'te0003';
-    realPassword = 'te0003';
-  } else if (username === 'student1') {
-    realUsername = 'st0005';
-    realPassword = 'st0005';
-  }
-
   const response = await fetch(KEYCLOAK_TOKEN_URL, {
     method: 'POST',
     headers: {
@@ -94,10 +89,9 @@ export const keycloakLogin = async (username, password) => {
     },
     body: new URLSearchParams({
       grant_type: 'password',
-      client_id: 'graduation_thesis_ver2',
-      client_secret: 'Tj5zNU17UX9Ak1d4lLulx9VcXSSdHJwC',
-      username: realUsername,
-      password: realPassword
+      client_id: KEYCLOAK_CLIENT_ID,
+      username,
+      password
     })
   });
 
@@ -145,8 +139,7 @@ export const keycloakExchangeCodeForToken = async (code) => {
     },
     body: new URLSearchParams({
       grant_type: 'authorization_code',
-      client_id: 'graduation_thesis_ver2',
-      client_secret: 'Tj5zNU17UX9Ak1d4lLulx9VcXSSdHJwC',
+      client_id: KEYCLOAK_CLIENT_ID,
       code: code,
       redirect_uri: window.location.origin + '/'
     })
@@ -442,5 +435,3 @@ export const importStudentsFromExcel = async (courseId, file) => {
     body: formData
   });
 };
-
-

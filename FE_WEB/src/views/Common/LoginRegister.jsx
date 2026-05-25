@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { login, registerUser, clearError } from '../../store/authSlice';
 import { LogIn, UserPlus, ShieldAlert, KeyRound, BookOpen } from 'lucide-react';
+import { KEYCLOAK_AUTH_URL, KEYCLOAK_CLIENT_ID } from '../../services/api';
 
 export default function LoginRegister() {
   const [isRegister, setIsRegister] = useState(false);
@@ -38,25 +39,19 @@ export default function LoginRegister() {
   const handleSocialLogin = (provider) => {
     dispatch(clearError());
     setSocialLoading(provider);
-    
-    const host = window.location.hostname;
-    const protocol = window.location.protocol;
-    const authUrl = host === 'localhost'
-      ? 'http://localhost:9000/realms/hung2004/protocol/openid-connect/auth'
-      : `${protocol}//${host}/realms/hung2004/protocol/openid-connect/auth`;
-      
+
     const redirectUri = window.location.origin + '/';
-    
+
     const params = new URLSearchParams({
-      client_id: 'graduation_thesis_ver2',
+      client_id: KEYCLOAK_CLIENT_ID,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'openid',
       kc_idp_hint: provider
     });
-    
+
     // Redirect browser to Keycloak Identity Provider broker
-    window.location.href = `${authUrl}?${params.toString()}`;
+    window.location.href = `${KEYCLOAK_AUTH_URL}?${params.toString()}`;
   };
 
   return (

@@ -18,28 +18,45 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 21 (Backend)
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Compile and Verify Spring Boot Backend
+      - name: Test Spring Boot Backend
         run: |
           cd Graduation_thesis_ver2_BE
-          mvn clean compile
+          chmod +x ./mvnw
+          ./mvnw test
 
-      - name: Set up Node.js (Frontend & Mobile)
-        uses: actions/setup-node@v3
+      - name: Set up Node.js (Frontend)
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: FE_WEB/package-lock.json
 
-      - name: Test React Web Frontend
+      - name: Lint and Build React Web Frontend
         run: |
           cd FE_WEB
           npm ci
-          # Build check to ensure no syntax errors
-          npm run build --if-present
+          npm run lint
+          npm run build
+
+      - name: Compile Python Services
+        run: |
+          python -m compileall -q detect-face
+          python -m compileall -q ai-proctor/app
+
+      - name: Validate Production Docker Compose
+        env:
+          POSTGRES_PASSWORD: ci-postgres-password
+          KC_DB_PASSWORD: ci-postgres-password
+          KEYCLOAK_ADMIN: ci-keycloak-admin
+          KEYCLOAK_ADMIN_PASSWORD: ci-keycloak-admin-password
+          KEYCLOAK_ADMIN_CLIENT_SECRET: ci-admin-client-secret
+        run: docker compose -f Graduation_thesis_ver2_BE/docker-compose.prod.yml config
 
 
   build-images:
@@ -115,11 +132,31 @@ jobs:
             # Di chuyển vào thư mục chứa Docker Compose
             cd Graduation_thesis_ver2_BE
 
-            # Cấu hình biến môi trường nếu chưa có
-            if [ ! -f .env ]; then
-              echo "Khởi tạo file .env trên VPS..."
-              echo "DATA_PATH=/root/data" > .env
-            fi
+            # Ghi cấu hình production từ GitHub Secrets. Các secret đã lộ cần được rotate trước khi deploy.
+            cat > .env <<'EOF'
+            POSTGRES_DB=${{ secrets.PROD_POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.PROD_POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.PROD_POSTGRES_PASSWORD }}
+            KC_DB_USERNAME=${{ secrets.PROD_KC_DB_USERNAME }}
+            KC_DB_PASSWORD=${{ secrets.PROD_KC_DB_PASSWORD }}
+            KEYCLOAK_REALM=${{ secrets.PROD_KEYCLOAK_REALM }}
+            KEYCLOAK_ADMIN=${{ secrets.PROD_KEYCLOAK_ADMIN }}
+            KEYCLOAK_ADMIN_PASSWORD=${{ secrets.PROD_KEYCLOAK_ADMIN_PASSWORD }}
+            KEYCLOAK_ADMIN_CLIENT_ID=${{ secrets.PROD_KEYCLOAK_ADMIN_CLIENT_ID }}
+            KEYCLOAK_ADMIN_CLIENT_SECRET=${{ secrets.PROD_KEYCLOAK_ADMIN_CLIENT_SECRET }}
+            APP_BOOTSTRAP_ADMIN_ENABLED=${{ secrets.PROD_BOOTSTRAP_ADMIN_ENABLED }}
+            APP_BOOTSTRAP_ADMIN_USERNAME=${{ secrets.PROD_BOOTSTRAP_ADMIN_USERNAME }}
+            APP_BOOTSTRAP_ADMIN_EMAIL=${{ secrets.PROD_BOOTSTRAP_ADMIN_EMAIL }}
+            APP_BOOTSTRAP_ADMIN_FIRST_NAME=${{ secrets.PROD_BOOTSTRAP_ADMIN_FIRST_NAME }}
+            APP_BOOTSTRAP_ADMIN_LAST_NAME=${{ secrets.PROD_BOOTSTRAP_ADMIN_LAST_NAME }}
+            APP_BOOTSTRAP_ADMIN_PASSWORD=${{ secrets.PROD_BOOTSTRAP_ADMIN_PASSWORD }}
+            DATA_PATH=${{ secrets.PROD_DATA_PATH }}
+            EOF
+            sed -i 's/^[[:space:]]*//' .env
+            chmod 600 .env
+
+            echo "Kiểm tra cấu hình Docker Compose production..."
+            docker compose -f docker-compose.prod.yml config >/dev/null
 
             # Đăng nhập vào GHCR trên VPS để pull các private packages nếu có
             echo "Đăng nhập GHCR trên VPS..."

@@ -29,7 +29,7 @@ def getImagePaths(ids):
     try:
         connection = psycopg2.connect(
             user=os.getenv("DB_USER", "postgres"),
-            password=os.getenv("DB_PASSWORD", "hung2004"),
+            password=os.getenv("DB_PASSWORD", ""),
             host=os.getenv("DB_HOST", "localhost"),
             port=os.getenv("DB_PORT", "5432"),
             database=os.getenv("DB_NAME", "graduation_thesis_ver2")

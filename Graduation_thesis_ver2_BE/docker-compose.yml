@@ -1,13 +1,11 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15
     container_name: graduation_thesis_postgres
     environment:
-      POSTGRES_DB: graduation_thesis_ver2
-      POSTGRES_USER: doanhung
-      POSTGRES_PASSWORD: hung2004
+      POSTGRES_DB: ${POSTGRES_DB:-graduation_thesis_ver2}
+      POSTGRES_USER: ${POSTGRES_USER:-doanhung}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local}
     ports:
       - "5433:5432"
     volumes:
@@ -19,12 +17,12 @@ services:
     container_name: graduation_thesis_keycloak
     command: start-dev --import-realm --features=scripts
     environment:
-      KEYCLOAK_ADMIN: keycloak_owner
-      KEYCLOAK_ADMIN_PASSWORD: keycloak_owner
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me-local}
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/graduation_thesis_ver2
-      KC_DB_USERNAME: doanhung
-      KC_DB_PASSWORD: hung2004
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-graduation_thesis_ver2}
+      KC_DB_USERNAME: ${KC_DB_USERNAME:-doanhung}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-change-me-local}
     ports:
       - "9000:8080"
     volumes:
@@ -33,18 +31,32 @@ services:
       - postgres
     restart: unless-stopped
 
-
   backend:
     build: .
     container_name: graduation_thesis_backend
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/graduation_thesis_ver2
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/hung2004/protocol/openid-connect/certs
-      - KEYCLOAK_URLS_AUTH=http://keycloak:8080
-      - TZ=Asia/Ho_Chi_Minh
-      - APP_UPLOAD_DIR=/app/data/student_faces
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-graduation_thesis_ver2}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-doanhung}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/${KEYCLOAK_REALM:-hung2004}/protocol/openid-connect/certs
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-hung2004}
+      KEYCLOAK_URLS_AUTH: http://keycloak:8080
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-graduation_thesis_ver2}
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-}
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me-local}
+      APP_BOOTSTRAP_ADMIN_ENABLED: ${APP_BOOTSTRAP_ADMIN_ENABLED:-false}
+      APP_BOOTSTRAP_ADMIN_USERNAME: ${APP_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      APP_BOOTSTRAP_ADMIN_EMAIL: ${APP_BOOTSTRAP_ADMIN_EMAIL:-admin_system@example.com}
+      APP_BOOTSTRAP_ADMIN_FIRST_NAME: ${APP_BOOTSTRAP_ADMIN_FIRST_NAME:-System}
+      APP_BOOTSTRAP_ADMIN_LAST_NAME: ${APP_BOOTSTRAP_ADMIN_LAST_NAME:-Admin}
+      APP_BOOTSTRAP_ADMIN_PASSWORD: ${APP_BOOTSTRAP_ADMIN_PASSWORD:-}
+      APP_UPLOAD_DIR: /app/data/student_faces
+      APP_DOCUMENT_DIR: /app/data/document
+      APP_AI_PROCTOR_URL: http://ai_proctor:8000
+      TZ: Asia/Ho_Chi_Minh
     volumes:
       - ${DATA_PATH:-./data}:/app/data
     depends_on:
@@ -58,12 +70,12 @@ services:
     ports:
       - "8888:8888"
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=doanhung
-      - DB_PASSWORD=hung2004
-      - DB_NAME=graduation_thesis_ver2
-      - TZ=Asia/Ho_Chi_Minh
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-doanhung}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local}
+      DB_NAME: ${POSTGRES_DB:-graduation_thesis_ver2}
+      TZ: Asia/Ho_Chi_Minh
     volumes:
       - ${DATA_PATH:-./data}:/app/data
     depends_on:
@@ -85,12 +97,11 @@ services:
     ports:
       - "8899:8000"
     environment:
-      - TZ=Asia/Ho_Chi_Minh
-      - STORAGE_ROOT=/app/data/future_ai_feature
+      TZ: Asia/Ho_Chi_Minh
+      STORAGE_ROOT: /app/data/future_ai_feature
     volumes:
       - ${DATA_PATH:-./data}:/app/data
     restart: unless-stopped
 
 volumes:
   postgres_data:
-
