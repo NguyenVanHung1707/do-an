@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { uploadStudentFace, fetchStudentFace } from '../../store/attendanceSlice';
 import { UploadCloud, CheckCircle2, User, RefreshCw, Trash2, Camera, ShieldCheck } from 'lucide-react';
 import Card from '../../components/Common/Card';
+import WebcamCapture from '../../components/Webcam/WebcamCapture';
 
 export default function FaceUpload() {
   const dispatch = useDispatch();
@@ -14,6 +15,7 @@ export default function FaceUpload() {
   const [dragActive, setDragActive] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [captureMode, setCaptureMode] = useState('camera');
 
   useEffect(() => {
     dispatch(fetchStudentFace());
@@ -42,6 +44,11 @@ export default function FaceUpload() {
       setSuccessMsg('');
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleCameraCapture = (dataUri) => {
+    setImagePreview(dataUri);
+    setSuccessMsg('');
   };
 
   // Drag and drop events
@@ -146,7 +153,45 @@ export default function FaceUpload() {
         {/* Right Side Uploader */}
         <div className="md:col-span-3">
           <Card title="Khu vực đăng ký ảnh chân dung" className="shadow-sm h-full flex flex-col justify-between">
+            {!imagePreview && (
+              <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+                <button
+                  type="button"
+                  onClick={() => setCaptureMode('camera')}
+                  className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition ${
+                    captureMode === 'camera'
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Chụp bằng camera</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCaptureMode('upload')}
+                  className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition ${
+                    captureMode === 'upload'
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  <span>Tải ảnh lên</span>
+                </button>
+              </div>
+            )}
             {!imagePreview ? (
+              captureMode === 'camera' ? (
+                <WebcamCapture
+                  onCapture={handleCameraCapture}
+                  emptyLabel="Camera đang tắt"
+                  startLabel="Mở camera để chụp khuôn mặt"
+                  captureLabel="Chụp ảnh khuôn mặt"
+                  confirmLabel="Dùng ảnh này"
+                  previewBadge="ẢNH KHUÔN MẶT"
+                />
+              ) : (
               <div
                 onDragEnter={handleDrag}
                 onDragOver={handleDrag}
@@ -178,6 +223,7 @@ export default function FaceUpload() {
                   </span>
                 </label>
               </div>
+              )
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
                 {/* Circular scanner overlay simulator */}

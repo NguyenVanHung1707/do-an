@@ -1,7 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Camera, RefreshCw, Square, Check, X } from 'lucide-react';
 
-export default function WebcamCapture({ onCapture }) {
+export default function WebcamCapture({
+  onCapture,
+  emptyLabel = 'Camera hiện tại đang tắt',
+  startLabel = 'Mở Camera trực tiếp',
+  captureLabel = 'Chụp ảnh tập thể',
+  confirmLabel = 'Sử dụng ảnh này',
+  previewBadge = 'PREVIEW CHỤP'
+}) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [stream, setStream] = useState(null);
@@ -105,13 +112,13 @@ export default function WebcamCapture({ onCapture }) {
 
       {!isActive && !capturedImage && !error && (
         <div className="text-center py-12">
-          <p className="text-slate-400 mb-4">Camera hiện tại đang tắt</p>
+          <p className="text-slate-400 mb-4">{emptyLabel}</p>
           <button
             onClick={startWebcam}
             className="flex items-center gap-2 px-5 py-3 bg-primary hover:bg-primary-hover active:bg-primary-active text-white rounded-xl shadow-lg shadow-primary/20 transition font-medium mx-auto"
           >
             <Camera className="w-5 h-5" />
-            <span>Mở Camera trực tiếp</span>
+            <span>{startLabel}</span>
           </button>
         </div>
       )}
@@ -132,7 +139,7 @@ export default function WebcamCapture({ onCapture }) {
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md shadow-emerald-600/20 transition"
             >
               <Camera className="w-4 h-4" />
-              <span>Chụp ảnh tập thể</span>
+              <span>{captureLabel}</span>
             </button>
             <button
               onClick={stopWebcam}
@@ -151,7 +158,7 @@ export default function WebcamCapture({ onCapture }) {
           <div className="relative rounded-lg overflow-hidden bg-black border border-slate-700">
             <img src={capturedImage} alt="Captured preview" className="w-full h-auto object-cover transform -scale-x-100" />
             <div className="absolute top-3 left-3 bg-slate-900/80 px-3 py-1 rounded-full text-xs font-semibold font-mono tracking-wider text-emerald-400">
-              PREVIEW CHỤP
+              {previewBadge}
             </div>
           </div>
 
@@ -161,7 +168,7 @@ export default function WebcamCapture({ onCapture }) {
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition shadow-lg shadow-emerald-600/20"
             >
               <Check className="w-4 h-4" />
-              <span>Sử dụng ảnh này</span>
+              <span>{confirmLabel}</span>
             </button>
             <button
               onClick={handleRetake}
