@@ -22,10 +22,16 @@ export const fetchStudentFace = createAsyncThunk(
       const response = await fetch(`${baseUrl}/api/student/get-my-image`, {
         headers: getAuthHeader()
       });
+      if (response.status === 204) {
+        return null;
+      }
       if (!response.ok) {
         throw new Error('Chưa đăng ký ảnh khuôn mặt');
       }
       const blob = await response.blob();
+      if (blob.size === 0) {
+        return null;
+      }
       return URL.createObjectURL(blob);
     } catch (err) {
       return rejectWithValue(err.message || 'Lỗi lấy hình ảnh!');

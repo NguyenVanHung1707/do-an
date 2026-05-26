@@ -330,7 +330,7 @@ public class StudentServiceImplement implements StudentService {
                 throw new CustomException("Get image failed", HttpStatus.BAD_REQUEST);
             }
         }else {
-            throw new CustomException("Image not found", HttpStatus.NOT_FOUND);
+            return null;
         }
     }
 

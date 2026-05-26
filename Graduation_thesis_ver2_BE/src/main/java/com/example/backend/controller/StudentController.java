@@ -47,7 +47,11 @@ public class StudentController {
     }
     @GetMapping("/get-my-image")
     public ResponseEntity<?> getMyImage(@AuthenticationPrincipal Jwt jwt){
-        return ResponseEntity.ok(studentService.getMyImage(jwt.getClaimAsString("sub")));
+        Object image = studentService.getMyImage(jwt.getClaimAsString("sub"));
+        if (image == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(image);
     }
 
     @GetMapping("/profile")
