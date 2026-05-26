@@ -162,7 +162,13 @@ jobs:
 
             # Cập nhật code mới nhất từ GitHub
             echo "Đang kéo mã nguồn mới nhất từ GitHub..."
-            git pull origin main
+            if [ -n "$(git status --porcelain)" ]; then
+              echo "Detected local changes on VPS, stashing before deploy..."
+              git stash push --include-untracked -m "ci-deploy-autostash-$(date -u +%Y%m%d%H%M%S)"
+            fi
+            git fetch origin main
+            git checkout main
+            git pull --ff-only origin main
 
             # Di chuyển vào thư mục chứa Docker Compose
             cd Graduation_thesis_ver2_BE
