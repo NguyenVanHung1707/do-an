@@ -1,0 +1,45 @@
+name: Reset Production Demo Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type RESET_PRODUCTION_DEMO_DATA to wipe production demo data and seed clean sample data."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  reset-demo-data:
+    name: Reset production database and seed demo data
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.confirm == 'RESET_PRODUCTION_DEMO_DATA' }}
+    env:
+      DEMO_USER_PASSWORD: ${{ secrets.PROD_DEMO_USER_PASSWORD }}
+    steps:
+      - name: Reset demo data on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          command_timeout: 20m
+          envs: DEMO_USER_PASSWORD
+          script: |
+            set -euo pipefail
+
+            cd /root/do-an || {
+              git clone https://github.com/NguyenVanHung1707/do-an.git /root/do-an
+              cd /root/do-an
+            }
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            cd Graduation_thesis_ver2_BE
+            chmod +x scripts/reset-demo-data.sh
+            export CONFIRM_RESET=RESET_PRODUCTION_DEMO_DATA
+            ./scripts/reset-demo-data.sh
