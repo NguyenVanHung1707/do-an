@@ -79,6 +79,23 @@ kc() {
   docker exec "$KEYCLOAK_CONTAINER" /opt/keycloak/bin/kcadm.sh "$@"
 }
 
+if [ -z "$KEYCLOAK_ADMIN_CLIENT_SECRET" ]; then
+  echo "KEYCLOAK_ADMIN_CLIENT_SECRET is not set. Reading the admin client secret from Keycloak database metadata."
+  KEYCLOAK_ADMIN_CLIENT_SECRET="$(
+    docker exec -i -e PGPASSWORD="$POSTGRES_PASSWORD" "$POSTGRES_CONTAINER" \
+      psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA \
+      -v realm="$KEYCLOAK_REALM" \
+      -v client_id="$KEYCLOAK_ADMIN_CLIENT_ID" <<'SQL' | tr -d '\r\n'
+SELECT COALESCE(c.secret, '')
+FROM client c
+JOIN realm r ON r.id = c.realm_id
+WHERE r.name = :'realm'
+  AND c.client_id = :'client_id'
+LIMIT 1;
+SQL
+  )"
+fi
+
 echo "Authenticating to Keycloak admin CLI."
 if [ -n "$KEYCLOAK_ADMIN_CLIENT_SECRET" ]; then
   kc config credentials \
