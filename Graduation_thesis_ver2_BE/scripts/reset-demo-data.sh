@@ -50,12 +50,14 @@ POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-hung2004}"
 KEYCLOAK_ADMIN="${KEYCLOAK_ADMIN:-}"
 KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-}"
+KEYCLOAK_ADMIN_CLIENT_ID="${KEYCLOAK_ADMIN_CLIENT_ID:-graduation_thesis_ver2}"
+KEYCLOAK_ADMIN_CLIENT_SECRET="${KEYCLOAK_ADMIN_CLIENT_SECRET:-}"
 APP_BOOTSTRAP_ADMIN_USERNAME="${APP_BOOTSTRAP_ADMIN_USERNAME:-admin}"
 DATA_PATH="${DATA_PATH:-./data}"
 DEMO_USER_PASSWORD="${DEMO_USER_PASSWORD:-Demo@123456}"
 
-if [ -z "$POSTGRES_PASSWORD" ] || [ -z "$KEYCLOAK_ADMIN" ] || [ -z "$KEYCLOAK_ADMIN_PASSWORD" ]; then
-  echo "POSTGRES_PASSWORD, KEYCLOAK_ADMIN, and KEYCLOAK_ADMIN_PASSWORD must be present in .env or environment."
+if [ -z "$POSTGRES_PASSWORD" ]; then
+  echo "POSTGRES_PASSWORD must be present in .env or environment."
   exit 1
 fi
 
@@ -78,11 +80,22 @@ kc() {
 }
 
 echo "Authenticating to Keycloak admin CLI."
-kc config credentials \
-  --server http://localhost:8080 \
-  --realm master \
-  --user "$KEYCLOAK_ADMIN" \
-  --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
+if [ -n "$KEYCLOAK_ADMIN_CLIENT_SECRET" ]; then
+  kc config credentials \
+    --server http://localhost:8080 \
+    --realm "$KEYCLOAK_REALM" \
+    --client "$KEYCLOAK_ADMIN_CLIENT_ID" \
+    --secret "$KEYCLOAK_ADMIN_CLIENT_SECRET" >/dev/null
+elif [ -n "$KEYCLOAK_ADMIN" ] && [ -n "$KEYCLOAK_ADMIN_PASSWORD" ]; then
+  kc config credentials \
+    --server http://localhost:8080 \
+    --realm master \
+    --user "$KEYCLOAK_ADMIN" \
+    --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
+else
+  echo "Set KEYCLOAK_ADMIN_CLIENT_SECRET or KEYCLOAK_ADMIN/KEYCLOAK_ADMIN_PASSWORD for Keycloak management."
+  exit 1
+fi
 
 kc get "roles/admin" -r "$KEYCLOAK_REALM" >/dev/null
 kc get "roles/teacher" -r "$KEYCLOAK_REALM" >/dev/null
