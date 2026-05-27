@@ -26,6 +26,7 @@ public class AssessmentDto {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private Boolean isLocationRequired;
+    private Boolean isCameraRequired;
     private Integer allowedRadiusMeters;
     private Double teacherLatitude;
     private Double teacherLongitude;

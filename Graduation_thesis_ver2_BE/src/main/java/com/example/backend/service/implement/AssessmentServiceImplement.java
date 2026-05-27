@@ -72,6 +72,7 @@ public class AssessmentServiceImplement implements AssessmentService {
         assessment.setDeadline(dto.getDeadline());
         assessment.setScoreReleaseMode(dto.getScoreReleaseMode() != null ? dto.getScoreReleaseMode() : "AUTOMATIC");
         assessment.setIsPublished(dto.getIsPublished() != null ? dto.getIsPublished() : false);
+        assessment.setIsCameraRequired(dto.getIsCameraRequired() != null ? dto.getIsCameraRequired() : false);
         applyAssessmentGeofenceConfig(assessment, dto);
 
         Assessment saved = assessmentRepository.save(assessment);
@@ -404,6 +405,7 @@ public class AssessmentServiceImplement implements AssessmentService {
         d.setCreatedAt(a.getCreatedAt());
         d.setUpdatedAt(a.getUpdatedAt());
         d.setIsLocationRequired(Boolean.TRUE.equals(a.getIsLocationRequired()));
+        d.setIsCameraRequired(Boolean.TRUE.equals(a.getIsCameraRequired()));
         d.setAllowedRadiusMeters(a.getAllowedRadiusMeters());
         d.setTeacherLatitude(a.getTeacherLatitude());
         d.setTeacherLongitude(a.getTeacherLongitude());

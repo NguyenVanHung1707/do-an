@@ -57,6 +57,9 @@ public class Assessment {
     @Column(name = "is_location_required")
     private Boolean isLocationRequired = false;
 
+    @Column(name = "is_camera_required")
+    private Boolean isCameraRequired = false;
+
     @Column(name = "allowed_radius_meters")
     private Integer allowedRadiusMeters;
 

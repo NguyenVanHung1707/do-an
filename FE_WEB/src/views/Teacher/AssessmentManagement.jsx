@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../../components/Common/Card';
-import { Plus, Check, Clock, Calendar, FileText, Trash2, Eye, Award, ExternalLink, RefreshCw, MapPin } from 'lucide-react';
+import { Plus, Check, Clock, Calendar, FileText, Trash2, Eye, Award, ExternalLink, RefreshCw, MapPin, Camera } from 'lucide-react';
 import { apiFetch } from '../../services/api';
 
 export default function AssessmentManagement({ classId, onSelectSubmission }) {
@@ -17,6 +17,7 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
   const [deadline, setDeadline] = useState('');
   const [scoreReleaseMode, setScoreReleaseMode] = useState('AUTOMATIC'); // AUTOMATIC, MANUAL
   const [isLocationRequired, setIsLocationRequired] = useState(false);
+  const [isCameraRequired, setIsCameraRequired] = useState(false);
   const [allowedRadiusMeters, setAllowedRadiusMeters] = useState(100);
   const [questions, setQuestions] = useState([]);
 
@@ -157,6 +158,7 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
       scoreReleaseMode,
       isPublished: true,
       isLocationRequired,
+      isCameraRequired,
       allowedRadiusMeters: isLocationRequired ? parseInt(allowedRadiusMeters) : null,
       teacherLatitude: teacherLocation.latitude,
       teacherLongitude: teacherLocation.longitude,
@@ -178,6 +180,7 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
         setDurationMinutes('');
         setDeadline('');
         setIsLocationRequired(false);
+        setIsCameraRequired(false);
         setAllowedRadiusMeters(100);
         setQuestions([]);
         fetchAssessments();
@@ -410,6 +413,19 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
                     />
                   </div>
                 )}
+              </div>
+
+              <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/60 space-y-3">
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isCameraRequired}
+                    onChange={(e) => setIsCameraRequired(e.target.checked)}
+                    className="w-4 h-4 accent-primary"
+                  />
+                  <Camera className="w-3.5 h-3.5 text-primary" />
+                  <span>Yêu cầu bật Camera (AI giám sát góc nhìn)</span>
+                </label>
               </div>
 
               <div className="border-t border-slate-100 pt-6">

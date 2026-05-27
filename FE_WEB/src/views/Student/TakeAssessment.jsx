@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import Card from '../../components/Common/Card';
-import { ArrowLeft, Clock, Save, Wifi, WifiOff, AlertTriangle, ChevronLeft, ChevronRight, HelpCircle, Send, MapPin } from 'lucide-react';
+import { ArrowLeft, Clock, Save, Wifi, WifiOff, AlertTriangle, ChevronLeft, ChevronRight, HelpCircle, Send, MapPin, Camera, Video, VideoOff } from 'lucide-react';
 import { apiFetch } from '../../services/api';
 
 export default function TakeAssessment({ assessmentId, submissionId, courseId, onBack }) {
+  const { user } = useSelector((state) => state.auth);
+
   const [assessment, setAssessment] = useState(null);
   const [answers, setAnswers] = useState({}); // questionId -> { selectedChoice, answerText }
   const [currentQIdx, setCurrentQIdx] = useState(0);
@@ -11,6 +14,18 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [autoSaveStatus, setAutoSaveStatus] = useState('Đang đồng bộ...');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // AI Camera Proctoring states
+  const [cameraStream, setCameraStream] = useState(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+
+  // AI Camera Proctoring refs
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const wsRef = useRef(null);
+  const streamIntervalRef = useRef(null);
+  const cameraStreamRef = useRef(null);
 
   // Debouncing refs
   const saveTimeoutRef = useRef({});
@@ -38,6 +53,100 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
     };
   }, [answers, submissionId]);
 
+  const stopCameraProctoring = async () => {
+    if (streamIntervalRef.current) {
+      clearInterval(streamIntervalRef.current);
+      streamIntervalRef.current = null;
+    }
+
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach(track => track.stop());
+      cameraStreamRef.current = null;
+    }
+    setCameraStream(null);
+    setIsCameraActive(false);
+
+    if (wsRef.current) {
+      if (wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.close();
+      }
+      wsRef.current = null;
+    }
+
+    try {
+      await apiFetch(`/proctor/stop?examId=${assessmentId}&studentId=${user?.code}`, {
+        method: 'POST'
+      });
+    } catch (e) {
+      console.error("[AI Proctor] Error stopping session:", e);
+    }
+  };
+
+  const initCameraProctoring = async () => {
+    try {
+      await apiFetch(`/proctor/start?examId=${assessmentId}&studentId=${user?.code}`, {
+        method: 'POST'
+      });
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 320, height: 240, facingMode: 'user', frameRate: { max: 15 } },
+        audio: false
+      });
+      cameraStreamRef.current = stream;
+      setCameraStream(stream);
+      setIsCameraActive(true);
+      setCameraError(null);
+
+      // Connect stream to video element dynamically
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(e => console.error("Video play failed:", e));
+        }
+      }, 500);
+
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/api/proctor/stream/${assessmentId}/${user?.code}`;
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log("[AI Proctor] Real-time gaze streaming WebSocket connected.");
+        
+        streamIntervalRef.current = setInterval(() => {
+          if (videoRef.current && canvasRef.current && ws.readyState === WebSocket.OPEN) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = video.videoWidth || 320;
+            canvas.height = video.videoHeight || 240;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+              if (blob && ws.readyState === WebSocket.OPEN) {
+                ws.send(blob);
+              }
+            }, 'image/jpeg', 0.6);
+          }
+        }, 200);
+      };
+
+      ws.onerror = (e) => {
+        console.error("[AI Proctor] WebSocket error:", e);
+      };
+
+      ws.onclose = () => {
+        console.log("[AI Proctor] WebSocket connection closed.");
+      };
+
+    } catch (err) {
+      console.error("[AI Proctor] Failed to start camera proctoring:", err);
+      setCameraError("Thiếu quyền truy cập Camera! Vui lòng cấp quyền camera trong trình duyệt.");
+      alert("Bài thi này yêu cầu giám sát AI qua Camera trực tiếp. Vui lòng cấp quyền webcam để tiếp tục!");
+    }
+  };
+
   // Load assessment metadata and existing session
   useEffect(() => {
     const loadSession = async () => {
@@ -62,6 +171,10 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
         if (matched) {
           setAssessment(matched);
           
+          if (matched.isCameraRequired) {
+            initCameraProctoring();
+          }
+
           // Setup countdown timer
           if (matched.durationMinutes && detail) {
             // Started time is detail.startedAt
@@ -97,6 +210,18 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      // Stop proctoring on unmount
+      if (streamIntervalRef.current) {
+        clearInterval(streamIntervalRef.current);
+      }
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (wsRef.current) {
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.close();
+        }
+      }
     };
   }, [assessmentId, submissionId, courseId]);
 
@@ -240,6 +365,9 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
       }
       const res = await apiFetch(`/submissions/${submissionId}/submit`, options);
       if (res) {
+        if (assessment?.isCameraRequired) {
+          await stopCameraProctoring();
+        }
         alert(isAuto ? 'Hết giờ làm bài! Hệ thống đã tự động khóa và nộp bài thi của bạn.' : 'Nộp bài thi thành công!');
         onBack();
       }
@@ -472,6 +600,62 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
           )}
         </div>
       </div>
+
+      {/* AI WEBCAM MONITORING FLOATING PANEL */}
+      {assessment.isCameraRequired && (
+        <div className="fixed bottom-4 right-4 z-50 bg-slate-900 text-white p-3 rounded-2xl shadow-2xl border border-slate-700 w-48 sm:w-56 transition-all duration-300">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <span className={`h-2.5 w-2.5 rounded-full ${isCameraActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+              <span className="text-[10px] font-black tracking-wider uppercase text-slate-300 font-sans">
+                {isCameraActive ? 'AI Proctor Active' : 'Camera Off'}
+              </span>
+            </div>
+            {isCameraActive ? (
+              <Camera className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+            )}
+          </div>
+
+          <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-slate-800">
+            {cameraError ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center bg-slate-950/95">
+                <AlertTriangle className="w-6 h-6 text-rose-500 mb-1" />
+                <p className="text-[9px] text-rose-400 leading-tight font-medium">
+                  {cameraError}
+                </p>
+              </div>
+            ) : (
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover transform -scale-x-100"
+                />
+                {isCameraActive && (
+                  <div className="absolute bottom-1 right-1.5 bg-slate-950/60 px-1.5 py-0.5 rounded text-[8px] font-bold text-slate-300 font-mono tracking-wider">
+                    STREAMING
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          
+          <div className="mt-2 text-center">
+            <p className="text-[9px] text-slate-400 font-semibold leading-normal font-sans">
+              {isCameraActive 
+                ? 'Góc nhìn & khuôn mặt đang được AI giám sát tự động' 
+                : 'Vui lòng cấp quyền bật camera để tiếp tục làm bài'}
+            </p>
+          </div>
+          
+          {/* Hidden Canvas used for grabbing frames */}
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
+      )}
     </div>
   );
 }
