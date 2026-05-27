@@ -1,3 +1,7 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.2+cpu
+torchvision==0.17.2+cpu
+
 fastapi==0.95.1
 uvicorn==0.22.0
 deepface==0.0.75
@@ -9,5 +13,5 @@ typing-extensions==4.5.0
 # Optional for environment variables (if needed)
 python-dotenv==1.0.0
 psycopg2-binary
-tensorflow<2.16.0
+tensorflow-cpu<2.16.0
 python-multipart
