@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface FormRepository extends JpaRepository<Form, Long> {
-  @Query("select f from Form f where f.code = ?1")
+  @Query("select f from Form f where upper(f.code) = upper(?1)")
   Optional<Form> findByCode(String uniqueCode);
 
   Optional<Form> findByCourse(Course course);
