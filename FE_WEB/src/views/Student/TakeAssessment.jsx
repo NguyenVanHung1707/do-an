@@ -55,8 +55,6 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
           setAnswers(ansMap);
         }
 
-        // Get assessment details
-        const subDetail = await apiFetch(`/submissions/${submissionId}/grades`); 
         // Let's load the assessment details by fetching from the course's assessments list
         const assDetail = await apiFetch(`/courses/${courseId}/assessments`);
         // Let's search by ID
@@ -65,9 +63,9 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
           setAssessment(matched);
           
           // Setup countdown timer
-          if (matched.durationMinutes) {
-            // Started time is subDetail.startedAt
-            const startInstant = new Date(subDetail.startedAt).getTime();
+          if (matched.durationMinutes && detail) {
+            // Started time is detail.startedAt
+            const startInstant = new Date(detail.startedAt).getTime();
             const durationMillis = matched.durationMinutes * 60 * 1000;
             const expiryTime = startInstant + durationMillis;
             
@@ -86,9 +84,13 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
             updateTimer();
             timerRef.current = setInterval(updateTimer, 1000);
           }
+        } else {
+          throw new Error('Không tìm thấy thông tin bài thi này trong khóa học.');
         }
       } catch (e) {
-        console.error(e);
+        console.error('Lỗi khi tải phiên làm bài:', e);
+        alert(e.message || 'Có lỗi xảy ra khi tải đề thi.');
+        onBack();
       }
     };
     loadSession();
@@ -96,7 +98,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [assessmentId, submissionId]);
+  }, [assessmentId, submissionId, courseId]);
 
   // Sync offline answers stored in localStorage
   const syncOfflineAnswers = async () => {
