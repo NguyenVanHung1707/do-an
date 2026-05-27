@@ -160,8 +160,22 @@ public class TeacherController {
         return ResponseEntity.ok(teacherService.getRateOfMyClassChart(jwt.getClaimAsString("sub")));
     }
 
+    private boolean isTeacher(Jwt jwt) {
+        if (jwt == null) return false;
+        java.util.Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+        if (realmAccess != null && realmAccess.get("roles") instanceof java.util.List) {
+            java.util.List<?> roles = (java.util.List<?>) realmAccess.get("roles");
+            return roles.contains("teacher");
+        }
+        return false;
+    }
+
     @GetMapping("/profile")
     public ResponseEntity<?> getTeacherProfile(@AuthenticationPrincipal Jwt jwt) {
+        if (!isTeacher(jwt)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+                    .body(java.util.Map.of("message", "Từ chối truy cập: Yêu cầu quyền GIẢNG VIÊN!"));
+        }
         return ResponseEntity.ok(teacherService.getTeacherByKeycloakId(jwt.getClaimAsString("sub")));
     }
 
