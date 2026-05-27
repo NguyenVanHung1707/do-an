@@ -167,10 +167,22 @@ public class AssessmentServiceImplement implements AssessmentService {
             Optional<StudentSubmission> subOpt = submissionRepository.findByAssessmentIdAndStudentId(a.getId(), studentId);
             if (subOpt.isPresent()) {
                 StudentSubmission sub = subOpt.get();
-                d.setSubmissionStatus(sub.getStatus());
                 d.setSubmissionId(sub.getId());
-                if ("AUTOMATIC".equals(a.getScoreReleaseMode()) || "GRADED".equals(sub.getStatus())) {
-                    d.setStudentScore(sub.getFinalScore());
+                
+                // If release mode is MANUAL, student's view of submission status must be kept as SUBMITTED (not GRADED)
+                // and scores are hidden, until the teacher releases them (by turning release mode to AUTOMATIC).
+                if ("MANUAL".equals(a.getScoreReleaseMode())) {
+                    if ("GRADED".equals(sub.getStatus()) || "SUBMITTED".equals(sub.getStatus())) {
+                        d.setSubmissionStatus("SUBMITTED");
+                    } else {
+                        d.setSubmissionStatus(sub.getStatus());
+                    }
+                    d.setStudentScore(null);
+                } else {
+                    d.setSubmissionStatus(sub.getStatus());
+                    if ("AUTOMATIC".equals(a.getScoreReleaseMode()) || "GRADED".equals(sub.getStatus())) {
+                        d.setStudentScore(sub.getFinalScore());
+                    }
                 }
             } else {
                 d.setSubmissionStatus("NOT_STARTED");
@@ -320,16 +332,24 @@ public class AssessmentServiceImplement implements AssessmentService {
         StudentSubmission sub = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new IllegalArgumentException("Submission not found"));
 
-        if (!sub.getStudentId().equals(studentId)) {
-            throw new SecurityException("Unauthorized access");
+        // Allow access to the student themselves (if authorized)
+        if (sub.getStudentId().equals(studentId)) {
+            Assessment assessment = sub.getAssessment();
+            // Deny access if the grades are not yet released, unless the submission is still in progress (taking/resuming exam)
+            if ("MANUAL".equals(assessment.getScoreReleaseMode()) && 
+                ("SUBMITTED".equals(sub.getStatus()) || "GRADED".equals(sub.getStatus()))) {
+                throw new SecurityException("Grades have not been released yet");
+            }
+            return getSubmissionDto(sub);
         }
 
-        Assessment assessment = sub.getAssessment();
-        if ("MANUAL".equals(assessment.getScoreReleaseMode()) && "SUBMITTED".equals(sub.getStatus())) {
-            throw new SecurityException("Grades have not been released yet");
+        // Allow access to the course teacher
+        if (sub.getAssessment().getCourse().getTeacher() != null && 
+            studentId.equals(sub.getAssessment().getCourse().getTeacher().getKeycloakId())) {
+            return getSubmissionDto(sub);
         }
 
-        return getSubmissionDto(sub);
+        throw new SecurityException("Unauthorized access");
     }
 
     private void autoGradeMultipleChoice(AssessmentQuestion q, StudentAnswer ans) {
