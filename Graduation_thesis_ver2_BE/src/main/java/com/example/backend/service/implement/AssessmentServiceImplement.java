@@ -58,7 +58,16 @@ public class AssessmentServiceImplement implements AssessmentService {
         assessment.setTitle(dto.getTitle());
         assessment.setDescription(dto.getDescription());
         assessment.setType(dto.getType());
-        assessment.setMaxScore(dto.getMaxScore());
+
+        Double calculatedMaxScore = 0.0;
+        if (dto.getQuestions() != null && !dto.getQuestions().isEmpty()) {
+            for (AssessmentQuestionDto qDto : dto.getQuestions()) {
+                calculatedMaxScore += qDto.getScore() != null ? qDto.getScore() : 1.0;
+            }
+        } else {
+            calculatedMaxScore = dto.getMaxScore() != null ? dto.getMaxScore() : 10.0;
+        }
+        assessment.setMaxScore(calculatedMaxScore);
         assessment.setDurationMinutes(dto.getDurationMinutes());
         assessment.setDeadline(dto.getDeadline());
         assessment.setScoreReleaseMode(dto.getScoreReleaseMode() != null ? dto.getScoreReleaseMode() : "AUTOMATIC");
