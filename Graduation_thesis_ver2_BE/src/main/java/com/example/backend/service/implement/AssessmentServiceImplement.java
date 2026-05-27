@@ -315,7 +315,7 @@ public class AssessmentServiceImplement implements AssessmentService {
         }
 
         Assessment assessment = sub.getAssessment();
-        if ("MANUAL".equals(assessment.getScoreReleaseMode()) && !"GRADED".equals(sub.getStatus())) {
+        if ("MANUAL".equals(assessment.getScoreReleaseMode()) && "SUBMITTED".equals(sub.getStatus())) {
             throw new SecurityException("Grades have not been released yet");
         }
 
