@@ -40,10 +40,35 @@ export default function MyCourses() {
     }
   }, [selectedClass, activeTab]);
 
-  const handleStartResumeAssessment = async (assessmentId) => {
+  const getCurrentBrowserLocation = () => new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Trình duyệt không hỗ trợ lấy vị trí GPS.'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude
+      }),
+      () => reject(new Error('Vui lòng cấp quyền vị trí để tiếp tục.')),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+
+  const handleStartResumeAssessment = async (assessment) => {
+    const assessmentId = assessment.id;
     try {
+      const options = { method: 'POST' };
+      if (assessment.isLocationRequired) {
+        const location = await getCurrentBrowserLocation();
+        options.body = JSON.stringify({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          mockLocationDetected: false
+        });
+      }
       const sub = await apiFetch(`/assessments/${assessmentId}/start`, {
-        method: 'POST'
+        ...options
       });
       if (sub) {
         setActiveAssessmentSession({
@@ -369,12 +394,18 @@ export default function MyCourses() {
                           <span className="font-bold">Điểm đạt được: {a.studentScore} / {a.maxScore}đ</span>
                         </div>
                       )}
+                      {a.isLocationRequired && (
+                        <div className="flex items-center gap-2 text-emerald-600">
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span>Yêu cầu vị trí trong bán kính {a.allowedRadiusMeters || 100}m</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex gap-2 mt-6 pt-4 border-t border-slate-100">
                       {canTake && !isDeadlinePassed ? (
                         <button
-                          onClick={() => handleStartResumeAssessment(a.id)}
+                          onClick={() => handleStartResumeAssessment(a)}
                           className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all text-xs"
                         >
                           <Play className="w-3.5 h-3.5" />

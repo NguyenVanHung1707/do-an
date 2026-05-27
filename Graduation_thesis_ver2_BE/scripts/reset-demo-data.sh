@@ -80,13 +80,13 @@ kc() {
 }
 
 if [ -z "$KEYCLOAK_ADMIN_CLIENT_SECRET" ]; then
-  echo "KEYCLOAK_ADMIN_CLIENT_SECRET is not set. Reading the admin client secret from Keycloak database metadata."
-  KEYCLOAK_ADMIN_CLIENT_SECRET="$(
+  echo "KEYCLOAK_ADMIN_CLIENT_SECRET is not set. Checking client type from Keycloak database metadata."
+  is_public="$(
     docker exec -i -e PGPASSWORD="$POSTGRES_PASSWORD" "$POSTGRES_CONTAINER" \
       psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA \
       -v realm="$KEYCLOAK_REALM" \
       -v client_id="$KEYCLOAK_ADMIN_CLIENT_ID" <<'SQL' | tr -d '\r\n'
-SELECT COALESCE(c.secret, '')
+SELECT COALESCE(c.public_client, false)
 FROM client c
 JOIN realm r ON r.id = c.realm_id
 WHERE r.name = :'realm'
@@ -94,6 +94,25 @@ WHERE r.name = :'realm'
 LIMIT 1;
 SQL
   )"
+  if [ "$is_public" = "t" ] || [ "$is_public" = "true" ]; then
+    echo "Client is configured as a public client. We will authenticate using admin credentials instead of client secret."
+    KEYCLOAK_ADMIN_CLIENT_SECRET=""
+  else
+    echo "Client is confidential. Reading client secret."
+    KEYCLOAK_ADMIN_CLIENT_SECRET="$(
+      docker exec -i -e PGPASSWORD="$POSTGRES_PASSWORD" "$POSTGRES_CONTAINER" \
+        psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA \
+        -v realm="$KEYCLOAK_REALM" \
+        -v client_id="$KEYCLOAK_ADMIN_CLIENT_ID" <<'SQL' | tr -d '\r\n'
+SELECT COALESCE(c.secret, '')
+FROM client c
+JOIN realm r ON r.id = c.realm_id
+WHERE r.name = :'realm'
+  AND c.client_id = :'client_id'
+LIMIT 1;
+SQL
+    )"
+  fi
 fi
 
 echo "Authenticating to Keycloak admin CLI."
@@ -403,6 +422,294 @@ VALUES
   ((SELECT id FROM student WHERE student_code = 'st0006'), (SELECT id FROM course WHERE course_code = 'BE101'), now(), 'Demo registration', 0, 0, false, true),
   ((SELECT id FROM student WHERE student_code = 'st0007'), (SELECT id FROM course WHERE course_code = 'MOB101'), now(), 'Demo registration', 0, 0, false, true),
   ((SELECT id FROM student WHERE student_code = 'st0008'), (SELECT id FROM course WHERE course_code = 'DS101'), now(), 'Demo registration', 0, 0, false, true);
+
+-- ----------------------------------------------------
+-- 1. ATTENDANCE LOGS
+-- ----------------------------------------------------
+INSERT INTO attendance_log (student_id, course_id, attendance_time, lecture_number, is_attendance)
+VALUES
+  -- AI101 Lecture 1
+  ((SELECT id FROM student WHERE student_code = 'st0001'), (SELECT id FROM course WHERE course_code = 'AI101'), now() - INTERVAL '14 days', 1, true),
+  ((SELECT id FROM student WHERE student_code = 'st0002'), (SELECT id FROM course WHERE course_code = 'AI101'), now() - INTERVAL '14 days', 1, true),
+  ((SELECT id FROM student WHERE student_code = 'st0005'), (SELECT id FROM course WHERE course_code = 'AI101'), now() - INTERVAL '14 days', 1, false),
+  -- AI101 Lecture 2
+  ((SELECT id FROM student WHERE student_code = 'st0001'), (SELECT id FROM course WHERE course_code = 'AI101'), now() - INTERVAL '7 days', 2, true),
+  ((SELECT id FROM student WHERE student_code = 'st0002'), (SELECT id FROM course WHERE course_code = 'AI101'), now() - INTERVAL '7 days', 2, false),
+  ((SELECT id FROM student WHERE student_code = 'st0005'), (SELECT id FROM course WHERE course_code = 'AI101'), now() - INTERVAL '7 days', 2, false),
+  -- AI101 Lecture 3
+  ((SELECT id FROM student WHERE student_code = 'st0001'), (SELECT id FROM course WHERE course_code = 'AI101'), now(), 3, true),
+  ((SELECT id FROM student WHERE student_code = 'st0002'), (SELECT id FROM course WHERE course_code = 'AI101'), now(), 3, true),
+  ((SELECT id FROM student WHERE student_code = 'st0005'), (SELECT id FROM course WHERE course_code = 'AI101'), now(), 3, true);
+
+-- Dynamic counts update in register table based on attendance logs
+UPDATE register r
+SET 
+  number_of_attendance = (
+    SELECT COUNT(*) FROM attendance_log a 
+    WHERE a.student_id = r.student_id AND a.course_id = r.course_id AND a.is_attendance = true
+  ),
+  number_of_absence = (
+    SELECT COUNT(*) FROM attendance_log a 
+    WHERE a.student_id = r.student_id AND a.course_id = r.course_id AND a.is_attendance = false
+  );
+
+-- ----------------------------------------------------
+-- 2. DISCUSSIONS (FORUM POSTS & COMMENTS)
+-- ----------------------------------------------------
+INSERT INTO post (course_id, author_id, content, created_at, is_pinned)
+VALUES
+  (
+    (SELECT id FROM course WHERE course_code = 'AI101'),
+    :'te0001_id',
+    'Chào mừng cả lớp đến với môn học Nhận dạng khuôn mặt & AI! Mọi thảo luận, câu hỏi và tài liệu tham khảo các bạn có thể đăng tải tại đây nhé.',
+    now() - INTERVAL '10 days',
+    true
+  ),
+  (
+    (SELECT id FROM course WHERE course_code = 'BE101'),
+    :'te0001_id',
+    'Lớp Spring Boot sẽ có bài kiểm tra trắc nghiệm (Quiz 1) vào tuần sau nhé các em. Hãy chuẩn bị kỹ phần Spring Core và REST API.',
+    now() - INTERVAL '5 days',
+    false
+  );
+
+INSERT INTO comment (post_id, author_id, content, created_at)
+VALUES
+  (
+    (SELECT id FROM post WHERE content LIKE 'Chào mừng cả lớp%' LIMIT 1),
+    :'st0001_id',
+    'Dạ em chào thầy ạ! Em rất mong chờ các buổi học thực hành OpenCV của thầy.',
+    now() - INTERVAL '9 days'
+  ),
+  (
+    (SELECT id FROM post WHERE content LIKE 'Chào mừng cả lớp%' LIMIT 1),
+    :'st0002_id',
+    'Em chào thầy ạ! Chúc cả lớp mình hoàn thành tốt môn học ạ.',
+    now() - INTERVAL '9 days'
+  ),
+  (
+    (SELECT id FROM post WHERE content LIKE 'Lớp Spring Boot%' LIMIT 1),
+    :'st0003_id',
+    'Thầy ơi, bài kiểm tra Quiz 1 có tính thời gian làm bài không ạ?',
+    now() - INTERVAL '4 days'
+  ),
+  (
+    (SELECT id FROM post WHERE content LIKE 'Lớp Spring Boot%' LIMIT 1),
+    :'te0001_id',
+    'Có em nhé, bài kiểm tra sẽ diễn ra trong 15 phút với 10 câu hỏi trắc nghiệm.',
+    now() - INTERVAL '4 days'
+  );
+
+-- ----------------------------------------------------
+-- 3. COURSE DOCUMENTS
+-- ----------------------------------------------------
+INSERT INTO document (course_id, parent_folder_id, name, type, file_path, file_extension, file_size, uploader_id, uploader_name, created_at)
+VALUES
+  ((SELECT id FROM course WHERE course_code = 'AI101'), NULL, 'Bài giảng & Slides', 'FOLDER', NULL, NULL, NULL, :'te0001_id', 'Nguyen Van An', now() - INTERVAL '10 days'),
+  ((SELECT id FROM course WHERE course_code = 'AI101'), NULL, 'Tài liệu Lab', 'FOLDER', NULL, NULL, NULL, :'te0001_id', 'Nguyen Van An', now() - INTERVAL '10 days');
+
+INSERT INTO document (course_id, parent_folder_id, name, type, file_path, file_extension, file_size, uploader_id, uploader_name, created_at)
+VALUES
+  (
+    (SELECT id FROM course WHERE course_code = 'AI101'),
+    (SELECT id FROM document WHERE name = 'Bài giảng & Slides' LIMIT 1),
+    'Slide 1: Tổng quan về Computer Vision.pdf',
+    'FILE',
+    '/uploads/ai101/slide1.pdf',
+    'pdf',
+    2048576,
+    :'te0001_id',
+    'Nguyen Van An',
+    now() - INTERVAL '9 days'
+  ),
+  (
+    (SELECT id FROM course WHERE course_code = 'AI101'),
+    (SELECT id FROM document WHERE name = 'Bài giảng & Slides' LIMIT 1),
+    'Slide 2: Xử lý ảnh cơ bản & OpenCV.pdf',
+    'FILE',
+    '/uploads/ai101/slide2.pdf',
+    'pdf',
+    3145728,
+    :'te0001_id',
+    'Nguyen Van An',
+    now() - INTERVAL '8 days'
+  ),
+  (
+    (SELECT id FROM course WHERE course_code = 'AI101'),
+    (SELECT id FROM document WHERE name = 'Tài liệu Lab' LIMIT 1),
+    'Lab 1: Hướng dẫn cài đặt Python & OpenCV.pdf',
+    'FILE',
+    '/uploads/ai101/lab1.pdf',
+    'pdf',
+    1048576,
+    :'te0001_id',
+    'Nguyen Van An',
+    now() - INTERVAL '9 days'
+  );
+
+-- ----------------------------------------------------
+-- 4. ATTENDANCE CHECK-IN FORMS & SUBMISSIONS
+-- ----------------------------------------------------
+INSERT INTO form (course_id, code, expired_at, created_at, lecture_number, latitude, longitude)
+VALUES
+  (
+    (SELECT id FROM course WHERE course_code = 'AI101'),
+    'CHECKIN_LECTURE_3',
+    now() + INTERVAL '1 hour',
+    now() - INTERVAL '15 minutes',
+    3,
+    21.0285,
+    105.8542
+  );
+
+INSERT INTO question (form_id, content, created_at, updated_at)
+VALUES
+  (
+    (SELECT id FROM form WHERE code = 'CHECKIN_LECTURE_3' LIMIT 1),
+    'Hôm nay chúng ta học thuật toán nào để phát hiện khuôn mặt?',
+    now() - INTERVAL '15 minutes',
+    now() - INTERVAL '15 minutes'
+  );
+
+INSERT INTO answer (question_id, is_image, content, is_true, created_at, updated_at)
+VALUES
+  ((SELECT id FROM question WHERE content LIKE 'Hôm nay chúng ta%' LIMIT 1), false, 'Haar Cascades', true, now() - INTERVAL '15 minutes', now() - INTERVAL '15 minutes'),
+  ((SELECT id FROM question WHERE content LIKE 'Hôm nay chúng ta%' LIMIT 1), false, 'Dijkstra Shortest Path', false, now() - INTERVAL '15 minutes', now() - INTERVAL '15 minutes'),
+  ((SELECT id FROM question WHERE content LIKE 'Hôm nay chúng ta%' LIMIT 1), false, 'QuickSort Algorithm', false, now() - INTERVAL '15 minutes', now() - INTERVAL '15 minutes');
+
+INSERT INTO form_submission (student_id, form_id, is_correct, submitted_at)
+VALUES
+  (
+    (SELECT id FROM student WHERE student_code = 'st0001'),
+    (SELECT id FROM form WHERE code = 'CHECKIN_LECTURE_3' LIMIT 1),
+    true,
+    now() - INTERVAL '10 minutes'
+  ),
+  (
+    (SELECT id FROM student WHERE student_code = 'st0002'),
+    (SELECT id FROM form WHERE code = 'CHECKIN_LECTURE_3' LIMIT 1),
+    true,
+    now() - INTERVAL '8 minutes'
+  );
+
+-- ----------------------------------------------------
+-- 5. ASSESSMENT TESTS, QUESTIONS, SUBMISSIONS & ANSWERS
+-- ----------------------------------------------------
+INSERT INTO assessment (course_id, title, description, type, max_score, duration_minutes, deadline, score_release_mode, is_published, created_at, updated_at)
+VALUES
+  (
+    (SELECT id FROM course WHERE course_code = 'BE101'),
+    'Quiz 1: Spring Boot Overview',
+    'Bài kiểm tra trắc nghiệm tổng quan về Spring Boot và REST API.',
+    'QUIZ',
+    10.0,
+    15,
+    now() + INTERVAL '7 days',
+    'AUTOMATIC',
+    true,
+    now() - INTERVAL '5 days',
+    now() - INTERVAL '5 days'
+  ),
+  (
+    (SELECT id FROM course WHERE course_code = 'AI101'),
+    'Midterm Exam: Face Recognition',
+    'Bài thi giữa kỳ môn Nhận dạng khuôn mặt & AI.',
+    'MID_TERM',
+    10.0,
+    90,
+    now() + INTERVAL '14 days',
+    'MANUAL',
+    true,
+    now() - INTERVAL '1 day',
+    now() - INTERVAL '1 day'
+  );
+
+INSERT INTO assessment_question (assessment_id, type, content, score, order_index, metadata, created_at)
+VALUES
+  (
+    (SELECT id FROM assessment WHERE title = 'Quiz 1: Spring Boot Overview' LIMIT 1),
+    'MULTIPLE_CHOICE',
+    'Annotation nào dùng để định nghĩa một REST Controller trong Spring Boot?',
+    5.0,
+    1,
+    '{"choices": ["@Controller", "@RestController", "@Service", "@Component"], "correct_choice": "@RestController"}'::jsonb,
+    now() - INTERVAL '5 days'
+  ),
+  (
+    (SELECT id FROM assessment WHERE title = 'Quiz 1: Spring Boot Overview' LIMIT 1),
+    'SHORT_ANSWER',
+    'Tên viết tắt của Dependency Injection là gì?',
+    5.0,
+    2,
+    '{"correct_answer": "DI"}'::jsonb,
+    now() - INTERVAL '5 days'
+  );
+
+-- Student test submissions
+INSERT INTO student_submission (assessment_id, student_id, started_at, submitted_at, final_score, status, teacher_feedback, graded_at, created_at)
+VALUES
+  (
+    (SELECT id FROM assessment WHERE title = 'Quiz 1: Spring Boot Overview' LIMIT 1),
+    :'st0001_id',
+    now() - INTERVAL '2 hours',
+    now() - INTERVAL '1 hour 45 minutes',
+    10.0,
+    'GRADED',
+    'Làm bài tốt lắm! Hoàn toàn chính xác.',
+    now() - INTERVAL '1 hour 45 minutes',
+    now() - INTERVAL '2 hours'
+  ),
+  (
+    (SELECT id FROM assessment WHERE title = 'Quiz 1: Spring Boot Overview' LIMIT 1),
+    :'st0003_id',
+    now() - INTERVAL '1 hour',
+    now() - INTERVAL '45 minutes',
+    5.0,
+    'GRADED',
+    'Cần ôn tập thêm về Dependency Injection.',
+    now() - INTERVAL '45 minutes',
+    now() - INTERVAL '1 hour'
+  );
+
+-- Student answers to assessment questions
+INSERT INTO student_answer (submission_id, question_id, answer_text, selected_choice, score, is_correct, teacher_comment)
+VALUES
+  (
+    (SELECT id FROM student_submission WHERE student_id = :'st0001_id' AND assessment_id = (SELECT id FROM assessment WHERE title = 'Quiz 1: Spring Boot Overview' LIMIT 1) LIMIT 1),
+    (SELECT id FROM assessment_question WHERE content LIKE 'Annotation nào%' LIMIT 1),
+    NULL,
+    '@RestController',
+    5.0,
+    true,
+    'Đúng'
+  ),
+  (
+    (SELECT id FROM student_submission WHERE student_id = :'st0001_id' AND assessment_id = (SELECT id FROM assessment WHERE title = 'Quiz 1: Spring Boot Overview' LIMIT 1) LIMIT 1),
+    (SELECT id FROM assessment_question WHERE content LIKE 'Tên viết tắt%' LIMIT 1),
+    'DI',
+    NULL,
+    5.0,
+    true,
+    'Đúng'
+  ),
+  (
+    (SELECT id FROM student_submission WHERE student_id = :'st0003_id' AND assessment_id = (SELECT id FROM assessment WHERE title = 'Quiz 1: Spring Boot Overview' LIMIT 1) LIMIT 1),
+    (SELECT id FROM assessment_question WHERE content LIKE 'Annotation nào%' LIMIT 1),
+    NULL,
+    '@RestController',
+    5.0,
+    true,
+    'Đúng'
+  ),
+  (
+    (SELECT id FROM student_submission WHERE student_id = :'st0003_id' AND assessment_id = (SELECT id FROM assessment WHERE title = 'Quiz 1: Spring Boot Overview' LIMIT 1) LIMIT 1),
+    (SELECT id FROM assessment_question WHERE content LIKE 'Tên viết tắt%' LIMIT 1),
+    'IOC',
+    NULL,
+    0.0,
+    false,
+    'Sai, IOC là Inversion of Control, còn Dependency Injection viết tắt là DI.'
+  );
 
 COMMIT;
 SQL

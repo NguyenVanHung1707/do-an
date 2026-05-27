@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Card from '../../components/Common/Card';
-import { ArrowLeft, Clock, Save, Wifi, WifiOff, AlertTriangle, ChevronLeft, ChevronRight, HelpCircle, Send } from 'lucide-react';
+import { ArrowLeft, Clock, Save, Wifi, WifiOff, AlertTriangle, ChevronLeft, ChevronRight, HelpCircle, Send, MapPin } from 'lucide-react';
 import { apiFetch } from '../../services/api';
 
 export default function TakeAssessment({ assessmentId, submissionId, courseId, onBack }) {
@@ -198,6 +198,21 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
     triggerAutoSave(qId, currentAns.selectedChoice, text);
   };
 
+  const getCurrentBrowserLocation = () => new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Trình duyệt không hỗ trợ lấy vị trí GPS.'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude
+      }),
+      () => reject(new Error('Vui lòng cấp quyền vị trí để tiếp tục.')),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+
   const handleManualSubmit = async () => {
     if (!confirm('Bạn có chắc chắn muốn nộp bài thi ngay lập tức? Sau khi nộp sẽ không thể chỉnh sửa!')) return;
     executeSubmit();
@@ -212,10 +227,16 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
   const executeSubmit = async (isAuto = false) => {
     setIsSubmitting(true);
     try {
-      // Direct submit call
-      const res = await apiFetch(`/submissions/${submissionId}/submit`, {
-        method: 'POST'
-      });
+      const options = { method: 'POST' };
+      if (assessment?.isLocationRequired) {
+        const location = await getCurrentBrowserLocation();
+        options.body = JSON.stringify({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          mockLocationDetected: false
+        });
+      }
+      const res = await apiFetch(`/submissions/${submissionId}/submit`, options);
       if (res) {
         alert(isAuto ? 'Hết giờ làm bài! Hệ thống đã tự động khóa và nộp bài thi của bạn.' : 'Nộp bài thi thành công!');
         onBack();
@@ -253,6 +274,12 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
         <div>
           <h2 className="text-lg font-bold text-slate-800 tracking-tight">{assessment.title}</h2>
           <p className="text-xs text-slate-400 font-semibold mt-0.5">Phân loại: {assessment.type} | Số câu: {totalQuestions}</p>
+          {assessment.isLocationRequired && (
+            <p className="text-xs text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Yêu cầu vị trí trong bán kính {assessment.allowedRadiusMeters || 100}m khi nộp bài</span>
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-4 w-full md:w-auto">

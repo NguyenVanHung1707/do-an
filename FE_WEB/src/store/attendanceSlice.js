@@ -70,7 +70,16 @@ export const uploadStudentFace = createAsyncThunk(
 // 3. Create Attendance Quiz Form (POST /teacher/create-form?courseId=X)
 export const createAttendanceForm = createAsyncThunk(
   'attendance/createAttendanceForm',
-  async ({ classId, lectureNumber, expiryMinutes, questions, latitude, longitude }, { rejectWithValue }) => {
+  async ({
+    classId,
+    lectureNumber,
+    expiryMinutes,
+    questions,
+    latitude,
+    longitude,
+    isLocationRequired = false,
+    allowedRadiusMeters = null
+  }, { rejectWithValue }) => {
     try {
       const formattedQuestions = questions.map((q) => ({
         content: q.text,
@@ -85,6 +94,8 @@ export const createAttendanceForm = createAsyncThunk(
         lectureNumber: parseInt(lectureNumber),
         latitude: latitude || null,
         longitude: longitude || null,
+        isLocationRequired,
+        allowedRadiusMeters: isLocationRequired ? parseInt(allowedRadiusMeters) : null,
         questions: formattedQuestions
       };
 
@@ -99,6 +110,8 @@ export const createAttendanceForm = createAsyncThunk(
         classId,
         lectureNumber,
         expiryMinutes,
+        isLocationRequired,
+        allowedRadiusMeters,
         questions
       };
     } catch (err) {
@@ -123,7 +136,7 @@ export const fetchFormByCode = createAsyncThunk(
 // 5. Submit Quiz Form Attendance (POST /student/submit-answer)
 export const submitStudentAttendance = createAsyncThunk(
   'attendance/submitStudentAttendance',
-  async ({ code, answers, latitude, longitude }, { getState, rejectWithValue }) => {
+  async ({ code, answers, latitude, longitude, mockLocationDetected = false }, { getState, rejectWithValue }) => {
     try {
       const state = getState();
       const activeForm = state.attendance.activeForm;
@@ -153,6 +166,7 @@ export const submitStudentAttendance = createAsyncThunk(
         code,
         latitude: latitude || null,
         longitude: longitude || null,
+        mockLocationDetected,
         answers: answersPayload
       };
 

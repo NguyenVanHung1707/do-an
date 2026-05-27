@@ -38,4 +38,19 @@ public class FormSubmission {
     @CreationTimestamp
     @Column(name = "submitted_at")
     private OffsetDateTime submittedAt;
+
+    @Column(name = "student_latitude")
+    private Double studentLatitude;
+
+    @Column(name = "student_longitude")
+    private Double studentLongitude;
+
+    @Column(name = "calculated_distance")
+    private Double calculatedDistance;
+
+    @Column(name = "is_valid_location")
+    private Boolean isValidLocation;
+
+    @Column(name = "mock_location_detected")
+    private Boolean mockLocationDetected;
 }

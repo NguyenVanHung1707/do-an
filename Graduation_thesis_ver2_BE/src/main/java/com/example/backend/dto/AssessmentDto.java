@@ -25,6 +25,10 @@ public class AssessmentDto {
     private Boolean isPublished;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    private Boolean isLocationRequired;
+    private Integer allowedRadiusMeters;
+    private Double teacherLatitude;
+    private Double teacherLongitude;
     private List<AssessmentQuestionDto> questions;
     private String submissionStatus; // NOT_STARTED, IN_PROGRESS, SUBMITTED, GRADED
     private Double studentScore;

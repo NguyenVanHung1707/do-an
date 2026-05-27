@@ -5,6 +5,7 @@ import com.example.backend.entity.*;
 import com.example.backend.exception.CustomException;
 import com.example.backend.repository.*;
 import com.example.backend.service.StudentService;
+import com.example.backend.util.GeoDistanceUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -144,6 +145,8 @@ public class StudentServiceImplement implements StudentService {
         formDto.setLectureNumber(form.get().getLectureNumber());
         formDto.setLatitude(form.get().getLatitude());
         formDto.setLongitude(form.get().getLongitude());
+        formDto.setIsLocationRequired(Boolean.TRUE.equals(form.get().getIsLocationRequired()));
+        formDto.setAllowedRadiusMeters(form.get().getAllowedRadiusMeters());
         formDto.setExpiredAt(form.get().getExpiredAt());
         formDto.setCourseId(course.getId());
         formDto.setSubject(course.getSubject());
@@ -244,16 +247,9 @@ public class StudentServiceImplement implements StudentService {
         if(register.isEmpty()){
             throw new CustomException("Form is not belong to student", HttpStatus.BAD_REQUEST);
         }
-        //check location
-        if(form.get().getLatitude() != null && form.get().getLongitude() != null){
-            if(studentAnswerDto.getLatitude() == null || studentAnswerDto.getLongitude() == null){
-                throw new CustomException("Location is required", HttpStatus.BAD_REQUEST);
-            }
-            double distance = Math.sqrt(Math.pow(form.get().getLatitude() - studentAnswerDto.getLatitude(), 2) + Math.pow(form.get().getLongitude() - studentAnswerDto.getLongitude(), 2));
-            if(distance > 0.0005){
-                throw new CustomException("Location is not correct", HttpStatus.BAD_REQUEST);
-            }
-        }
+        Form formEntity = form.get();
+        Student studentEntity = student.get();
+        Double calculatedDistance = validateFormLocation(studentEntity, formEntity, studentAnswerDto);
 
         List<AnswerDto> answers = studentAnswerDto.getAnswers();
 
@@ -270,12 +266,14 @@ public class StudentServiceImplement implements StudentService {
             }
         }
         // Save or update FormSubmission
-        FormSubmission submission = formSubmissionRepository.findByStudentAndForm(student.get(), form.get())
+        FormSubmission submission = formSubmissionRepository.findByStudentAndForm(studentEntity, formEntity)
                 .orElse(new FormSubmission());
-        submission.setStudent(student.get());
-        submission.setForm(form.get());
+        submission.setStudent(studentEntity);
+        submission.setForm(formEntity);
         submission.setIsCorrect(isCorrect);
         submission.setSubmittedAt(OffsetDateTime.now());
+        applyFormSubmissionLocationEvidence(submission, studentAnswerDto, calculatedDistance,
+                Boolean.TRUE.equals(formEntity.getIsLocationRequired()) ? true : null);
         formSubmissionRepository.save(submission);
 
         if (!isCorrect) {
@@ -284,12 +282,91 @@ public class StudentServiceImplement implements StudentService {
 
         // Return a dummy AttendanceLog to satisfy the method signature without creating a DB record
         AttendanceLog dummyLog = new AttendanceLog();
-        dummyLog.setStudent(student.get());
+        dummyLog.setStudent(studentEntity);
         dummyLog.setCourse(course);
         dummyLog.setIsAttendance(true);
-        dummyLog.setLectureNumber(form.get().getLectureNumber());
+        dummyLog.setLectureNumber(formEntity.getLectureNumber());
         dummyLog.setAttendanceTime(OffsetDateTime.now());
         return dummyLog;
+    }
+
+    private Double validateFormLocation(Student student, Form form, StudentAnswerDto dto) {
+        boolean required = Boolean.TRUE.equals(form.getIsLocationRequired());
+
+        if (Boolean.TRUE.equals(dto.getMockLocationDetected())) {
+            saveFormSubmissionLocationFailure(student, form, dto, null, false);
+            throw new CustomException("Thiết bị đang bật vị trí giả", HttpStatus.FORBIDDEN);
+        }
+
+        if (dto.getLatitude() == null || dto.getLongitude() == null) {
+            if (required) {
+                throw new CustomException("Vui lòng cấp quyền vị trí để tiếp tục", HttpStatus.BAD_REQUEST);
+            }
+            return null;
+        }
+
+        try {
+            GeoDistanceUtils.validateCoordinates(dto.getLatitude(), dto.getLongitude());
+        } catch (IllegalArgumentException ex) {
+            throw new CustomException("Tọa độ không hợp lệ", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!required) {
+            return null;
+        }
+
+        if (form.getLatitude() == null || form.getLongitude() == null || form.getAllowedRadiusMeters() == null) {
+            throw new CustomException("Cấu hình vị trí điểm danh không hợp lệ", HttpStatus.BAD_REQUEST);
+        }
+
+        double distance = GeoDistanceUtils.distanceMeters(
+                form.getLatitude(),
+                form.getLongitude(),
+                dto.getLatitude(),
+                dto.getLongitude()
+        );
+        if (distance > form.getAllowedRadiusMeters()) {
+            saveFormSubmissionLocationFailure(student, form, dto, distance, false);
+            throw new CustomException("Bạn không ở trong phạm vi lớp học", HttpStatus.FORBIDDEN);
+        }
+
+        return distance;
+    }
+
+    private void saveFormSubmissionLocationFailure(
+            Student student,
+            Form form,
+            StudentAnswerDto dto,
+            Double distance,
+            Boolean validLocation
+    ) {
+        FormSubmission submission = formSubmissionRepository.findByStudentAndForm(student, form)
+                .orElse(new FormSubmission());
+        submission.setStudent(student);
+        submission.setForm(form);
+        submission.setIsCorrect(false);
+        submission.setSubmittedAt(OffsetDateTime.now());
+        applyFormSubmissionLocationEvidence(submission, dto, distance, validLocation);
+        formSubmissionRepository.save(submission);
+    }
+
+    private void applyFormSubmissionLocationEvidence(
+            FormSubmission submission,
+            StudentAnswerDto dto,
+            Double distance,
+            Boolean validLocation
+    ) {
+        if (dto == null) {
+            return;
+        }
+        submission.setMockLocationDetected(Boolean.TRUE.equals(dto.getMockLocationDetected()));
+        if (dto.getLatitude() == null || dto.getLongitude() == null) {
+            return;
+        }
+        submission.setStudentLatitude(dto.getLatitude());
+        submission.setStudentLongitude(dto.getLongitude());
+        submission.setCalculatedDistance(distance);
+        submission.setIsValidLocation(validLocation);
     }
 
     @Override

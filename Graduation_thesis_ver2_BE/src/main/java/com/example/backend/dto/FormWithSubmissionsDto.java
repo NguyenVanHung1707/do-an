@@ -20,6 +20,8 @@ public class FormWithSubmissionsDto {
     private OffsetDateTime createdAt;
     private Double latitude;
     private Double longitude;
+    private Boolean isLocationRequired;
+    private Integer allowedRadiusMeters;
     private List<QuestionDto> questions;
     private List<StudentInCourseDto> successfulStudents;
 }

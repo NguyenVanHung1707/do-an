@@ -2,10 +2,13 @@ package com.example.backend.service.implement;
 
 import com.example.backend.dto.*;
 import com.example.backend.entity.*;
+import com.example.backend.exception.CustomException;
 import com.example.backend.repository.*;
 import com.example.backend.service.AssessmentService;
 import com.example.backend.service.NotificationService;
+import com.example.backend.util.GeoDistanceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +63,7 @@ public class AssessmentServiceImplement implements AssessmentService {
         assessment.setDeadline(dto.getDeadline());
         assessment.setScoreReleaseMode(dto.getScoreReleaseMode() != null ? dto.getScoreReleaseMode() : "AUTOMATIC");
         assessment.setIsPublished(dto.getIsPublished() != null ? dto.getIsPublished() : false);
+        applyAssessmentGeofenceConfig(assessment, dto);
 
         Assessment saved = assessmentRepository.save(assessment);
 
@@ -168,13 +172,15 @@ public class AssessmentServiceImplement implements AssessmentService {
     }
 
     @Override
-    public StudentSubmissionDto startAssessment(Long assessmentId, String studentId) {
+    public StudentSubmissionDto startAssessment(Long assessmentId, String studentId, LocationCheckRequest location) {
         Assessment assessment = assessmentRepository.findById(assessmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Assessment not found"));
 
         if (assessment.getDeadline() != null && assessment.getDeadline().isBefore(OffsetDateTime.now())) {
             throw new IllegalStateException("Deadline has already passed");
         }
+
+        Double distance = validateAssessmentLocation(assessment, location);
 
         Optional<StudentSubmission> existingOpt = submissionRepository.findByAssessmentIdAndStudentId(assessmentId, studentId);
         StudentSubmission sub;
@@ -188,6 +194,8 @@ public class AssessmentServiceImplement implements AssessmentService {
             sub.setStatus("IN_PROGRESS");
             sub = submissionRepository.save(sub);
         }
+        applyLocationEvidence(sub, location, distance, Boolean.TRUE.equals(assessment.getIsLocationRequired()) ? true : null);
+        sub = submissionRepository.save(sub);
 
         return getSubmissionDto(sub);
     }
@@ -225,7 +233,7 @@ public class AssessmentServiceImplement implements AssessmentService {
     }
 
     @Override
-    public StudentSubmissionDto submitAssessment(Long submissionId, String studentId) {
+    public StudentSubmissionDto submitAssessment(Long submissionId, String studentId, LocationCheckRequest location) {
         StudentSubmission sub = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new IllegalArgumentException("Submission not found"));
 
@@ -236,6 +244,9 @@ public class AssessmentServiceImplement implements AssessmentService {
         if (!"IN_PROGRESS".equals(sub.getStatus())) {
             return getSubmissionDto(sub);
         }
+
+        Double distance = validateAssessmentLocation(sub.getAssessment(), location);
+        applyLocationEvidence(sub, location, distance, Boolean.TRUE.equals(sub.getAssessment().getIsLocationRequired()) ? true : null);
 
         sub.setSubmittedAt(OffsetDateTime.now());
         sub.setStatus("SUBMITTED");
@@ -383,6 +394,10 @@ public class AssessmentServiceImplement implements AssessmentService {
         d.setIsPublished(a.getIsPublished());
         d.setCreatedAt(a.getCreatedAt());
         d.setUpdatedAt(a.getUpdatedAt());
+        d.setIsLocationRequired(Boolean.TRUE.equals(a.getIsLocationRequired()));
+        d.setAllowedRadiusMeters(a.getAllowedRadiusMeters());
+        d.setTeacherLatitude(a.getTeacherLatitude());
+        d.setTeacherLongitude(a.getTeacherLongitude());
 
         List<AssessmentQuestion> qs = questionRepository.findByAssessmentIdOrderByOrderIndexAsc(a.getId());
         d.setQuestions(qs.stream().map(q -> {
@@ -431,6 +446,11 @@ public class AssessmentServiceImplement implements AssessmentService {
         d.setTeacherFeedback(sub.getTeacherFeedback());
         d.setGradedAt(sub.getGradedAt());
         d.setCreatedAt(sub.getCreatedAt());
+        d.setStudentLatitude(sub.getStudentLatitude());
+        d.setStudentLongitude(sub.getStudentLongitude());
+        d.setCalculatedDistance(sub.getCalculatedDistance());
+        d.setIsValidLocation(sub.getIsValidLocation());
+        d.setMockLocationDetected(sub.getMockLocationDetected());
 
         List<StudentAnswer> answers = studentAnswerRepository.findBySubmissionId(sub.getId());
         d.setAnswers(answers.stream().map(a -> {
@@ -445,5 +465,79 @@ public class AssessmentServiceImplement implements AssessmentService {
         }).collect(Collectors.toList()));
 
         return d;
+    }
+
+    private void applyAssessmentGeofenceConfig(Assessment assessment, AssessmentDto dto) {
+        boolean required = Boolean.TRUE.equals(dto.getIsLocationRequired());
+        assessment.setIsLocationRequired(required);
+        assessment.setAllowedRadiusMeters(required ? dto.getAllowedRadiusMeters() : null);
+        assessment.setTeacherLatitude(required ? dto.getTeacherLatitude() : null);
+        assessment.setTeacherLongitude(required ? dto.getTeacherLongitude() : null);
+
+        if (!required) {
+            return;
+        }
+
+        try {
+            GeoDistanceUtils.validateAllowedRadius(dto.getAllowedRadiusMeters());
+            GeoDistanceUtils.validateCoordinates(dto.getTeacherLatitude(), dto.getTeacherLongitude());
+        } catch (IllegalArgumentException ex) {
+            throw new CustomException("Cấu hình vị trí bài kiểm tra không hợp lệ", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private Double validateAssessmentLocation(Assessment assessment, LocationCheckRequest location) {
+        boolean required = Boolean.TRUE.equals(assessment.getIsLocationRequired());
+        if (location != null && Boolean.TRUE.equals(location.getMockLocationDetected())) {
+            throw new CustomException("Thiết bị đang bật vị trí giả", HttpStatus.FORBIDDEN);
+        }
+        if (location == null || location.getLatitude() == null || location.getLongitude() == null) {
+            if (required) {
+                throw new CustomException("Vui lòng cấp quyền vị trí để tiếp tục", HttpStatus.BAD_REQUEST);
+            }
+            return null;
+        }
+
+        try {
+            GeoDistanceUtils.validateCoordinates(location.getLatitude(), location.getLongitude());
+        } catch (IllegalArgumentException ex) {
+            throw new CustomException("Tọa độ không hợp lệ", HttpStatus.BAD_REQUEST);
+        }
+
+        if (assessment.getTeacherLatitude() == null || assessment.getTeacherLongitude() == null) {
+            if (required) {
+                throw new CustomException("Cấu hình vị trí bài kiểm tra không hợp lệ", HttpStatus.BAD_REQUEST);
+            }
+            return null;
+        }
+
+        double distance = GeoDistanceUtils.distanceMeters(
+                assessment.getTeacherLatitude(),
+                assessment.getTeacherLongitude(),
+                location.getLatitude(),
+                location.getLongitude()
+        );
+
+        if (required && (assessment.getAllowedRadiusMeters() == null || distance > assessment.getAllowedRadiusMeters())) {
+            throw new CustomException("Bạn không ở trong phạm vi lớp học", HttpStatus.FORBIDDEN);
+        }
+
+        return distance;
+    }
+
+    private void applyLocationEvidence(
+            StudentSubmission submission,
+            LocationCheckRequest location,
+            Double distance,
+            Boolean validLocation
+    ) {
+        if (location == null || location.getLatitude() == null || location.getLongitude() == null) {
+            return;
+        }
+        submission.setStudentLatitude(location.getLatitude());
+        submission.setStudentLongitude(location.getLongitude());
+        submission.setCalculatedDistance(distance);
+        submission.setMockLocationDetected(Boolean.TRUE.equals(location.getMockLocationDetected()));
+        submission.setIsValidLocation(validLocation);
     }
 }

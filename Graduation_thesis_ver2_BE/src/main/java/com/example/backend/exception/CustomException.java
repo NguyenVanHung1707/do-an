@@ -8,11 +8,11 @@ import org.springframework.web.server.ResponseStatusException;
 public class CustomException extends ResponseStatusException {
     private String message;
     public CustomException(String message, HttpStatusCode statusCode) {
-        super(statusCode);
+        super(statusCode, message);
         this.message = message;
     }
     public CustomException(String message) {
-        super(HttpStatusCode.valueOf(400));
+        super(HttpStatusCode.valueOf(400), message);
         this.message = message;
     }
     public CustomException(HttpStatusCode statusCode) {

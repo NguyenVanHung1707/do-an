@@ -12,8 +12,8 @@ public interface AssessmentService {
     
     // Student Methods
     List<AssessmentDto> getAssessmentsForCourse(Long courseId, String studentKeycloakId);
-    StudentSubmissionDto startAssessment(Long assessmentId, String studentKeycloakId);
+    StudentSubmissionDto startAssessment(Long assessmentId, String studentKeycloakId, LocationCheckRequest location);
     void saveDraft(Long submissionId, SubmissionAnswerDto draftDto, String studentKeycloakId);
-    StudentSubmissionDto submitAssessment(Long submissionId, String studentKeycloakId);
+    StudentSubmissionDto submitAssessment(Long submissionId, String studentKeycloakId, LocationCheckRequest location);
     StudentSubmissionDto getSubmissionGrades(Long submissionId, String studentKeycloakId);
 }

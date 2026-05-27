@@ -54,6 +54,18 @@ public class Assessment {
     @Column(name = "is_published")
     private Boolean isPublished = false;
 
+    @Column(name = "is_location_required")
+    private Boolean isLocationRequired = false;
+
+    @Column(name = "allowed_radius_meters")
+    private Integer allowedRadiusMeters;
+
+    @Column(name = "teacher_latitude")
+    private Double teacherLatitude;
+
+    @Column(name = "teacher_longitude")
+    private Double teacherLongitude;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private OffsetDateTime createdAt;

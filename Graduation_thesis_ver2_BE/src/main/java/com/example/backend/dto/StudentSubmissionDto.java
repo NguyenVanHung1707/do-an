@@ -24,5 +24,10 @@ public class StudentSubmissionDto {
     private String teacherFeedback;
     private OffsetDateTime gradedAt;
     private OffsetDateTime createdAt;
+    private Double studentLatitude;
+    private Double studentLongitude;
+    private Double calculatedDistance;
+    private Boolean isValidLocation;
+    private Boolean mockLocationDetected;
     private List<SubmissionAnswerDto> answers;
 }

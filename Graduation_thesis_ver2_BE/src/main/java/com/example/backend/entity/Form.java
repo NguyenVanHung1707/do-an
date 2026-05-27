@@ -49,4 +49,10 @@ public class Form {
 
     @Column(name = "longitude")
     private Double longitude;
+
+    @Column(name = "is_location_required")
+    private Boolean isLocationRequired = false;
+
+    @Column(name = "allowed_radius_meters")
+    private Integer allowedRadiusMeters;
 }

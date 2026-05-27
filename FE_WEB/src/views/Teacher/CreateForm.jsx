@@ -39,6 +39,8 @@ export default function CreateForm() {
   const [generatedCode, setGeneratedCode] = useState(null);
   const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isLocationRequired, setIsLocationRequired] = useState(false);
+  const [allowedRadiusMeters, setAllowedRadiusMeters] = useState(100);
 
   // States for multiple forms
   const [sessionForms, setSessionForms] = useState([]);
@@ -132,9 +134,14 @@ export default function CreateForm() {
       return;
     }
 
-    const selectedClass = classesList.find(c => String(c.id) === String(selectedClassId));
+    if (isLocationRequired) {
+      const radius = parseInt(allowedRadiusMeters);
+      if (!radius || radius < 50 || radius > 500) {
+        setErrorMsg('Bán kính hợp lệ từ 50 đến 500 mét.');
+        return;
+      }
+    }
 
-    // Request GPS location if available or default to null
     const proceedWithLocation = (lat = null, lng = null) => {
       dispatch(createAttendanceForm({
         classId: selectedClassId,
@@ -146,7 +153,9 @@ export default function CreateForm() {
           correctAnswer: q.correctAnswer
         })),
         latitude: lat,
-        longitude: lng
+        longitude: lng,
+        isLocationRequired,
+        allowedRadiusMeters
       }))
         .unwrap()
         .then((res) => {
@@ -160,19 +169,25 @@ export default function CreateForm() {
         });
     };
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          proceedWithLocation(pos.coords.latitude, pos.coords.longitude);
-        },
-        () => {
-          proceedWithLocation(null, null);
-        },
-        { enableHighAccuracy: true, timeout: 5000 }
-      );
-    } else {
+    if (!isLocationRequired) {
       proceedWithLocation(null, null);
+      return;
     }
+
+    if (!navigator.geolocation) {
+      setErrorMsg('Trình duyệt không hỗ trợ lấy vị trí GPS.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        proceedWithLocation(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        setErrorMsg('Vui lòng cấp quyền vị trí để tạo form có kiểm tra vị trí.');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   // Trigger preview rule and open Modal
@@ -398,6 +413,35 @@ export default function CreateForm() {
                     />
                   </div>
 
+                  <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/60 space-y-3">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isLocationRequired}
+                        onChange={(e) => setIsLocationRequired(e.target.checked)}
+                        className="w-4 h-4 accent-primary"
+                      />
+                      <MapPin className="w-3.5 h-3.5 text-primary" />
+                      <span>Yêu cầu kiểm tra vị trí</span>
+                    </label>
+
+                    {isLocationRequired && (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-slate-500 text-[11px] font-semibold">
+                          Bán kính cho phép (mét)
+                        </label>
+                        <input
+                          type="number"
+                          min="50"
+                          max="500"
+                          value={allowedRadiusMeters}
+                          onChange={(e) => setAllowedRadiusMeters(e.target.value)}
+                          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   {/* Danh sách câu hỏi */}
                   <div className="space-y-3 pt-2">
                     <label className="text-slate-700 text-xs font-semibold block">Nội dung câu hỏi Đúng/Sai:</label>
@@ -532,10 +576,10 @@ export default function CreateForm() {
                             <span>•</span>
                             <span>Tạo lúc: {new Date(form.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
-                          {(form.latitude || form.longitude) && (
+                          {form.isLocationRequired && (
                             <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-600 font-semibold">
                               <MapPin className="w-3 h-3" />
-                              <span>Định vị GPS được bật</span>
+                              <span>GPS bật, bán kính {form.allowedRadiusMeters || 100}m</span>
                             </div>
                           )}
                         </div>

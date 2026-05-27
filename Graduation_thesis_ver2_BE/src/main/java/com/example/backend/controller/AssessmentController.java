@@ -72,9 +72,10 @@ public class AssessmentController {
     @PostMapping("/assessments/{id}/start")
     public ResponseEntity<StudentSubmissionDto> startAssessment(
             @PathVariable Long id,
+            @RequestBody(required = false) LocationCheckRequest location,
             @AuthenticationPrincipal Jwt jwt) {
         String studentId = jwt.getClaimAsString("sub");
-        return ResponseEntity.ok(assessmentService.startAssessment(id, studentId));
+        return ResponseEntity.ok(assessmentService.startAssessment(id, studentId, location));
     }
 
     @PostMapping("/submissions/{subId}/save-draft")
@@ -90,9 +91,10 @@ public class AssessmentController {
     @PostMapping("/submissions/{subId}/submit")
     public ResponseEntity<StudentSubmissionDto> submitAssessment(
             @PathVariable Long subId,
+            @RequestBody(required = false) LocationCheckRequest location,
             @AuthenticationPrincipal Jwt jwt) {
         String studentId = jwt.getClaimAsString("sub");
-        return ResponseEntity.ok(assessmentService.submitAssessment(subId, studentId));
+        return ResponseEntity.ok(assessmentService.submitAssessment(subId, studentId, location));
     }
 
     @GetMapping("/submissions/{subId}/grades")

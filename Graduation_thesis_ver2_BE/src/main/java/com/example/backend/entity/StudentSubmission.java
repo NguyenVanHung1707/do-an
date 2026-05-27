@@ -51,6 +51,21 @@ public class StudentSubmission {
     @Column(name = "graded_at")
     private OffsetDateTime gradedAt;
 
+    @Column(name = "student_latitude")
+    private Double studentLatitude;
+
+    @Column(name = "student_longitude")
+    private Double studentLongitude;
+
+    @Column(name = "calculated_distance")
+    private Double calculatedDistance;
+
+    @Column(name = "is_valid_location")
+    private Boolean isValidLocation;
+
+    @Column(name = "mock_location_detected")
+    private Boolean mockLocationDetected;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private OffsetDateTime createdAt;

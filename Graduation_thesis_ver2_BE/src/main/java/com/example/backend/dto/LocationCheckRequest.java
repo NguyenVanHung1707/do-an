@@ -5,15 +5,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class StudentAnswerDto {
-    private String code;
-    private List<AnswerDto> answers;
+public class LocationCheckRequest {
     private Double latitude;
     private Double longitude;
     private Boolean mockLocationDetected;

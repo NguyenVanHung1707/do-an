@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../../components/Common/Card';
-import { Plus, Check, Clock, Calendar, FileText, Trash2, Eye, Award, ExternalLink, RefreshCw } from 'lucide-react';
+import { Plus, Check, Clock, Calendar, FileText, Trash2, Eye, Award, ExternalLink, RefreshCw, MapPin } from 'lucide-react';
 import { apiFetch } from '../../services/api';
 
 export default function AssessmentManagement({ classId, onSelectSubmission }) {
@@ -16,6 +16,8 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
   const [durationMinutes, setDurationMinutes] = useState('');
   const [deadline, setDeadline] = useState('');
   const [scoreReleaseMode, setScoreReleaseMode] = useState('AUTOMATIC'); // AUTOMATIC, MANUAL
+  const [isLocationRequired, setIsLocationRequired] = useState(false);
+  const [allowedRadiusMeters, setAllowedRadiusMeters] = useState(100);
   const [questions, setQuestions] = useState([]);
 
   // Load assessments
@@ -76,6 +78,21 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
     setQuestions(updated);
   };
 
+  const getCurrentBrowserLocation = () => new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Trình duyệt không hỗ trợ lấy vị trí GPS.'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude
+      }),
+      () => reject(new Error('Vui lòng cấp quyền vị trí để tạo bài có kiểm tra vị trí.')),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -85,6 +102,13 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
     if (questions.length === 0) {
       alert('Vui lòng thêm ít nhất một câu hỏi!');
       return;
+    }
+    if (isLocationRequired) {
+      const radius = parseInt(allowedRadiusMeters);
+      if (!radius || radius < 50 || radius > 500) {
+        alert('Bán kính hợp lệ từ 50 đến 500 mét.');
+        return;
+      }
     }
 
     const payloadQuestions = questions.map((q, idx) => {
@@ -112,6 +136,16 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
       };
     });
 
+    let teacherLocation = { latitude: null, longitude: null };
+    try {
+      if (isLocationRequired) {
+        teacherLocation = await getCurrentBrowserLocation();
+      }
+    } catch (e) {
+      alert(e.message);
+      return;
+    }
+
     const payload = {
       courseId: classId,
       title,
@@ -122,6 +156,10 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
       deadline: deadline ? new Date(deadline).toISOString() : null,
       scoreReleaseMode,
       isPublished: true,
+      isLocationRequired,
+      allowedRadiusMeters: isLocationRequired ? parseInt(allowedRadiusMeters) : null,
+      teacherLatitude: teacherLocation.latitude,
+      teacherLongitude: teacherLocation.longitude,
       questions: payloadQuestions
     };
 
@@ -139,6 +177,8 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
         setType('ASSIGNMENT');
         setDurationMinutes('');
         setDeadline('');
+        setIsLocationRequired(false);
+        setAllowedRadiusMeters(100);
         setQuestions([]);
         fetchAssessments();
       }
@@ -233,6 +273,12 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
                   <Award className="w-3.5 h-3.5" />
                   <span>Công bố điểm: {a.scoreReleaseMode === 'AUTOMATIC' ? 'Tự động hiển thị' : 'Chờ GV duyệt'}</span>
                 </div>
+                {a.isLocationRequired && (
+                  <div className="flex items-center gap-2 text-emerald-600">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>Kiểm tra vị trí trong bán kính {a.allowedRadiusMeters || 100}m</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2 mt-6 pt-4 border-t border-slate-100">
@@ -335,6 +381,35 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
                     <option value="MANUAL">Giảng viên duyệt thủ công</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/60 space-y-3">
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isLocationRequired}
+                    onChange={(e) => setIsLocationRequired(e.target.checked)}
+                    className="w-4 h-4 accent-primary"
+                  />
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  <span>Yêu cầu kiểm tra vị trí</span>
+                </label>
+
+                {isLocationRequired && (
+                  <div className="max-w-xs">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                      Bán kính cho phép (mét)
+                    </label>
+                    <input
+                      type="number"
+                      min="50"
+                      max="500"
+                      value={allowedRadiusMeters}
+                      onChange={(e) => setAllowedRadiusMeters(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs focus:ring-primary/20 focus:border-primary focus:outline-none bg-white"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-slate-100 pt-6">

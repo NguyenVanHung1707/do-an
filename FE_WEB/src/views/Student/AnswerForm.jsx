@@ -26,12 +26,12 @@ export default function AnswerForm() {
   const [successData, setSuccessData] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Fetch location automatically in step 2
+  // Fetch location automatically only when the form requires geofencing
   useEffect(() => {
-    if (step === 2) {
+    if (step === 2 && selectedForm?.isLocationRequired) {
       fetchLocation();
     }
-  }, [step]);
+  }, [step, selectedForm?.isLocationRequired]);
 
   const fetchLocation = () => {
     if (!navigator.geolocation) {
@@ -92,6 +92,8 @@ export default function AnswerForm() {
       .unwrap()
       .then((form) => {
         setSelectedForm(form);
+        setCoords(null);
+        setLocationError('');
         // Initialize empty answers
         const initialAnswers = {};
         form.questions.forEach(q => {
@@ -124,8 +126,7 @@ export default function AnswerForm() {
       return;
     }
 
-    // Verify location is fetched (as coordinate verification is highly recommended)
-    if (!coords) {
+    if (selectedForm?.isLocationRequired && !coords) {
       setErrorMsg('Hệ thống yêu cầu tọa độ GPS để xác minh bạn đang ở phòng học. Hãy nhấp cho phép lấy vị trí.');
       return;
     }
@@ -138,8 +139,9 @@ export default function AnswerForm() {
     dispatch(submitStudentAttendance({
       code: selectedForm.code,
       answers,
-      latitude: coords.lat,
-      longitude: coords.lng
+      latitude: coords?.lat || null,
+      longitude: coords?.lng || null,
+      mockLocationDetected: false
     }))
       .unwrap()
       .then(() => {
@@ -191,13 +193,15 @@ export default function AnswerForm() {
             <span>Thời gian:</span>
             <span className="text-slate-800 font-bold font-mono">{successData.time} - {successData.date}</span>
           </div>
-          <div className="flex justify-between items-start">
-            <span>Tọa độ xác thực:</span>
-            <span className="text-primary font-mono text-right">
-              Lat: {successData.coords.lat.toFixed(6)}<br />
-              Lon: {successData.coords.lng.toFixed(6)}
-            </span>
-          </div>
+          {successData.coords && (
+            <div className="flex justify-between items-start">
+              <span>Tọa độ xác thực:</span>
+              <span className="text-primary font-mono text-right">
+                Lat: {successData.coords.lat.toFixed(6)}<br />
+                Lon: {successData.coords.lng.toFixed(6)}
+              </span>
+            </div>
+          )}
         </div>
 
         <button
@@ -291,6 +295,10 @@ export default function AnswerForm() {
                   {coords ? (
                     <p className="text-xs text-emerald-600 font-mono font-bold mt-0.5">
                       Đã ghi nhận tọa độ GPS: {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
+                    </p>
+                  ) : !selectedForm?.isLocationRequired ? (
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">
+                      Form này không bắt buộc kiểm tra vị trí.
                     </p>
                   ) : locationLoading ? (
                     <p className="text-xs text-slate-400 font-medium animate-pulse mt-0.5">

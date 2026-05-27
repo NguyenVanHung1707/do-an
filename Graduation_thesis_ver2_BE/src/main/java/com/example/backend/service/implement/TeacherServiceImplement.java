@@ -7,6 +7,7 @@ import com.example.backend.exception.ScheduleConflictException;
 import com.example.backend.repository.*;
 import com.example.backend.service.TeacherService;
 import com.example.backend.service.Utility;
+import com.example.backend.util.GeoDistanceUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -271,6 +272,7 @@ public class TeacherServiceImplement implements TeacherService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<Course> getMyCourses(String teacherKeycloakId) {
         Optional<Teacher> teacher = teacherRepository.findByKeycloakId(teacherKeycloakId);
         if(teacher.isEmpty()){
@@ -287,7 +289,20 @@ public class TeacherServiceImplement implements TeacherService {
             courseWithoutTeacher.setUpdatedAt(course.getUpdatedAt());
             courseWithoutTeacher.setIsActive(course.getIsActive());
             courseWithoutTeacher.setDescription(course.getDescription());
-            courseWithoutTeacher.setSemester(course.getSemester());
+            
+            // Tránh lỗi LazyInitializationException bằng cách tạo thực thể Semester không proxy
+            if (course.getSemester() != null) {
+                Semester sem = new Semester();
+                sem.setId(course.getSemester().getId());
+                sem.setCode(course.getSemester().getCode());
+                sem.setStartDate(course.getSemester().getStartDate());
+                sem.setEndDate(course.getSemester().getEndDate());
+                sem.setIsActive(course.getSemester().getIsActive());
+                sem.setCreatedAt(course.getSemester().getCreatedAt());
+                sem.setUpdatedAt(course.getSemester().getUpdatedAt());
+                courseWithoutTeacher.setSemester(sem);
+            }
+            
             response.add(courseWithoutTeacher);
         }
         return response;
@@ -530,8 +545,7 @@ public class TeacherServiceImplement implements TeacherService {
         }while (formRepository.findByCode(uniqueCode).isPresent());
         form.setCode(uniqueCode);
         form.setCourse(course.get());
-        form.setLatitude(formDto.getLatitude());
-        form.setLongitude(formDto.getLongitude());
+        applyFormGeofenceConfig(form, formDto);
         formRepository.save(form);
         for(QuestionDto questionDto: formDto.getQuestions()){
             Question question = new Question();
@@ -570,6 +584,10 @@ public class TeacherServiceImplement implements TeacherService {
         formDto.setCode(form.get().getCode());
         formDto.setLectureNumber(form.get().getLectureNumber());
         formDto.setTimeOfPeriod(form.get().getExpiredAt().toEpochSecond() - OffsetDateTime.now().toEpochSecond());
+        formDto.setLatitude(form.get().getLatitude());
+        formDto.setLongitude(form.get().getLongitude());
+        formDto.setIsLocationRequired(Boolean.TRUE.equals(form.get().getIsLocationRequired()));
+        formDto.setAllowedRadiusMeters(form.get().getAllowedRadiusMeters());
 
         List<QuestionDto> questionDtos = new ArrayList<>();
         List<Question> questions = questionRepository.findByForm(form.get());
@@ -691,6 +709,8 @@ public class TeacherServiceImplement implements TeacherService {
             dto.setCreatedAt(form.getCreatedAt());
             dto.setLatitude(form.getLatitude());
             dto.setLongitude(form.getLongitude());
+            dto.setIsLocationRequired(Boolean.TRUE.equals(form.getIsLocationRequired()));
+            dto.setAllowedRadiusMeters(form.getAllowedRadiusMeters());
 
             // Get questions
             List<QuestionDto> questionDtos = new ArrayList<>();
@@ -1174,5 +1194,24 @@ public class TeacherServiceImplement implements TeacherService {
         }
 
         return report;
+    }
+
+    private void applyFormGeofenceConfig(Form form, FormDto formDto) {
+        boolean required = Boolean.TRUE.equals(formDto.getIsLocationRequired());
+        form.setIsLocationRequired(required);
+        form.setAllowedRadiusMeters(required ? formDto.getAllowedRadiusMeters() : null);
+        form.setLatitude(required ? formDto.getLatitude() : null);
+        form.setLongitude(required ? formDto.getLongitude() : null);
+
+        if (!required) {
+            return;
+        }
+
+        try {
+            GeoDistanceUtils.validateAllowedRadius(formDto.getAllowedRadiusMeters());
+            GeoDistanceUtils.validateCoordinates(formDto.getLatitude(), formDto.getLongitude());
+        } catch (IllegalArgumentException ex) {
+            throw new CustomException("Cấu hình vị trí điểm danh không hợp lệ", HttpStatus.BAD_REQUEST);
+        }
     }
 }
