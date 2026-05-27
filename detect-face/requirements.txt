@@ -8,7 +8,7 @@ deepface==0.0.75
 retina-face
 shutilwhich==1.1.0
 pydantic==1.10.10
-typing-extensions==4.5.0
+typing-extensions>=4.8.0
 
 # Optional for environment variables (if needed)
 python-dotenv==1.0.0
