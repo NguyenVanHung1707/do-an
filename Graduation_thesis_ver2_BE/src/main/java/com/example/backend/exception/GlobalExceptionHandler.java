@@ -36,4 +36,26 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);
     }
+
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<Map<String, Object>> handleSecurityException(SecurityException ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", HttpStatus.FORBIDDEN.value());
+        body.put("error", "Forbidden");
+        body.put("message", ex.getMessage());
+        body.put("timestamp", OffsetDateTime.now().toString());
+
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler({IllegalStateException.class, IllegalArgumentException.class})
+    public ResponseEntity<Map<String, Object>> handleBadRequestExceptions(RuntimeException ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Bad Request");
+        body.put("message", ex.getMessage());
+        body.put("timestamp", OffsetDateTime.now().toString());
+
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
 }
