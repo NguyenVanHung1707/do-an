@@ -772,11 +772,11 @@ INSERT INTO student_answer (submission_id, question_id, answer_text, selected_ch
 SELECT
   sub.id,
   q.id,
-  CASE WHEN (sub.final_score % 5.0) = 0.0 THEN 'IoC' ELSE 'Container' END,
+  CASE WHEN (sub.final_score::numeric % 5.0) = 0.0 THEN 'IoC' ELSE 'Container' END,
   NULL,
-  CASE WHEN (sub.final_score % 5.0) = 0.0 THEN 5.0 ELSE 0.0 END,
-  CASE WHEN (sub.final_score % 5.0) = 0.0 THEN true ELSE false END,
-  CASE WHEN (sub.final_score % 5.0) = 0.0 THEN 'Chính xác.' ELSE 'Inversion of Control viết tắt là IoC.' END
+  CASE WHEN (sub.final_score::numeric % 5.0) = 0.0 THEN 5.0 ELSE 0.0 END,
+  CASE WHEN (sub.final_score::numeric % 5.0) = 0.0 THEN true ELSE false END,
+  CASE WHEN (sub.final_score::numeric % 5.0) = 0.0 THEN 'Chính xác.' ELSE 'Inversion of Control viết tắt là IoC.' END
 FROM student_submission sub
 JOIN assessment a ON a.id = sub.assessment_id
 JOIN assessment_question q ON q.assessment_id = a.id
