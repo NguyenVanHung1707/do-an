@@ -137,27 +137,48 @@ kc get "roles/admin" -r "$KEYCLOAK_REALM" >/dev/null
 kc get "roles/teacher" -r "$KEYCLOAK_REALM" >/dev/null
 kc get "roles/student" -r "$KEYCLOAK_REALM" >/dev/null
 
+kc_get_retry() {
+  local path="$1"
+  shift
+  local out=""
+  local attempts=0
+  while [ $attempts -lt 3 ]; do
+    out="$(kc get "$path" "$@" 2>/dev/null || echo "")"
+    if [[ "$out" == \[* ]] || [[ "$out" == \{* ]]; then
+      echo "$out"
+      return 0
+    fi
+    attempts=$((attempts + 1))
+    sleep 1
+  done
+  echo "$out"
+  return 1
+}
+
 user_id_by_username() {
   local username="$1"
   local users_json
-  users_json="$(kc get users -r "$KEYCLOAK_REALM" -q "username=${username}" -q exact=true --fields id,username)"
+  users_json="$(kc_get_retry users -r "$KEYCLOAK_REALM" -q "username=${username}" -q exact=true --fields id,username || echo "[]")"
   printf '%s' "$users_json" | python3 -c '
 import json
 import sys
 
 target = sys.argv[1]
-data = json.load(sys.stdin)
-for user in data:
-    if user.get("username") == target:
-        print(user.get("id", ""))
-        break
+try:
+    data = json.load(sys.stdin)
+    for user in data:
+        if user.get("username") == target:
+            print(user.get("id", ""))
+            break
+except Exception:
+    pass
 ' "$username"
 }
 
 has_admin_role() {
   local user_id="$1"
   local roles_json
-  roles_json="$(kc get "users/${user_id}/role-mappings/realm" -r "$KEYCLOAK_REALM" --fields name 2>/dev/null || echo "[]")"
+  roles_json="$(kc_get_retry "users/${user_id}/role-mappings/realm" -r "$KEYCLOAK_REALM" --fields name || echo "[]")"
   printf '%s' "$roles_json" | python3 -c '
 import json
 import sys
@@ -171,7 +192,7 @@ sys.exit(0 if any(role.get("name") == "admin" for role in roles) else 1)
 '
 }
 
-users_json="$(kc get users -r "$KEYCLOAK_REALM" -q max=10000 --fields id,username,serviceAccountClientId)"
+users_json="$(kc_get_retry users -r "$KEYCLOAK_REALM" -q max=10000 --fields id,username,serviceAccountClientId || echo "[]")"
 users_tsv="$(printf '%s' "$users_json" | python3 -c '
 import json
 import sys
