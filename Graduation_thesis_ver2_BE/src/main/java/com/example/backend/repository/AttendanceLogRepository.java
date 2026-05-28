@@ -11,4 +11,5 @@ import java.util.List;
 public interface AttendanceLogRepository extends JpaRepository<AttendanceLog, Long> {
     List<AttendanceLog> findByStudentAndCourse(Student student, Course course);
     List<AttendanceLog> findByStudentAndCourseAndLectureNumber(Student student, Course course, Integer lectureNumber);
+    boolean existsByCourseIdAndLectureNumber(Long courseId, Integer lectureNumber);
 }

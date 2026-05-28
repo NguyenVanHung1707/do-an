@@ -80,4 +80,16 @@ public interface CourseScheduleRepository extends JpaRepository<CourseSchedule, 
         @Param("windowStart") LocalTime windowStart,
         @Param("windowEnd") LocalTime windowEnd
     );
+
+    @Query("SELECT cs FROM CourseSchedule cs " +
+           "JOIN FETCH cs.course c " +
+           "JOIN FETCH c.semester s " +
+           "WHERE s.startDate <= :scheduleDate " +
+           "  AND s.endDate >= :scheduleDate " +
+           "  AND cs.dayOfWeek = :dayOfWeek " +
+           "  AND (c.isActive IS NULL OR c.isActive = true)")
+    List<CourseSchedule> findSchedulesForDate(
+        @Param("scheduleDate") LocalDate scheduleDate,
+        @Param("dayOfWeek") Integer dayOfWeek
+    );
 }
