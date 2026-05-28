@@ -20,6 +20,9 @@ public class GlobalExceptionHandler {
         body.put("error", status.getReasonPhrase());
         body.put("message", ex.getMessage());
         body.put("timestamp", OffsetDateTime.now().toString());
+        if (ex.getDetails() != null && !ex.getDetails().isEmpty()) {
+            body.put("details", ex.getDetails());
+        }
 
         return new ResponseEntity<>(body, status);
     }

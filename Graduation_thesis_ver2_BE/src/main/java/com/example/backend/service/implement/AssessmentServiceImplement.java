@@ -526,7 +526,11 @@ public class AssessmentServiceImplement implements AssessmentService {
     private Double validateAssessmentLocation(Assessment assessment, LocationCheckRequest location) {
         boolean required = Boolean.TRUE.equals(assessment.getIsLocationRequired());
         if (location != null && Boolean.TRUE.equals(location.getMockLocationDetected())) {
-            throw new CustomException("Thiết bị đang bật vị trí giả", HttpStatus.FORBIDDEN);
+            throw new CustomException(
+                    "Thiết bị đang bật vị trí giả",
+                    HttpStatus.FORBIDDEN,
+                    Map.of("reason", "MOCK_LOCATION_DETECTED")
+            );
         }
         if (location == null || location.getLatitude() == null || location.getLongitude() == null) {
             if (required) {
@@ -556,7 +560,19 @@ public class AssessmentServiceImplement implements AssessmentService {
         );
 
         if (required && (assessment.getAllowedRadiusMeters() == null || distance > assessment.getAllowedRadiusMeters())) {
-            throw new CustomException("Bạn không ở trong phạm vi lớp học", HttpStatus.FORBIDDEN);
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("reason", "OUT_OF_RANGE");
+            details.put("allowedRadiusMeters", assessment.getAllowedRadiusMeters());
+            details.put("calculatedDistanceMeters", Math.round(distance));
+            details.put("teacherLatitude", assessment.getTeacherLatitude());
+            details.put("teacherLongitude", assessment.getTeacherLongitude());
+            details.put("studentLatitude", location.getLatitude());
+            details.put("studentLongitude", location.getLongitude());
+            throw new CustomException(
+                    "Bạn không ở trong phạm vi lớp học",
+                    HttpStatus.FORBIDDEN,
+                    details
+            );
         }
 
         return distance;

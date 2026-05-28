@@ -77,8 +77,23 @@ export default function MyCourses() {
         });
       }
     } catch (e) {
-      alert('Không thể bắt đầu làm bài: ' + e.message);
+      alert('Không thể bắt đầu làm bài: ' + formatAssessmentStartError(e));
     }
+  };
+
+  const formatAssessmentStartError = (error) => {
+    const details = error?.details || error?.payload?.details;
+    if (error?.status === 403 && details?.reason === 'OUT_OF_RANGE') {
+      const distance = Number(details.calculatedDistanceMeters);
+      const radius = Number(details.allowedRadiusMeters);
+      const distanceText = Number.isFinite(distance) ? `${distance}m` : 'không xác định';
+      const radiusText = Number.isFinite(radius) ? `${radius}m` : 'chưa cấu hình';
+      return `Bạn đang ở ngoài phạm vi lớp học. Khoảng cách hiện tại: ${distanceText}, bán kính cho phép: ${radiusText}. Vui lòng kiểm tra GPS hoặc liên hệ giảng viên nếu vị trí lớp chưa đúng.`;
+    }
+    if (error?.status === 403 && details?.reason === 'MOCK_LOCATION_DETECTED') {
+      return 'Thiết bị đang bật vị trí giả. Vui lòng tắt fake GPS rồi thử lại.';
+    }
+    return error?.message || 'Có lỗi xảy ra.';
   };
 
   const handleViewGradedSubmission = async (subId) => {
