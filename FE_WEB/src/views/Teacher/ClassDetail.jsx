@@ -84,6 +84,81 @@ export default function ClassDetail({ classId, onBack }) {
   const [isConflictOpen, setIsConflictOpen] = useState(false);
   const [conflictData, setConflictData] = useState(null);
 
+  // Student detailed attendance log modal states
+  const [isStudentAttendanceDetailsOpen, setIsStudentAttendanceDetailsOpen] = useState(false);
+  const [selectedStudentDetails, setSelectedStudentDetails] = useState(null);
+  const [studentAttendanceLogs, setStudentAttendanceLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [savingAttendanceWeek, setSavingAttendanceWeek] = useState(null);
+
+  const handleOpenStudentDetails = async (student) => {
+    setSelectedStudentDetails(student);
+    setIsStudentAttendanceDetailsOpen(true);
+    setLoadingLogs(true);
+    try {
+      const logs = await apiFetch(`/teacher/get-all-attendance-of-student-of-course?courseId=${classId}&studentId=${student.id}`);
+      setStudentAttendanceLogs(logs || []);
+    } catch (e) {
+      console.error("Lỗi lấy lịch sử điểm danh sinh viên:", e);
+      setStudentAttendanceLogs([]);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const handleToggleAttendanceForWeek = async (weekNumber, currentStatus) => {
+    if (!selectedStudentDetails) return;
+    setSavingAttendanceWeek(weekNumber);
+    const newStatus = currentStatus === 'present' ? 'absent' : 'present';
+    try {
+      await dispatch(addManualAttendance({
+        classId,
+        studentId: selectedStudentDetails.id,
+        status: newStatus,
+        lectureNumber: weekNumber
+      })).unwrap();
+
+      // Refresh logs for this student
+      const logs = await apiFetch(`/teacher/get-all-attendance-of-student-of-course?courseId=${classId}&studentId=${selectedStudentDetails.id}`);
+      setStudentAttendanceLogs(logs || []);
+
+      // Also update the summary totals in selectedStudentDetails
+      setSelectedStudentDetails(prev => {
+        if (!prev) return null;
+        let diffPresence = 0;
+        let diffAbsence = 0;
+        
+        const oldLog = studentAttendanceLogs.find(l => l.lectureNumber === weekNumber);
+        if (oldLog) {
+          if (newStatus === 'present') {
+            diffPresence = 1;
+            diffAbsence = -1;
+          } else {
+            diffPresence = -1;
+            diffAbsence = 1;
+          }
+        } else {
+          if (newStatus === 'present') {
+            diffPresence = 1;
+          } else {
+            diffAbsence = 1;
+          }
+        }
+
+        return {
+          ...prev,
+          presences: Math.max(0, prev.presences + diffPresence),
+          absences: Math.max(0, prev.absences + diffAbsence)
+        };
+      });
+
+    } catch (err) {
+      alert(err.message || err || 'Không thể cập nhật điểm danh!');
+    } finally {
+      setSavingAttendanceWeek(null);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'timetable') {
       setLoadingSchedules(true);
@@ -460,6 +535,7 @@ export default function ClassDetail({ classId, onBack }) {
                       <th className="py-3 px-4 text-center">Buổi đi học</th>
                       <th className="py-3 px-4 text-center">Buổi vắng mặt</th>
                       <th className="py-3 px-4 text-right">Tỷ lệ chuyên cần</th>
+                      <th className="py-3 px-4 text-center">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -492,6 +568,15 @@ export default function ClassDetail({ classId, onBack }) {
                                 />
                               </div>
                             </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              onClick={() => handleOpenStudentDetails(student)}
+                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 rounded-lg text-xs font-bold transition flex items-center gap-1.5 mx-auto"
+                            >
+                              <FileEdit className="w-3.5 h-3.5" />
+                              <span>Chi tiết</span>
+                            </button>
                           </td>
                         </tr>
                       );
@@ -838,6 +923,174 @@ export default function ClassDetail({ classId, onBack }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Student Detailed Attendance Logs Modal */}
+      {isStudentAttendanceDetailsOpen && selectedStudentDetails && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                  <GraduationCap className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base">
+                    Chi tiết &amp; Điểm danh sinh viên
+                  </h3>
+                  <p className="text-xs font-semibold text-slate-500 font-mono mt-0.5">
+                    {selectedStudentDetails.fullName} (MSSV: {selectedStudentDetails.studentCode || selectedStudentDetails.id})
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setIsStudentAttendanceDetailsOpen(false);
+                  setSelectedStudentDetails(null);
+                  setStudentAttendanceLogs([]);
+                }} 
+                className="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 hover:bg-slate-100 rounded-lg transition"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              {/* Quick Stats Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 border border-slate-200/60 rounded-2xl">
+                <div className="text-center">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tổng số buổi</p>
+                  <p className="text-sm font-black text-slate-800 mt-1">15 buổi học</p>
+                </div>
+                <div className="text-center border-l border-slate-200">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Đi học</p>
+                  <p className="text-sm font-black text-emerald-600 mt-1">
+                    {selectedStudentDetails.presences} buổi
+                  </p>
+                </div>
+                <div className="text-center border-l border-slate-200">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vắng mặt</p>
+                  <p className="text-sm font-black text-rose-500 mt-1">
+                    {selectedStudentDetails.absences} buổi
+                  </p>
+                </div>
+                <div className="text-center border-l border-slate-200">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tỷ lệ chuyên cần</p>
+                  <p className="text-sm font-black text-primary mt-1">
+                    {(() => {
+                      const total = selectedStudentDetails.presences + selectedStudentDetails.absences;
+                      return total > 0 ? Math.round((selectedStudentDetails.presences / total) * 100) : 100;
+                    })()}%
+                  </p>
+                </div>
+              </div>
+
+              {/* Attendance Sessions Timeline list */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
+                  Danh sách lịch sử 15 buổi học
+                </h4>
+
+                {loadingLogs ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-2">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-slate-400 text-xs font-medium">Đang tải lịch sử điểm danh...</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100 max-h-[40vh] overflow-y-auto pr-2">
+                    {Array.from({ length: 15 }, (_, i) => i + 1).map((w) => {
+                      const log = studentAttendanceLogs.find((l) => l.lectureNumber === w);
+                      const isSaving = savingAttendanceWeek === w;
+                      
+                      return (
+                        <div key={w} className="py-3 flex items-center justify-between gap-4 group">
+                          {/* Left: Week number & Status info */}
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-slate-100 border border-slate-200 rounded-lg flex items-center justify-center text-xs font-bold text-slate-600 font-mono shrink-0">
+                              B{w}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-slate-800">Buổi học số {w}</p>
+                              {log ? (
+                                <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                                  Ngày học: {new Date(log.attendanceTime).toLocaleDateString('vi-VN')} {new Date(log.attendanceTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              ) : (
+                                <p className="text-[10px] text-slate-400 italic mt-0.5">Chưa ghi nhận điểm danh</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Middle: Attendance Badge */}
+                          <div className="shrink-0">
+                            {log ? (
+                              log.isAttendance ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-bold">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  <span>Đi học</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-full text-[10px] font-bold">
+                                  <AlertTriangle className="w-3 h-3 text-rose-600" />
+                                  <span>Vắng mặt</span>
+                                </span>
+                              )
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-50 text-slate-400 border border-slate-200 rounded-full text-[10px] font-bold">
+                                <span>Chưa điểm danh</span>
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Right: Quick Action Controls */}
+                          <div className="shrink-0 flex items-center min-w-[120px] justify-end">
+                            {isSaving ? (
+                              <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                                <span className="text-[10px]">Đang lưu...</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleAttendanceForWeek(w, log && log.isAttendance ? 'present' : 'absent')}
+                                  className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold transition shadow-sm ${
+                                    log && log.isAttendance
+                                      ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border border-rose-200'
+                                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700 border border-emerald-200'
+                                  }`}
+                                >
+                                  {log && log.isAttendance ? 'Đánh vắng' : 'Đánh đi học'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsStudentAttendanceDetailsOpen(false);
+                  setSelectedStudentDetails(null);
+                  setStudentAttendanceLogs([]);
+                }}
+                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition shadow-md"
+              >
+                Đóng chi tiết
+              </button>
+            </div>
           </div>
         </div>
       )}
