@@ -3,6 +3,9 @@ package com.example.backend.controller;
 import com.example.backend.dto.*;
 import com.example.backend.service.AssessmentService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +32,28 @@ public class AssessmentController {
             @AuthenticationPrincipal Jwt jwt) {
         String teacherId = jwt.getClaimAsString("sub");
         return ResponseEntity.ok(assessmentService.createAssessment(assessmentDto, teacherId));
+    }
+
+    @GetMapping("/teacher/assessments/questions-template")
+    public ResponseEntity<byte[]> downloadQuestionsTemplate() {
+        try {
+            byte[] data = assessmentService.getQuestionsImportTemplate();
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"question_import_template.xlsx\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    @PostMapping("/teacher/assessments/import-questions")
+    public ResponseEntity<?> importQuestions(@RequestParam("file") MultipartFile file) {
+        try {
+            return ResponseEntity.ok(assessmentService.importQuestionsFromExcel(file));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
+        }
     }
 
     @GetMapping("/teacher/assessments/{id}/submissions")

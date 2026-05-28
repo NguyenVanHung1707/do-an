@@ -35,6 +35,7 @@ import AssessmentManagement from './AssessmentManagement';
 import GradeAssessment from './GradeAssessment';
 import ClassDocuments from '../../components/Common/ClassDocuments';
 import TeacherClassAnalytics from '../../components/Teacher/TeacherClassAnalytics';
+import ClassGradebook from '../../components/Teacher/ClassGradebook';
 
 export default function ClassDetail({ classId, onBack }) {
   const { classesList } = useSelector((state) => state.classes);
@@ -396,6 +397,16 @@ export default function ClassDetail({ classId, onBack }) {
           Phân tích học lực
         </button>
         <button
+          onClick={() => setActiveTab('gradebook')}
+          className={`py-3 px-6 text-sm font-bold border-b-2 transition duration-200 ${
+            activeTab === 'gradebook'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Bảng điểm tổng hợp
+        </button>
+        <button
           onClick={() => setActiveTab('timetable')}
           className={`py-3 px-6 text-sm font-bold border-b-2 transition duration-200 ${
             activeTab === 'timetable'
@@ -637,6 +648,8 @@ export default function ClassDetail({ classId, onBack }) {
         <ClassDocuments classId={classId} isTeacher={true} />
       ) : activeTab === 'analytics' ? (
         <TeacherClassAnalytics classId={classId} />
+      ) : activeTab === 'gradebook' ? (
+        <ClassGradebook classId={classId} />
       ) : (
         <div>
           {assessmentViewState === 'list' ? (

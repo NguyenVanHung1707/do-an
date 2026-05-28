@@ -30,6 +30,7 @@ public class AssessmentDto {
     private Integer allowedRadiusMeters;
     private Double teacherLatitude;
     private Double teacherLongitude;
+    private Double weight;
     private List<AssessmentQuestionDto> questions;
     private String submissionStatus; // NOT_STARTED, IN_PROGRESS, SUBMITTED, GRADED
     private Double studentScore;

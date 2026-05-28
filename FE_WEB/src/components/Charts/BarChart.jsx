@@ -19,7 +19,7 @@ export default function BarChart({ data = [], yLabel = '', maxVal = 100, suffix 
 
   if (barCount === 0) {
     return (
-      <div className="w-full flex justify-center items-center py-20 bg-slate-50 rounded-xl border border-slate-100 text-slate-400 text-xs font-semibold">
+      <div className="w-full flex justify-center items-center py-20 bg-[#FAFAFA] dark:bg-slate-900/60 rounded-md border border-[#E4E4E7] dark:border-slate-800 text-slate-400 text-xs font-semibold font-inter">
         Không có dữ liệu hiển thị
       </div>
     );
@@ -50,7 +50,7 @@ export default function BarChart({ data = [], yLabel = '', maxVal = 100, suffix 
                 y1={y}
                 x2={width - paddingRight}
                 y2={y}
-                stroke="#E2E8F0"
+                stroke="#E4E4E7"
                 strokeWidth={1}
                 strokeDasharray="4 4"
               />
@@ -91,8 +91,8 @@ export default function BarChart({ data = [], yLabel = '', maxVal = 100, suffix 
                 y={y}
                 width={barWidth}
                 height={barHeight}
-                rx={6}
-                fill={isHovered ? '#0056b3' : '#34568B'}
+                rx={4}
+                fill={isHovered ? '#1D4ED8' : '#2563EB'}
                 className="transition-all duration-200"
               />
 

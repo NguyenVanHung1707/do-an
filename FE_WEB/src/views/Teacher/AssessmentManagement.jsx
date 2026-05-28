@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../../components/Common/Card';
 import { Plus, Check, Clock, Calendar, FileText, Trash2, Eye, Award, ExternalLink, RefreshCw, MapPin, Camera } from 'lucide-react';
-import { apiFetch } from '../../services/api';
+import { apiFetch, downloadQuestionsTemplate, importQuestionsFromExcel } from '../../services/api';
 
 export default function AssessmentManagement({ classId, onSelectSubmission }) {
   const [assessments, setAssessments] = useState([]);
@@ -61,6 +61,57 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
         caseSensitive: false
       }
     ]);
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const blob = await downloadQuestionsTemplate();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'question_import_template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (e) {
+      alert('Không thể tải file mẫu: ' + e.message);
+    }
+  };
+
+  const handleImportExcel = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    e.target.value = null;
+
+    try {
+      const parsedQuestions = await importQuestionsFromExcel(file);
+      if (parsedQuestions && parsedQuestions.length > 0) {
+        const cleaned = parsedQuestions.map(q => ({
+          id: q.id || Date.now() + Math.random(),
+          type: q.type || 'MULTIPLE_CHOICE',
+          content: q.content || '',
+          score: q.score || 1.0,
+          choices: q.choices || [
+            { key: 'A', text: '' },
+            { key: 'B', text: '' },
+            { key: 'C', text: '' },
+            { key: 'D', text: '' }
+          ],
+          correctChoice: q.correctChoice || 'A',
+          keywords: q.keywords || '',
+          caseSensitive: q.caseSensitive !== null ? q.caseSensitive : false
+        }));
+
+        setQuestions([...questions, ...cleaned]);
+        alert(`Nhập thành công ${cleaned.length} câu hỏi từ file Excel!`);
+      } else {
+        alert('Không tìm thấy câu hỏi nào hợp lệ trong file Excel.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Lỗi nhập Excel: ' + err.message);
+    }
   };
 
   const handleRemoveQuestion = (idx) => {
@@ -431,14 +482,35 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
               <div className="border-t border-slate-100 pt-6">
                 <div className="flex justify-between items-center mb-4">
                   <h4 className="font-bold text-slate-800 text-sm">Danh sách Câu hỏi ({questions.length})</h4>
-                  <button
-                    type="button"
-                    onClick={handleAddQuestion}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20 transition-all"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Thêm câu hỏi
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleDownloadTemplate}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition-all"
+                      title="Tải file mẫu Excel"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Tải file mẫu Excel
+                    </button>
+                    <label className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-xs font-bold rounded-lg cursor-pointer transition-all">
+                      <Plus className="w-3.5 h-3.5" />
+                      Nhập từ Excel
+                      <input
+                        type="file"
+                        accept=".xlsx"
+                        onChange={handleImportExcel}
+                        className="hidden"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleAddQuestion}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20 transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Thêm câu hỏi
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-6">

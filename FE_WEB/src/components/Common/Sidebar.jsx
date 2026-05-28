@@ -50,32 +50,32 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
   }
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-4">
       {/* Mobile Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 md:hidden">
-        <span className="font-bold text-slate-800 dark:text-slate-100">Menu chức năng</span>
-        <button onClick={onClose} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400">
+      <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 md:hidden">
+        <span className="font-headline font-bold text-slate-850 dark:text-slate-100 text-sm tracking-tight">Menu chức năng</span>
+        <button onClick={onClose} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md text-slate-500 dark:text-slate-400 transition-colors">
           <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* Role Profile Badge */}
-      <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-bold shadow-md shadow-primary/20">
+      <div className="pb-4 pt-2 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-3 bg-slate-50/70 dark:bg-slate-800/10 p-3 rounded-lg border border-slate-100/50 dark:border-slate-800/50 shadow-subtle">
+          <div className="w-10 h-10 rounded-md bg-primary text-white flex items-center justify-center font-headline font-bold shadow-subtle">
             {role === 'admin' ? 'AD' : role === 'teacher' ? 'GV' : 'SV'}
           </div>
           <div>
-            <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{user?.fullName || 'Người dùng'}</p>
-            <p className="text-xs font-medium text-primary mt-0.5 capitalize">
-              {role === 'admin' ? 'Quản trị viên' : role === 'teacher' ? 'Giảng viên' : 'Sinh viên'}
+            <p className="font-headline font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight">{user?.fullName || 'Người dùng'}</p>
+            <p className="text-[11px] font-mono font-bold text-secondary mt-0.5 uppercase tracking-wide">
+              {role === 'admin' ? 'Admin' : role === 'teacher' ? 'Teacher' : 'Student'}
             </p>
           </div>
         </div>
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 py-4 space-y-1 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
@@ -86,13 +86,14 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
                 onViewChange(item.id);
                 onClose(); // Close drawer on mobile
               }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 group ${
+              className={`w-full flex items-center gap-3 px-4 py-2.5 font-inter text-[14px] font-medium transition-all duration-150 group border-l-2 ${
                 isActive
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
-                  : 'text-slate-600 dark:text-slate-450 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
+                  ? 'border-primary bg-[#EFF6FF] dark:bg-blue-950/20 text-primary dark:text-blue-400 rounded-r-md'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 rounded-md'
               }`}
+              style={{ height: '40px' }}
             >
-              <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 duration-200 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'}`} />
+              <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 duration-150 ${isActive ? 'text-primary dark:text-blue-400' : 'text-slate-500 dark:text-slate-450 group-hover:text-primary'}`} />
               <span>{item.label}</span>
             </button>
           );
@@ -100,7 +101,7 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
       </nav>
 
       {/* Version footer */}
-      <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-center">
+      <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tracking-wider">
           BKHN-CLASSROOM V1.0.0
         </span>
@@ -111,7 +112,7 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
   return (
     <>
       {/* Desktop Sidebar (Permanent) */}
-      <aside className="w-64 hidden md:block shrink-0 h-[calc(100vh-62px)] sticky top-[62px] z-30">
+      <aside className="w-[280px] hidden md:block shrink-0 h-[calc(100vh-62px)] sticky top-[62px] z-30">
         {sidebarContent}
       </aside>
 
@@ -125,7 +126,7 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onClose }) 
 
       {/* Mobile Drawer (Slide in) */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 w-72 max-w-[80vw] z-50 md:hidden transition-transform duration-300 transform ${
+        className={`fixed top-0 bottom-0 left-0 w-[280px] z-50 md:hidden transition-transform duration-300 transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

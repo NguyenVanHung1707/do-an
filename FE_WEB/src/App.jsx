@@ -289,7 +289,7 @@ export default function App() {
           />
 
           {/* Core View Content */}
-          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto max-w-[100vw] md:max-w-[calc(100vw-16rem)]">
+          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto max-w-[100vw] md:max-w-[calc(100vw-280px)]">
             <div className="max-w-7xl mx-auto animate-fadeIn">
               {renderContent()}
             </div>

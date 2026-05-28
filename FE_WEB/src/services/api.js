@@ -75,6 +75,10 @@ export const apiFetch = async (endpoint, options = {}) => {
       error.conflicts = errData.conflicts || null;
       error.details = errData.details || null;
     }
+    if (response.status === 401) {
+      localStorage.removeItem('user');
+      window.location.reload();
+    }
     throw error;
   }
 
@@ -466,6 +470,25 @@ export const importStudentsFromExcel = async (courseId, file) => {
   const formData = new FormData();
   formData.append('file', file);
   return await apiFetch(`/teacher/courses/${courseId}/import-students`, {
+    method: 'POST',
+    body: formData
+  });
+};
+
+export const downloadQuestionsTemplate = async () => {
+  const response = await fetch(`${BASE_API_URL}/teacher/assessments/questions-template`, {
+    headers: getAuthHeader()
+  });
+  if (!response.ok) {
+    throw new Error('Không thể tải file mẫu Excel');
+  }
+  return await response.blob();
+};
+
+export const importQuestionsFromExcel = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return await apiFetch(`/teacher/assessments/import-questions`, {
     method: 'POST',
     body: formData
   });

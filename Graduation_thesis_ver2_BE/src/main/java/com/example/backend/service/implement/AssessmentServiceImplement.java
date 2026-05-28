@@ -7,6 +7,10 @@ import com.example.backend.repository.*;
 import com.example.backend.service.AssessmentService;
 import com.example.backend.service.NotificationService;
 import com.example.backend.util.GeoDistanceUtils;
+import com.example.backend.util.QuestionExcelParser;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.ByteArrayOutputStream;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -73,6 +77,7 @@ public class AssessmentServiceImplement implements AssessmentService {
         assessment.setScoreReleaseMode(dto.getScoreReleaseMode() != null ? dto.getScoreReleaseMode() : "AUTOMATIC");
         assessment.setIsPublished(dto.getIsPublished() != null ? dto.getIsPublished() : false);
         assessment.setIsCameraRequired(dto.getIsCameraRequired() != null ? dto.getIsCameraRequired() : false);
+        assessment.setWeight(dto.getWeight() != null ? dto.getWeight() : 0.0);
         applyAssessmentGeofenceConfig(assessment, dto);
 
         Assessment saved = assessmentRepository.save(assessment);
@@ -429,6 +434,7 @@ public class AssessmentServiceImplement implements AssessmentService {
         d.setAllowedRadiusMeters(a.getAllowedRadiusMeters());
         d.setTeacherLatitude(a.getTeacherLatitude());
         d.setTeacherLongitude(a.getTeacherLongitude());
+        d.setWeight(a.getWeight());
 
         List<AssessmentQuestion> qs = questionRepository.findByAssessmentIdOrderByOrderIndexAsc(a.getId());
         d.setQuestions(qs.stream().map(q -> {
@@ -570,5 +576,77 @@ public class AssessmentServiceImplement implements AssessmentService {
         submission.setCalculatedDistance(distance);
         submission.setMockLocationDetected(Boolean.TRUE.equals(location.getMockLocationDetected()));
         submission.setIsValidLocation(validLocation);
+    }
+
+    @Override
+    public byte[] getQuestionsImportTemplate() throws Exception {
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            Sheet sheet = workbook.createSheet("Mẫu câu hỏi");
+
+            // Header styling
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+
+            CellStyle headerStyle = workbook.createCellStyle();
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.INDIGO.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+
+            // Create headers row
+            Row headerRow = sheet.createRow(0);
+            String[] columns = {
+                "STT", 
+                "Loại câu hỏi (MULTIPLE_CHOICE / SHORT_ANSWER / ESSAY)", 
+                "Nội dung câu hỏi", 
+                "Điểm số", 
+                "Các lựa chọn (Trắc nghiệm - phân tách bằng |)", 
+                "Đáp án đúng / Từ khóa", 
+                "Phân biệt chữ hoa/thường (Trả lời ngắn - YES/NO)"
+            };
+            for (int i = 0; i < columns.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(columns[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // Create 3 mock data rows for different types
+            Object[][] mockData = {
+                {1, "MULTIPLE_CHOICE", "Thủ đô của Việt Nam là gì?", 2.0, "A: Hà Nội | B: TP. Hồ Chí Minh | C: Đà Nẵng | D: Hải Phòng", "A", "NO"},
+                {2, "SHORT_ANSWER", "Ngôn ngữ lập trình chính thức được Google khuyến khích sử dụng cho phát triển Android là gì?", 1.5, "", "Kotlin, Java", "NO"},
+                {3, "ESSAY", "Trình bày ưu điểm và nhược điểm của việc sử dụng AI trong chấm điểm học sinh.", 5.0, "", "", ""}
+            };
+
+            for (int r = 0; r < mockData.length; r++) {
+                Row row = sheet.createRow(r + 1);
+                for (int c = 0; c < mockData[r].length; c++) {
+                    Cell cell = row.createCell(c);
+                    Object val = mockData[r][c];
+                    if (val instanceof Integer) {
+                        cell.setCellValue((Integer) val);
+                    } else if (val instanceof Double) {
+                        cell.setCellValue((Double) val);
+                    } else {
+                        cell.setCellValue((String) val);
+                    }
+                }
+            }
+
+            // Auto size columns
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+        }
+    }
+
+    @Override
+    public List<Map<String, Object>> importQuestionsFromExcel(org.springframework.web.multipart.MultipartFile file) throws Exception {
+        return QuestionExcelParser.parseQuestions(file);
     }
 }

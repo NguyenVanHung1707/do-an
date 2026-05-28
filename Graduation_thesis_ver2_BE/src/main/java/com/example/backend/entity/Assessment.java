@@ -69,6 +69,9 @@ public class Assessment {
     @Column(name = "teacher_longitude")
     private Double teacherLongitude;
 
+    @Column(name = "weight")
+    private Double weight = 0.0;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private OffsetDateTime createdAt;

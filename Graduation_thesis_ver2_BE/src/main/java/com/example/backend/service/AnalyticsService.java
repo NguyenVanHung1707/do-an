@@ -243,4 +243,103 @@ public class AnalyticsService {
         summary.put("studentStats", studentStats);
         return summary;
     }
+
+    public Map<String, Object> getGradebook(Long courseId) {
+        Map<String, Object> result = new HashMap<>();
+
+        Optional<Course> courseOpt = courseRepository.findById(courseId);
+        if (courseOpt.isEmpty()) {
+            throw new RuntimeException("Course not found for ID: " + courseId);
+        }
+        Course course = courseOpt.get();
+
+        // 1. Fetch all assessments for this course
+        List<Assessment> assessments = assessmentRepository.findByCourseId(courseId);
+        List<Map<String, Object>> assessmentList = new ArrayList<>();
+        double allAssessmentsWeightSum = 0.0;
+        for (Assessment ass : assessments) {
+            allAssessmentsWeightSum += ass.getWeight() != null ? ass.getWeight() : 0.0;
+            Map<String, Object> assMap = new HashMap<>();
+            assMap.put("id", ass.getId());
+            assMap.put("title", ass.getTitle());
+            assMap.put("maxScore", ass.getMaxScore());
+            assMap.put("type", ass.getType());
+            assMap.put("weight", ass.getWeight() != null ? ass.getWeight() : 0.0);
+            assessmentList.add(assMap);
+        }
+        result.put("assessments", assessmentList);
+
+        // 2. Fetch all registered students
+        List<Register> registrations = registerRepository.findByIdCourse(course);
+        List<Map<String, Object>> studentList = new ArrayList<>();
+
+        for (Register reg : registrations) {
+            Student student = reg.getId().getStudent();
+            if (student == null) continue;
+            String keycloakId = student.getKeycloakId();
+
+            Map<String, Object> studentMap = new HashMap<>();
+            studentMap.put("studentId", keycloakId);
+            studentMap.put("studentCode", student.getStudentCode());
+            studentMap.put("name", student.getName());
+
+            // Individual grades mapping
+            Map<Long, Double> grades = new HashMap<>();
+            double totalWeight = 0;
+            double weightedScore = 0;
+
+            for (Assessment ass : assessments) {
+                Optional<StudentSubmission> subOpt = studentSubmissionRepository.findByAssessmentIdAndStudentId(ass.getId(), keycloakId);
+                double w = ass.getWeight() != null ? ass.getWeight() : 0.0;
+
+                if (subOpt.isPresent() && "GRADED".equals(subOpt.get().getStatus())) {
+                    Double score = subOpt.get().getFinalScore();
+                    if (score != null) {
+                        grades.put(ass.getId(), score);
+                        if (allAssessmentsWeightSum < 0.001) {
+                            // Fallback: simple average if weights sum is 0
+                            weightedScore += (score / ass.getMaxScore()) * 10.0;
+                            totalWeight += 1.0;
+                        } else {
+                            // Normalized weighted average
+                            weightedScore += ((score / ass.getMaxScore()) * 10.0) * w;
+                            totalWeight += w;
+                        }
+                    }
+                }
+            }
+
+            double averageGrade = totalWeight > 0 ? Math.round((weightedScore / totalWeight) * 10.0) / 10.0 : 0.0;
+
+            studentMap.put("grades", grades);
+            studentMap.put("averageGrade", averageGrade);
+            studentList.add(studentMap);
+        }
+
+        result.put("students", studentList);
+        return result;
+    }
+
+    public void updateWeights(Long courseId, List<com.example.backend.dto.WeightUpdateDto> weightUpdates) {
+        double sum = 0.0;
+        for (com.example.backend.dto.WeightUpdateDto u : weightUpdates) {
+            if (u.getWeight() == null || u.getWeight() < 0) {
+                throw new IllegalArgumentException("Hệ số điểm không được âm hoặc rỗng!");
+            }
+            sum += u.getWeight();
+        }
+        if (Math.abs(sum - 1.0) > 0.001) {
+            throw new IllegalArgumentException("Tổng các hệ số phải bằng 1.0 (100%)");
+        }
+
+        for (com.example.backend.dto.WeightUpdateDto u : weightUpdates) {
+            Assessment ass = assessmentRepository.findById(u.getAssessmentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài đánh giá với ID: " + u.getAssessmentId()));
+            if (!ass.getCourse().getId().equals(courseId)) {
+                throw new IllegalArgumentException("Bài đánh giá không thuộc lớp học này!");
+            }
+            ass.setWeight(u.getWeight());
+            assessmentRepository.save(ass);
+        }
+    }
 }

@@ -300,7 +300,7 @@ export default function Timetable() {
           )}
 
           {/* Timetable Grid Container */}
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4">
             {daysOfWeek.map((day) => {
               // Find schedule slots for this specific day of week
               const daySchedules = schedules.filter(s => s.dayOfWeek === day.num);
@@ -323,11 +323,11 @@ export default function Timetable() {
                   }`}
                 >
                   {/* Day Header */}
-                  <div className="border-b border-slate-100 dark:border-slate-800/80 pb-2 flex justify-between items-center">
-                    <span className={`text-xs font-black uppercase tracking-wider ${isToday ? 'text-primary' : 'text-slate-800 dark:text-slate-200'}`}>
+                  <div className="border-b border-slate-100 dark:border-slate-800/80 pb-2 flex justify-between items-center gap-1.5">
+                    <span className={`text-xs font-black uppercase tracking-wider whitespace-nowrap ${isToday ? 'text-primary' : 'text-slate-800 dark:text-slate-200'}`}>
                       {day.label}
                     </span>
-                    <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded font-mono ${
+                    <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded font-mono shrink-0 ${
                       isToday 
                         ? 'bg-primary text-white' 
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
@@ -366,16 +366,16 @@ export default function Timetable() {
 
                           <div className="pl-1 pt-1 border-t border-slate-100/50 dark:border-slate-800/50 space-y-1 text-[10px] font-semibold text-slate-500 dark:text-slate-450">
                             <div className="flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5 text-slate-400" />
+                              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                               <span className="font-mono">{slot.startTime} - {slot.endTime}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                               <span className="line-clamp-1">{slot.roomName}</span>
                             </div>
                             {slot.teacherName && role === 'student' && (
                               <div className="flex items-center gap-1">
-                                <BookOpen className="w-3.5 h-3.5 text-slate-400" />
+                                <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                 <span className="line-clamp-1">{slot.teacherName}</span>
                               </div>
                             )}
