@@ -99,8 +99,8 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: true
           tags: ghcr.io/nguyenvanhung1707/do-an/${{ matrix.service }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }},ignore-error=true
 
   deploy:
     name: Deploy to Production VPS
