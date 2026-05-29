@@ -79,14 +79,14 @@ export default function AnswerForm() {
     e.preventDefault();
     setErrorMsg('');
 
-    if (pinCode.trim().length !== 6) {
-      setErrorMsg('Mã PIN điểm danh phải có độ dài chính xác 6 ký tự.');
+    if (pinCode.trim().length !== 8) {
+      setErrorMsg('Mã PIN điểm danh phải có độ dài chính xác 8 ký tự.');
       return;
     }
 
-    const codeUpper = pinCode.toUpperCase();
+    const codeTrimmed = pinCode.trim();
     
-    dispatch(fetchFormByCode(codeUpper))
+    dispatch(fetchFormByCode(codeTrimmed))
       .unwrap()
       .then((form) => {
         setSelectedForm(form);
@@ -244,11 +244,11 @@ export default function AnswerForm() {
             <div className="w-full max-w-xs pt-4">
               <input
                 type="text"
-                maxLength="6"
-                placeholder="VD: AI123F"
+                maxLength="8"
+                placeholder="VD: WUtpvpYH"
                 value={pinCode}
-                onChange={(e) => setPinCode(e.target.value.toUpperCase())}
-                className="w-full text-center font-mono text-3xl font-extrabold tracking-[0.4em] uppercase bg-slate-50 border-2 border-slate-200 rounded-2xl py-3 text-slate-700 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition-all uppercase placeholder:font-sans placeholder:tracking-normal placeholder:text-lg"
+                onChange={(e) => setPinCode(e.target.value)}
+                className="w-full text-center font-mono text-2xl font-extrabold tracking-[0.2em] bg-slate-50 border-2 border-slate-200 rounded-2xl py-3 text-slate-700 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition-all placeholder:font-sans placeholder:tracking-normal placeholder:text-lg"
                 required
               />
             </div>
