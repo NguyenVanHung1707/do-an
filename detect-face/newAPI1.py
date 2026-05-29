@@ -158,7 +158,11 @@ def checkAttendence(imagePath, listID):
                         detector_backend='retinaface', 
                         enforce_detection=False
                     )
-                    if res.get('verified', False):
+                    distance = res.get('distance', 0.0)
+                    threshold = res.get('threshold', 0.0)
+                    verified = res.get('verified', False)
+                    print(f"[AI Face ID] Student {id} ({s_name}): verified={verified}, distance={distance:.4f}, threshold={threshold:.4f}")
+                    if verified:
                         is_student_present = True
                         face_item["identified"] = True
                         face_item["studentId"] = id
