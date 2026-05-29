@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Card from '../../components/Common/Card';
-import { ArrowLeft, Check, CheckCircle2, XCircle, AlertTriangle, Send, RefreshCw, Award, User } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Send, RefreshCw, Award, User } from 'lucide-react';
 import { apiFetch } from '../../services/api';
 
 export default function GradeAssessment({ assessmentId, onBack }) {
@@ -13,7 +13,7 @@ export default function GradeAssessment({ assessmentId, onBack }) {
   const [essayGrades, setEssayGrades] = useState({}); // questionId -> { score, comment }
   const [overallFeedback, setOverallFeedback] = useState('');
 
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await apiFetch(`/teacher/assessments/${assessmentId}/submissions`);
@@ -25,11 +25,11 @@ export default function GradeAssessment({ assessmentId, onBack }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [assessmentId]);
 
   useEffect(() => {
     fetchSubmissions();
-  }, [assessmentId]);
+  }, [fetchSubmissions]);
 
   const handleSelectSubmission = async (sub) => {
     setIsSubLoading(true);

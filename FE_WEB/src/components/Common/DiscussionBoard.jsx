@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { Pin, Trash2, MessageSquare, Send, RefreshCw, User, MessageCircle, AlertCircle } from 'lucide-react';
 import { apiFetch } from '../../services/api';
@@ -205,7 +205,7 @@ export default function DiscussionBoard({ courseId }) {
     return user.role === 'teacher' || post.authorId === user.id;
   };
 
-  const canDeleteComment = (comment, post) => {
+  const canDeleteComment = (comment) => {
     if (!user) return false;
     return user.role === 'teacher' || comment.authorId === user.id;
   };
@@ -414,7 +414,7 @@ export default function DiscussionBoard({ courseId }) {
                                   </p>
                                 </div>
 
-                                {canDeleteComment(comment, post) && (
+                                {canDeleteComment(comment) && (
                                   <button
                                     onClick={() => handleDeleteComment(post.id, comment.id)}
                                     className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded transition"

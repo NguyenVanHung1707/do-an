@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { uploadStudentFace, fetchStudentFace } from '../../store/attendanceSlice';
-import { UploadCloud, CheckCircle2, User, RefreshCw, Trash2, Camera, ShieldCheck } from 'lucide-react';
+import { UploadCloud, CheckCircle2, RefreshCw, Trash2, Camera, ShieldCheck } from 'lucide-react';
 import Card from '../../components/Common/Card';
 import WebcamCapture from '../../components/Webcam/WebcamCapture';
 
@@ -9,7 +9,6 @@ export default function FaceUpload() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const registeredFaceUrl = useSelector((state) => state.attendance.registeredFaceUrl);
-  const loading = useSelector((state) => state.attendance.loading);
 
   const [imagePreview, setImagePreview] = useState(null);
   const [dragActive, setDragActive] = useState(false);
@@ -82,7 +81,7 @@ export default function FaceUpload() {
         setIsScanning(false);
         setSuccessMsg('Đăng ký khuôn mặt thành công! Hệ thống đã học đặc trưng sinh trắc học của bạn.');
       })
-      .catch((err) => {
+      .catch(() => {
         setIsScanning(false);
         // Error is set in state, but we can also handle here if needed
       });

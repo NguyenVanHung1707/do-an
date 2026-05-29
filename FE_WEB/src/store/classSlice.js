@@ -38,7 +38,7 @@ export const fetchClasses = createAsyncThunk(
                 attendanceRate,
                 students: formattedStudents
               };
-            } catch (err) {
+            } catch {
               return {
                 ...course,
                 studentsCount: 0,
@@ -82,7 +82,7 @@ export const fetchClasses = createAsyncThunk(
                 presences,
                 logs: formattedLogs
               };
-            } catch (e) {
+            } catch {
               return {
                 ...course,
                 attendanceRate: 100,

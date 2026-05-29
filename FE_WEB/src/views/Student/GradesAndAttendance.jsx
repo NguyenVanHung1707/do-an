@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { 
   BookOpen, 
@@ -6,17 +6,13 @@ import {
   Award, 
   Clock, 
   FileText, 
-  CheckCircle2, 
   AlertTriangle, 
   ChevronDown, 
   ChevronUp, 
-  Percent, 
-  Frown, 
   Smile, 
   ListOrdered,
   History
 } from 'lucide-react';
-import Card from '../../components/Common/Card';
 import { getMyCourses, getMyAttendance, getCourseAssessments, getSemesters } from '../../services/api';
 import StudentAnalytics from '../../components/Student/StudentAnalytics';
 
@@ -75,8 +71,6 @@ export default function GradesAndAttendance() {
 
       // 2. Fetch attendance logs and assessments for each course concurrently
       const details = {};
-      let totalAbsCount = 0;
-      let totalRateSum = 0;
 
       await Promise.all(
         courseList.map(async (course) => {
@@ -91,9 +85,6 @@ export default function GradesAndAttendance() {
             const presences = attendanceLogs.filter(log => log.isAttendance).length;
             const absences = attendanceLogs.filter(log => !log.isAttendance).length;
             const rate = totalSessions > 0 ? Math.round((presences / totalSessions) * 100) : 100;
-
-            totalAbsCount += absences;
-            totalRateSum += rate;
 
             // Filter out absent log details
             const absentLogs = attendanceLogs.filter(log => !log.isAttendance).map(log => {
@@ -508,7 +499,7 @@ export default function GradesAndAttendance() {
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
-                                    {detail.absentLogs.map((log, idx) => (
+                                    {detail.absentLogs.map((log) => (
                                       <tr key={log.id} className="hover:bg-rose-50/10 transition">
                                         <td className="py-4 px-5">
                                           <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../store/authSlice';
 import { getStudentProfile, completeStudentProfile } from '../../services/api';
@@ -35,7 +35,7 @@ export default function CompleteProfile({ onComplete }) {
           name: data.name || '',
           email: data.email || ''
         });
-      } catch (e) {
+      } catch {
         setError('Không thể kết nối máy chủ để tải thông tin tài khoản!');
       } finally {
         setLoading(false);

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import Card from '../../components/Common/Card';
-import { ArrowLeft, Clock, Save, Wifi, WifiOff, AlertTriangle, ChevronLeft, ChevronRight, HelpCircle, Send, MapPin, Camera, Video, VideoOff } from 'lucide-react';
+import { Clock, Save, Wifi, WifiOff, AlertTriangle, ChevronLeft, ChevronRight, HelpCircle, Send, MapPin, Camera } from 'lucide-react';
 import { apiFetch } from '../../services/api';
 
 export default function TakeAssessment({ assessmentId, submissionId, courseId, onBack }) {
@@ -16,7 +16,6 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // AI Camera Proctoring states
-  const [cameraStream, setCameraStream] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
 
@@ -33,27 +32,22 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
   // Timer Ref
   const timerRef = useRef(null);
 
-  // Synchronize offline status
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false);
-      setAutoSaveStatus('Đang đồng bộ dữ liệu ngoại tuyến...');
-      syncOfflineAnswers();
-    };
-    const handleOffline = () => {
-      setIsOffline(true);
-      setAutoSaveStatus('Đang ngoại tuyến - Đã lưu nháp vào bộ nhớ máy');
-    };
+  const getCurrentBrowserLocation = () => new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Trình duyệt không hỗ trợ lấy vị trí GPS.'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude
+      }),
+      () => reject(new Error('Vui lòng cấp quyền vị trí để tiếp tục.')),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [answers, submissionId]);
-
-  const stopCameraProctoring = async () => {
+  const stopCameraProctoring = useCallback(async () => {
     if (streamIntervalRef.current) {
       clearInterval(streamIntervalRef.current);
       streamIntervalRef.current = null;
@@ -63,7 +57,6 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
       cameraStreamRef.current.getTracks().forEach(track => track.stop());
       cameraStreamRef.current = null;
     }
-    setCameraStream(null);
     setIsCameraActive(false);
 
     if (wsRef.current) {
@@ -80,9 +73,9 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
     } catch (e) {
       console.error("[AI Proctor] Error stopping session:", e);
     }
-  };
+  }, [assessmentId, user]);
 
-  const initCameraProctoring = async () => {
+  const initCameraProctoring = useCallback(async () => {
     try {
       await apiFetch(`/proctor/start?examId=${assessmentId}&studentId=${user?.code}`, {
         method: 'POST'
@@ -93,7 +86,6 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
         audio: false
       });
       cameraStreamRef.current = stream;
-      setCameraStream(stream);
       setIsCameraActive(true);
       setCameraError(null);
 
@@ -145,7 +137,90 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
       setCameraError("Thiếu quyền truy cập Camera! Vui lòng cấp quyền camera trong trình duyệt.");
       alert("Bài thi này yêu cầu giám sát AI qua Camera trực tiếp. Vui lòng cấp quyền webcam để tiếp tục!");
     }
-  };
+  }, [assessmentId, user]);
+
+  const executeSubmit = useCallback(async (isAuto = false) => {
+    setIsSubmitting(true);
+    try {
+      const options = { method: 'POST' };
+      if (assessment?.isLocationRequired) {
+        const location = await getCurrentBrowserLocation();
+        options.body = JSON.stringify({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          mockLocationDetected: false
+        });
+      }
+      const res = await apiFetch(`/submissions/${submissionId}/submit`, options);
+      if (res) {
+        if (assessment?.isCameraRequired) {
+          await stopCameraProctoring();
+        }
+        alert(isAuto ? 'Hết giờ làm bài! Hệ thống đã tự động khóa và nộp bài thi của bạn.' : 'Nộp bài thi thành công!');
+        onBack();
+      }
+    } catch (e) {
+      alert('Không thể nộp bài: ' + e.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [assessment, submissionId, onBack, stopCameraProctoring]);
+
+  const handleAutoSubmit = useCallback(() => {
+    setIsSubmitting(true);
+    setAutoSaveStatus('HẾT GIỜ! Đang tự động nộp bài...');
+    executeSubmit(true);
+  }, [executeSubmit]);
+
+  const syncOfflineAnswers = useCallback(async () => {
+    const offlineKey = `submission:offline:${submissionId}`;
+    const stored = localStorage.getItem(offlineKey);
+    if (!stored) {
+      setAutoSaveStatus('Đã lưu mọi thay đổi.');
+      return;
+    }
+
+    try {
+      const storedAnswers = JSON.parse(stored);
+      for (const qId of Object.keys(storedAnswers)) {
+        await apiFetch(`/submissions/${submissionId}/save-draft`, {
+          method: 'POST',
+          body: JSON.stringify({
+            questionId: parseInt(qId),
+            selectedChoice: storedAnswers[qId].selectedChoice,
+            answerText: storedAnswers[qId].answerText
+          })
+        });
+      }
+      localStorage.removeItem(offlineKey);
+      setAutoSaveStatus('Đã đồng bộ thành công lên máy chủ!');
+    } catch (e) {
+      console.error(e);
+      setAutoSaveStatus('Có lỗi đồng bộ: Chờ kết nối tốt hơn...');
+    }
+  }, [submissionId]);
+
+  // Synchronize offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      setAutoSaveStatus('Đang đồng bộ dữ liệu ngoại tuyến...');
+      syncOfflineAnswers();
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+      setAutoSaveStatus('Đang ngoại tuyến - Đã lưu nháp vào bộ nhớ máy');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [answers, submissionId, syncOfflineAnswers]);
+
+
 
   // Load assessment metadata and existing session
   useEffect(() => {
@@ -223,36 +298,9 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
         }
       }
     };
-  }, [assessmentId, submissionId, courseId]);
+  }, [assessmentId, submissionId, courseId, initCameraProctoring, handleAutoSubmit, onBack]);
 
-  // Sync offline answers stored in localStorage
-  const syncOfflineAnswers = async () => {
-    const offlineKey = `submission:offline:${submissionId}`;
-    const stored = localStorage.getItem(offlineKey);
-    if (!stored) {
-      setAutoSaveStatus('Đã lưu mọi thay đổi.');
-      return;
-    }
 
-    try {
-      const storedAnswers = JSON.parse(stored);
-      for (const qId of Object.keys(storedAnswers)) {
-        await apiFetch(`/submissions/${submissionId}/save-draft`, {
-          method: 'POST',
-          body: JSON.stringify({
-            questionId: parseInt(qId),
-            selectedChoice: storedAnswers[qId].selectedChoice,
-            answerText: storedAnswers[qId].answerText
-          })
-        });
-      }
-      localStorage.removeItem(offlineKey);
-      setAutoSaveStatus('Đã đồng bộ thành công lên máy chủ!');
-    } catch (e) {
-      console.error(e);
-      setAutoSaveStatus('Có lỗi đồng bộ: Chờ kết nối tốt hơn...');
-    }
-  };
 
   // Perform debounced save to backend
   const triggerAutoSave = (questionId, selectedChoice, answerText) => {
@@ -325,58 +373,12 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
     triggerAutoSave(qId, currentAns.selectedChoice, text);
   };
 
-  const getCurrentBrowserLocation = () => new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error('Trình duyệt không hỗ trợ lấy vị trí GPS.'));
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude
-      }),
-      () => reject(new Error('Vui lòng cấp quyền vị trí để tiếp tục.')),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  });
-
   const handleManualSubmit = async () => {
     if (!confirm('Bạn có chắc chắn muốn nộp bài thi ngay lập tức? Sau khi nộp sẽ không thể chỉnh sửa!')) return;
     executeSubmit();
   };
 
-  const handleAutoSubmit = () => {
-    setIsSubmitting(true);
-    setAutoSaveStatus('HẾT GIỜ! Đang tự động nộp bài...');
-    executeSubmit(true);
-  };
 
-  const executeSubmit = async (isAuto = false) => {
-    setIsSubmitting(true);
-    try {
-      const options = { method: 'POST' };
-      if (assessment?.isLocationRequired) {
-        const location = await getCurrentBrowserLocation();
-        options.body = JSON.stringify({
-          latitude: location.latitude,
-          longitude: location.longitude,
-          mockLocationDetected: false
-        });
-      }
-      const res = await apiFetch(`/submissions/${submissionId}/submit`, options);
-      if (res) {
-        if (assessment?.isCameraRequired) {
-          await stopCameraProctoring();
-        }
-        alert(isAuto ? 'Hết giờ làm bài! Hệ thống đã tự động khóa và nộp bài thi của bạn.' : 'Nộp bài thi thành công!');
-        onBack();
-      }
-    } catch (e) {
-      alert('Không thể nộp bài: ' + e.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const formatTime = (secs) => {
     if (secs === null) return 'Đang tính';
@@ -534,7 +536,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
                           </button>
                         );
                       });
-                    } catch (e) {
+                    } catch {
                       return <p className="text-rose-500 text-xs">Lỗi hiển thị đáp án câu hỏi.</p>;
                     }
                   })()}

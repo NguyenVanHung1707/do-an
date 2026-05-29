@@ -1,5 +1,5 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Camera, RefreshCw, Square, Check, X } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { Camera, RefreshCw, Square, Check } from 'lucide-react';
 
 export default function WebcamCapture({
   onCapture,

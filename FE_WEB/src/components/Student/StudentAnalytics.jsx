@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getStudentAnalyticsSummary } from '../../services/api';
-import { Award, Calendar, CheckCircle2, AlertTriangle, TrendingUp, BarChart3, Activity } from 'lucide-react';
+import { AlertTriangle, TrendingUp, BarChart3, Activity } from 'lucide-react';
 
 export default function StudentAnalytics({ semesterId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [semesterId]);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -23,7 +19,11 @@ export default function StudentAnalytics({ semesterId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [semesterId]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
 
   if (loading) {
     return (
@@ -50,7 +50,7 @@ export default function StudentAnalytics({ semesterId }) {
     );
   }
 
-  const { totalCourses, averageAttendance, totalAbsences, gpaProgress = [], absencesBreakdown = [] } = data;
+  const { averageAttendance, gpaProgress = [], absencesBreakdown = [] } = data;
 
   // Let's compute some custom SVG values for the GPA progress line chart
   const hasGpa = gpaProgress.length > 0;

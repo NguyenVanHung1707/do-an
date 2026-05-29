@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { submitStudentAttendance, fetchFormByCode } from '../../store/attendanceSlice';
 import { ShieldCheck, MapPin, CheckCircle2, ChevronRight, Lock, HelpCircle, Navigation, Info } from 'lucide-react';
 import Card from '../../components/Common/Card';
 
 export default function AnswerForm() {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  const activeForms = useSelector((state) => state.attendance.activeForms);
 
   // Flow states
   const [step, setStep] = useState(1); // Step 1: Input Code, Step 2: Answer Questions & Location

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { detectGroupFaceAttendance, clearPhotoResult } from '../../store/attendanceSlice';
 import { apiFetch } from '../../services/api';

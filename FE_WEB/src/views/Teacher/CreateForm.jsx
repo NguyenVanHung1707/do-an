@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createAttendanceForm } from '../../store/attendanceSlice';
 import { apiFetch } from '../../services/api';
@@ -55,7 +55,7 @@ export default function CreateForm() {
   const [isSavingChanges, setIsSavingChanges] = useState(false);
 
   // Fetch all forms for the selected class and session number
-  const fetchForms = async (classId, lecNum) => {
+  const fetchForms = useCallback(async (classId, lecNum) => {
     if (!classId || !lecNum) return;
     setLoadingForms(true);
     try {
@@ -70,7 +70,7 @@ export default function CreateForm() {
     } finally {
       setLoadingForms(false);
     }
-  };
+  }, [minFormsRequired]);
 
   // Add question to list
   const handleAddQuestion = () => {
@@ -118,7 +118,7 @@ export default function CreateForm() {
     if (selectedClassId && lectureNumber) {
       fetchForms(selectedClassId, lectureNumber);
     }
-  }, [selectedClassId, lectureNumber]);
+  }, [selectedClassId, lectureNumber, fetchForms]);
 
   // Form submit handler
   const handleSubmit = (e) => {

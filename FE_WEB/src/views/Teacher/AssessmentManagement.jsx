@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Card from '../../components/Common/Card';
-import { Plus, Check, Clock, Calendar, FileText, Trash2, Eye, Award, ExternalLink, RefreshCw, MapPin, Camera } from 'lucide-react';
+import { Plus, Check, Clock, Calendar, FileText, Trash2, Eye, Award, RefreshCw, MapPin, Camera } from 'lucide-react';
 import { apiFetch, downloadQuestionsTemplate, importQuestionsFromExcel } from '../../services/api';
 
 export default function AssessmentManagement({ classId, onSelectSubmission }) {
@@ -12,7 +12,7 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState('ASSIGNMENT'); // QUIZ, MID_TERM, FINAL_EXAM, ASSIGNMENT
-  const [maxScore, setMaxScore] = useState(10.0);
+  const maxScore = 10.0;
   const [durationMinutes, setDurationMinutes] = useState('');
   const [deadline, setDeadline] = useState('');
   const [scoreReleaseMode, setScoreReleaseMode] = useState('AUTOMATIC'); // AUTOMATIC, MANUAL
@@ -22,7 +22,7 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
   const [questions, setQuestions] = useState([]);
 
   // Load assessments
-  const fetchAssessments = async () => {
+  const fetchAssessments = useCallback(async () => {
     setIsLoading(true);
     try {
       // Students and teachers call endpoints, we use teacher specific view but we can fetch course assessments
@@ -36,11 +36,11 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [classId]);
 
   useEffect(() => {
     fetchAssessments();
-  }, [classId]);
+  }, [fetchAssessments]);
 
   const handleAddQuestion = () => {
     setQuestions([
@@ -164,7 +164,7 @@ export default function AssessmentManagement({ classId, onSelectSubmission }) {
     }
 
     const payloadQuestions = questions.map((q, idx) => {
-      let meta = {};
+      let meta;
       if (q.type === 'MULTIPLE_CHOICE') {
         meta = {
           choices: q.choices.map(c => ({ key: c.key, text: c.text })),

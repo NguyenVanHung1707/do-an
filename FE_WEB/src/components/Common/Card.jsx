@@ -1,4 +1,3 @@
-import React from 'react';
 
 export default function Card({ children, className = '', title = '', subtitle = '', action = null }) {
   return (

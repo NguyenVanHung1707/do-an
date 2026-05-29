@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { BookOpen, Calendar, MapPin, CheckCircle, XCircle, ArrowLeft, Award, Clock, FileText, CheckCircle2, AlertTriangle, Eye, ArrowRight, Play } from 'lucide-react';
+import { BookOpen, Calendar, MapPin, CheckCircle, XCircle, ArrowLeft, Award, Clock, FileText, Eye, Play } from 'lucide-react';
 import Card from '../../components/Common/Card';
 import DiscussionBoard from '../../components/Common/DiscussionBoard';
 import TakeAssessment from './TakeAssessment';
@@ -17,9 +17,8 @@ export default function MyCourses() {
   const [isAssessmentsLoading, setIsAssessmentsLoading] = useState(false);
   const [activeAssessmentSession, setActiveAssessmentSession] = useState(null);
   const [viewingGradedSubmission, setViewingGradedSubmission] = useState(null);
-  const [isSubmissionLoading, setIsSubmissionLoading] = useState(false);
 
-  const fetchClassAssessments = async () => {
+  const fetchClassAssessments = useCallback(async () => {
     if (!selectedClass) return;
     setIsAssessmentsLoading(true);
     try {
@@ -32,13 +31,13 @@ export default function MyCourses() {
     } finally {
       setIsAssessmentsLoading(false);
     }
-  };
+  }, [selectedClass]);
 
   useEffect(() => {
     if (selectedClass && activeTab === 'assessment') {
       fetchClassAssessments();
     }
-  }, [selectedClass, activeTab]);
+  }, [selectedClass, activeTab, fetchClassAssessments]);
 
   const getCurrentBrowserLocation = () => new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -97,7 +96,6 @@ export default function MyCourses() {
   };
 
   const handleViewGradedSubmission = async (subId) => {
-    setIsSubmissionLoading(true);
     try {
       const detail = await apiFetch(`/submissions/${subId}/grades`);
       if (detail) {
@@ -105,8 +103,6 @@ export default function MyCourses() {
       }
     } catch (e) {
       alert('Không thể tải chi tiết điểm thi: ' + e.message);
-    } finally {
-      setIsSubmissionLoading(false);
     }
   };
 

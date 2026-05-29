@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getPendingTeachers, approveTeacher, rejectTeacher } from '../../services/api';
 import Card from '../../components/Common/Card';
 import { 
@@ -41,7 +41,7 @@ export default function TeacherApproval() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const fetchTeachers = async () => {
+  const fetchTeachers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -56,11 +56,11 @@ export default function TeacherApproval() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, debouncedSearch]);
 
   useEffect(() => {
     fetchTeachers();
-  }, [page, debouncedSearch]);
+  }, [fetchTeachers]);
 
   const handleApprove = async (id) => {
     if (!window.confirm('Bạn có chắc chắn muốn PHÊ DUYỆT tài khoản giảng viên này?')) return;

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
-export default function BarChart({ data = [], yLabel = '', maxVal = 100, suffix = '' }) {
+export default function BarChart({ data = [], maxVal = 100, suffix = '' }) {
   const [hoveredBar, setHoveredBar] = useState(null);
 
   // SVG dimensions

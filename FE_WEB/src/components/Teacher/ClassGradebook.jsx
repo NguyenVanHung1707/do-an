@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '../../services/api';
 import Card from '../Common/Card';
 import { Search, Loader2, Award, Download, Settings, X } from 'lucide-react';
@@ -11,11 +11,7 @@ export default function ClassGradebook({ classId }) {
   const [weightsState, setWeightsState] = useState({});
   const [isSavingWeights, setIsSavingWeights] = useState(false);
 
-  useEffect(() => {
-    fetchGradebook();
-  }, [classId]);
-
-  const fetchGradebook = async () => {
+  const fetchGradebook = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await apiFetch(`/analytics/teacher/class/${classId}/gradebook`);
@@ -28,7 +24,11 @@ export default function ClassGradebook({ classId }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [classId]);
+
+  useEffect(() => {
+    fetchGradebook();
+  }, [fetchGradebook]);
 
   const handleExportCSV = () => {
     if (!data || !data.students) return;

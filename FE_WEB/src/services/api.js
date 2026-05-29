@@ -20,7 +20,7 @@ export const decodeJWT = (token) => {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
     return JSON.parse(jsonPayload);
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -33,7 +33,7 @@ export const getAuthHeader = () => {
       if (user && user.token) {
         return { 'Authorization': `Bearer ${user.token}` };
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
   }
@@ -61,11 +61,11 @@ export const apiFetch = async (endpoint, options = {}) => {
     try {
       errData = await response.json();
       errMsg = errData.message || errData.error || errMsg;
-    } catch (e) {
+    } catch {
       try {
         const text = await response.text();
         errMsg = text || errMsg;
-      } catch (e2) {}
+      } catch {}
     }
     const error = new Error(errMsg);
     error.status = response.status;
@@ -89,7 +89,7 @@ export const apiFetch = async (endpoint, options = {}) => {
 
   try {
     return await response.json();
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -113,7 +113,7 @@ export const keycloakLogin = async (username, password) => {
     try {
       const errData = await response.json();
       errorDescription = errData.error_description || errorDescription;
-    } catch (e) {}
+    } catch {}
     throw new Error(errorDescription);
   }
 
@@ -163,7 +163,7 @@ export const keycloakExchangeCodeForToken = async (code) => {
     try {
       const errData = await response.json();
       errorDescription = errData.error_description || errorDescription;
-    } catch (e) {}
+    } catch {}
     throw new Error(errorDescription);
   }
 
@@ -228,11 +228,11 @@ export const keycloakRegister = async ({ username, email, fullName, code, passwo
     try {
       const errData = await response.json();
       errMsg = errData.message || errMsg;
-    } catch (e) {
+    } catch {
       try {
         const text = await response.text();
         errMsg = text || errMsg;
-      } catch (e2) {}
+      } catch {}
     }
     throw new Error(errMsg);
   }

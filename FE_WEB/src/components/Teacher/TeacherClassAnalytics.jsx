@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getTeacherClassAnalyticsSummary } from '../../services/api';
-import { Award, Calendar, CheckCircle2, AlertTriangle, Users, BarChart3, ArrowDownAZ, GraduationCap } from 'lucide-react';
+import { Award, CheckCircle2, AlertTriangle, Users, BarChart3 } from 'lucide-react';
 
 export default function TeacherClassAnalytics({ classId }) {
   const [data, setData] = useState(null);
@@ -8,11 +8,7 @@ export default function TeacherClassAnalytics({ classId }) {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    fetchClassAnalytics();
-  }, [classId]);
-
-  const fetchClassAnalytics = async () => {
+  const fetchClassAnalytics = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -24,7 +20,11 @@ export default function TeacherClassAnalytics({ classId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId]);
+
+  useEffect(() => {
+    fetchClassAnalytics();
+  }, [fetchClassAnalytics]);
 
   if (loading) {
     return (

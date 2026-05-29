@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   getSemesters, 
   createSemester, 
   setActiveSemester, 
-  getSemesterWeeks,
-  updateSemester
+  getSemesterWeeks
 } from '../../services/api';
 import Card from '../../components/Common/Card';
 import { 
@@ -15,10 +14,8 @@ import {
   AlertCircle, 
   Trash2, 
   CalendarDays, 
-  ChevronRight, 
   CheckCircle, 
   Loader2, 
-  Tag, 
   Clock, 
   Settings2,
   ListTodo

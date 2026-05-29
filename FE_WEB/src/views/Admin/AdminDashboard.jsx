@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getTrafficMetrics, getPerformanceMetrics } from '../../services/api';
 import Card from '../../components/Common/Card';
 import { 
@@ -9,7 +9,6 @@ import {
   Server, 
   Cpu, 
   Database,
-  Calendar,
   RefreshCw,
   CheckCircle2,
   AlertTriangle
@@ -24,7 +23,7 @@ export default function AdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchDashboardData = async (period = trafficPeriod, showIndicator = false) => {
+  const fetchDashboardData = useCallback(async (period = trafficPeriod, showIndicator = false) => {
     if (showIndicator) setRefreshing(true);
     else setLoading(true);
     setError(null);
@@ -41,7 +40,7 @@ export default function AdminDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [trafficPeriod]);
 
   useEffect(() => {
     fetchDashboardData(trafficPeriod);
@@ -52,7 +51,7 @@ export default function AdminDashboard() {
     }, 15000);
 
     return () => clearInterval(interval);
-  }, [trafficPeriod]);
+  }, [trafficPeriod, fetchDashboardData]);
 
   if (loading) {
     return (

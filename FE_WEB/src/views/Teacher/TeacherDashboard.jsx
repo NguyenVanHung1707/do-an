@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import Card from '../../components/Common/Card';
 import BarChart from '../../components/Charts/BarChart';
@@ -8,8 +8,7 @@ import {
   Users, 
   Calendar, 
   TrendingUp, 
-  History,
-  Loader2
+  History
 } from 'lucide-react';
 
 export default function TeacherDashboard() {

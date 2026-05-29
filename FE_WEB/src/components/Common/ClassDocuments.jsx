@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Folder, FileText, FileImage, FileVideo, FileSpreadsheet, FileArchive, FileCode, File, 
-  Upload, Plus, Trash2, Download, ArrowLeft, Settings, Shield, Search, Lock, Unlock, 
-  MoreVertical, Users, Check, X, Grid, List, RefreshCw, AlertCircle, Info, ChevronRight
+  Upload, Plus, Trash2, Download, Settings, Shield, Search, 
+  Users, X, Grid, List, RefreshCw, AlertCircle, Info, ChevronRight
 } from 'lucide-react';
 import { 
   getClassDocuments, uploadClassDocument, createClassFolder, 
@@ -69,12 +69,7 @@ export default function ClassDocuments({ classId, isTeacher = false }) {
   
   const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    fetchDocuments();
-    fetchUserPermissions();
-  }, [classId, currentFolder]);
-
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -86,9 +81,9 @@ export default function ClassDocuments({ classId, isTeacher = false }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId, currentFolder]);
 
-  const fetchUserPermissions = async () => {
+  const fetchUserPermissions = useCallback(async () => {
     if (isTeacher) {
       setPermissions({ canUploadDocuments: true, canDownloadDocuments: true });
       return;
@@ -104,7 +99,12 @@ export default function ClassDocuments({ classId, isTeacher = false }) {
     } catch (err) {
       console.error('Failed to get student class permissions:', err);
     }
-  };
+  }, [classId, isTeacher]);
+
+  useEffect(() => {
+    fetchDocuments();
+    fetchUserPermissions();
+  }, [classId, currentFolder, fetchDocuments, fetchUserPermissions]);
 
   const loadPermissionsData = async () => {
     if (!isTeacher) return;
@@ -120,6 +120,7 @@ export default function ClassDocuments({ classId, isTeacher = false }) {
         setBulkPermissions({ canUpload: allUpload, canDownload: allDownload });
       }
     } catch (err) {
+      console.error(err);
       alert('Không thể tải cấu hình quyền của sinh viên');
     } finally {
       setLoadingPermissions(false);
@@ -250,12 +251,6 @@ export default function ClassDocuments({ classId, isTeacher = false }) {
     setCurrentFolder(folder);
   };
 
-  const handleGoBack = () => {
-    const history = [...folderHistory];
-    history.pop();
-    setFolderHistory(history);
-    setCurrentFolder(history.length > 0 ? history[history.length - 1] : null);
-  };
 
   const handleNavigateToBreadcrumb = (index) => {
     if (index === -1) {
