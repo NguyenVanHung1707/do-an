@@ -209,13 +209,18 @@ export const detectGroupFaceAttendance = createAsyncThunk(
         throw new Error('API FastAPI lỗi hoặc không nhận diện được!');
       }
 
-      const results = await response.json();
-      // results is list of {'id': studentId, 'isAttendance': true/false}
+      const data = await response.json();
+      
+      // Support both old flat list format and new dict format
+      const results = Array.isArray(data) ? data : (data.attendance || []);
+      const faces = Array.isArray(data) ? [] : (data.faces || []);
+      
       const presentStudentIds = results.filter(r => r.isAttendance).map(r => r.id);
 
       return {
         classId,
         recognizedStudents: presentStudentIds,
+        detectedFaces: faces,
         timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
       };
     } catch (err) {

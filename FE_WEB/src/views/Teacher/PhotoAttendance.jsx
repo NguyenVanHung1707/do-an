@@ -263,6 +263,34 @@ export default function PhotoAttendance() {
                   className="w-full h-auto object-cover opacity-90"
                 />
 
+                {/* Overlaid real face recognition bounding boxes */}
+                {!isProcessing && photoAttendanceResult && photoAttendanceResult.detectedFaces && (
+                  <>
+                    {photoAttendanceResult.detectedFaces.map((face, idx) => {
+                      const [left, top, width, height] = face.box;
+                      const borderClass = face.identified ? 'border-emerald-500 shadow-emerald-500/20' : 'border-rose-500 shadow-rose-500/20';
+                      const bgClass = face.identified ? 'bg-emerald-500' : 'bg-rose-500';
+                      const label = face.identified ? face.studentName : 'Người lạ (Unidentified)';
+                      return (
+                        <div
+                          key={idx}
+                          className={`absolute border-2 rounded shadow-lg ${borderClass}`}
+                          style={{
+                            left: `${left}%`,
+                            top: `${top}%`,
+                            width: `${width}%`,
+                            height: `${height}%`
+                          }}
+                        >
+                          <span className={`absolute -top-6 left-0 text-white text-[9px] font-black font-mono px-1.5 py-0.5 rounded shadow whitespace-nowrap ${bgClass}`}>
+                            {label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+
                 {/* Loading animation overlay */}
                 {isProcessing && (
                   <div className="absolute inset-0 bg-black/65 backdrop-blur-sm flex flex-col items-center justify-center text-center">
