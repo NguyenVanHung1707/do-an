@@ -151,6 +151,8 @@ public class StudentServiceImplement implements StudentService {
         formDto.setCourseId(course.getId());
         formDto.setSubject(course.getSubject());
         formDto.setIsFaceVerificationRequired(Boolean.TRUE.equals(form.get().getIsFaceVerificationRequired()));
+        formDto.setStudentId(student.get().getId());
+        formDto.setStudentName(student.get().getName());
         List<QuestionDto> questionDtos = new ArrayList<>();
         //set question dto
         for(Question question : form.get().getQuestions()){

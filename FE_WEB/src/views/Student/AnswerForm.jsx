@@ -5,6 +5,25 @@ import { ShieldCheck, MapPin, CheckCircle2, ChevronRight, Lock, HelpCircle, Navi
 import Card from '../../components/Common/Card';
 import WebcamCapture from '../../components/Webcam/WebcamCapture';
 
+const dataURLtoFile = (dataUrl, filename) => {
+  const arr = dataUrl.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+  const binary = atob(arr[1]);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new File([bytes], filename, { type: mime });
+};
+
+const getDetectFaceUrl = () => {
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  return hostname === 'localhost'
+    ? 'http://localhost:8888/attendance'
+    : `${protocol}//${hostname}/detect-face/attendance`;
+};
+
 export default function AnswerForm() {
   const dispatch = useDispatch();
 
@@ -22,6 +41,9 @@ export default function AnswerForm() {
   const [locationError, setLocationError] = useState('');
   const [faceImageBase64, setFaceImageBase64] = useState(null);
   const [isFaceCaptureOpen, setIsFaceCaptureOpen] = useState(false);
+  const [isFaceProcessing, setIsFaceProcessing] = useState(false);
+  const [faceRecognitionResult, setFaceRecognitionResult] = useState(null);
+  const [faceRecognitionError, setFaceRecognitionError] = useState('');
 
   // Success screen state
   const [successData, setSuccessData] = useState(null);
@@ -97,6 +119,9 @@ export default function AnswerForm() {
         setLocationError('');
         setFaceImageBase64(null);
         setIsFaceCaptureOpen(false);
+        setIsFaceProcessing(false);
+        setFaceRecognitionResult(null);
+        setFaceRecognitionError('');
         // Initialize empty answers
         const initialAnswers = {};
         form.questions.forEach(q => {
@@ -118,6 +143,53 @@ export default function AnswerForm() {
     });
   };
 
+  const handleFaceCapture = async (image) => {
+    setFaceImageBase64(image);
+    setIsFaceCaptureOpen(false);
+    setFaceRecognitionResult(null);
+    setFaceRecognitionError('');
+
+    if (!selectedForm?.studentId) {
+      setFaceRecognitionError('Không tìm thấy thông tin sinh viên để đối chiếu khuôn mặt.');
+      return;
+    }
+
+    setIsFaceProcessing(true);
+    try {
+      const formData = new FormData();
+      formData.append('image_file', dataURLtoFile(image, 'attendance_face.jpg'));
+      formData.append('image_ids', String(selectedForm.studentId));
+
+      const response = await fetch(getDetectFaceUrl(), {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Máy chủ AI không xử lý được ảnh khuôn mặt.');
+      }
+
+      const data = await response.json();
+      const attendance = Array.isArray(data) ? data : (data.attendance || []);
+      const faces = Array.isArray(data) ? [] : (data.faces || []);
+      const isVerified = attendance.some((item) => Number(item.id) === Number(selectedForm.studentId) && item.isAttendance);
+
+      setFaceRecognitionResult({
+        faces,
+        isVerified,
+        studentName: selectedForm.studentName || 'Sinh viên'
+      });
+
+      if (!isVerified) {
+        setFaceRecognitionError('AI chưa xác thực được khuôn mặt chính chủ. Vui lòng chụp lại ảnh rõ mặt hơn.');
+      }
+    } catch (err) {
+      setFaceRecognitionError(err.message || 'Không thể kết nối máy chủ AI để xác thực khuôn mặt.');
+    } finally {
+      setIsFaceProcessing(false);
+    }
+  };
+
   // Submit form
   const handleSubmitAttendance = (e) => {
     e.preventDefault();
@@ -136,6 +208,11 @@ export default function AnswerForm() {
 
     if (selectedForm?.isFaceVerificationRequired && !faceImageBase64) {
       setErrorMsg('Vui lòng chụp ảnh khuôn mặt để xác thực chính chủ trước khi nộp điểm danh.');
+      return;
+    }
+
+    if (selectedForm?.isFaceVerificationRequired && isFaceProcessing) {
+      setErrorMsg('Hệ thống đang xử lý ảnh khuôn mặt. Vui lòng chờ hoàn tất trước khi nộp điểm danh.');
       return;
     }
 
@@ -175,6 +252,9 @@ export default function AnswerForm() {
     setCoords(null);
     setFaceImageBase64(null);
     setIsFaceCaptureOpen(false);
+    setIsFaceProcessing(false);
+    setFaceRecognitionResult(null);
+    setFaceRecognitionError('');
     setSuccessData(null);
     setErrorMsg('');
   };
@@ -363,7 +443,11 @@ export default function AnswerForm() {
 
                   <button
                     type="button"
-                    onClick={() => setIsFaceCaptureOpen(true)}
+                    onClick={() => {
+                      setIsFaceCaptureOpen(true);
+                      setFaceRecognitionResult(null);
+                      setFaceRecognitionError('');
+                    }}
                     className={`border font-semibold text-xs px-4 py-2 rounded-xl transition duration-150 flex items-center gap-1.5 shrink-0 shadow-sm ${
                       faceImageBase64
                         ? 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
@@ -376,21 +460,70 @@ export default function AnswerForm() {
                 </div>
 
                 {faceImageBase64 && !isFaceCaptureOpen && (
-                  <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-w-xs">
+                  <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-black max-w-md">
                     <img
                       src={faceImageBase64}
                       alt="Ảnh khuôn mặt đã chụp"
-                      className="w-full aspect-video object-cover transform -scale-x-100"
+                      className="w-full aspect-video object-cover transform -scale-x-100 opacity-95"
                     />
+                    {!isFaceProcessing && faceRecognitionResult?.faces?.map((face, idx) => {
+                      const [left, top, width, height] = face.box;
+                      const identified = Boolean(face.identified);
+                      const label = identified
+                        ? (face.studentName || faceRecognitionResult.studentName)
+                        : 'Chưa xác thực';
+                      return (
+                        <div
+                          key={idx}
+                          className={`absolute border-2 rounded shadow-lg ${
+                            identified ? 'border-emerald-500 shadow-emerald-500/20' : 'border-rose-500 shadow-rose-500/20'
+                          }`}
+                          style={{
+                            left: `${100 - left - width}%`,
+                            top: `${top}%`,
+                            width: `${width}%`,
+                            height: `${height}%`
+                          }}
+                        >
+                          <span className={`absolute -top-6 left-0 text-white text-[9px] font-black font-mono px-1.5 py-0.5 rounded shadow whitespace-nowrap ${
+                            identified ? 'bg-emerald-500' : 'bg-rose-500'
+                          }`}>
+                            {label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {isFaceProcessing && (
+                      <div className="absolute inset-0 bg-black/65 backdrop-blur-sm flex flex-col items-center justify-center text-center px-4">
+                        <RefreshCw className="w-8 h-8 text-primary animate-spin mb-3" />
+                        <p className="text-sm font-semibold text-slate-100">Đang xử lý ảnh khuôn mặt...</p>
+                        <p className="text-xs text-slate-300 mt-1">AI đang phát hiện khuôn mặt và đối chiếu với hồ sơ của bạn</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {faceRecognitionResult && !isFaceProcessing && (
+                  <div className={`text-xs font-bold px-3 py-2 rounded-xl border ${
+                    faceRecognitionResult.isVerified
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                      : 'bg-rose-50 border-rose-200 text-rose-700'
+                  }`}>
+                    {faceRecognitionResult.isVerified
+                      ? `Đã xác thực khuôn mặt: ${faceRecognitionResult.studentName}`
+                      : 'Chưa xác thực được khuôn mặt chính chủ'}
+                  </div>
+                )}
+
+                {faceRecognitionError && (
+                  <div className="text-xs font-semibold px-3 py-2 rounded-xl border bg-amber-50 border-amber-200 text-amber-700">
+                    {faceRecognitionError}
                   </div>
                 )}
 
                 {isFaceCaptureOpen && (
                   <WebcamCapture
-                    onCapture={(image) => {
-                      setFaceImageBase64(image);
-                      setIsFaceCaptureOpen(false);
-                    }}
+                    onCapture={handleFaceCapture}
                     emptyLabel="Camera xác thực khuôn mặt đang tắt"
                     startLabel="Mở camera để chụp khuôn mặt"
                     captureLabel="Chụp ảnh khuôn mặt"
@@ -458,9 +591,10 @@ export default function AnswerForm() {
             </button>
             <button
               type="submit"
-              className="bg-primary hover:bg-[#0056b3] active:bg-[#004080] text-white font-semibold px-8 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-md shadow-primary/10"
+              disabled={isFaceProcessing}
+              className="bg-primary hover:bg-[#0056b3] active:bg-[#004080] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-md shadow-primary/10"
             >
-              <ShieldCheck className="w-5 h-5" />
+              {isFaceProcessing ? <RefreshCw className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
               <span>Nộp kết quả điểm danh</span>
             </button>
           </div>

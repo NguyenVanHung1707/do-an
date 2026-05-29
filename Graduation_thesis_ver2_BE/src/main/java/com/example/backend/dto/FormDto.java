@@ -25,4 +25,6 @@ public class FormDto {
     private Long courseId;
     private String subject;
     private Boolean isFaceVerificationRequired;
+    private Long studentId;
+    private String studentName;
 }
