@@ -110,8 +110,18 @@ def checkAttendence(imagePath, listID):
                     })
                 else:
                     x1, y1, x2, y2 = face_obj["facial_area"]
-                    x1, y1 = max(0, x1), max(0, y1)
-                    x2, y2 = min(w, x2), min(h, y2)
+                    
+                    # Apply a 15% padding to keep the full context of the face (chin, forehead, ears) 
+                    # and completely crop out any distracting background noise.
+                    fw = x2 - x1
+                    fh = y2 - y1
+                    pad_w = int(fw * 0.15)
+                    pad_h = int(fh * 0.15)
+                    
+                    x1 = max(0, x1 - pad_w)
+                    y1 = max(0, y1 - pad_h)
+                    x2 = min(w, x2 + pad_w)
+                    y2 = min(h, y2 + pad_h)
                     
                     left_pct = (x1 / w) * 100
                     top_pct = (y1 / h) * 100
@@ -164,8 +174,18 @@ def checkAttendence(imagePath, listID):
                         if reg_img is not None:
                             rh, rw, _ = reg_img.shape
                             rx1, ry1, rx2, ry2 = detections_reg["face_1"]["facial_area"]
-                            rx1, ry1 = max(0, rx1), max(0, ry1)
-                            rx2, ry2 = min(rw, rx2), min(rh, ry2)
+                            
+                            # Add matching 15% padding to keep identical cropping zoom/scale
+                            rfw = rx2 - rx1
+                            rfh = ry2 - ry1
+                            rpad_w = int(rfw * 0.15)
+                            rpad_h = int(rfh * 0.15)
+                            
+                            rx1 = max(0, rx1 - rpad_w)
+                            ry1 = max(0, ry1 - rpad_h)
+                            rx2 = min(rw, rx2 + rpad_w)
+                            ry2 = min(rh, ry2 + rpad_h)
+                            
                             reg_face_crop = reg_img[ry1:ry2, rx1:rx2]
                             cv2.imwrite(ip_crop, reg_face_crop)
                             print(f"Successfully created cropped registered face at {ip_crop}")
