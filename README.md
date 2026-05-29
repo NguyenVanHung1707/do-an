@@ -35,11 +35,12 @@ Cánh tay nối dài của giảng viên trong công tác quản lý lớp học
 *   **Đổi Mật Khẩu Tiện Lợi**: Giao diện đổi mật khẩu tài khoản trực quan tích hợp ngay trong trang hồ sơ cá nhân giúp giảng viên chủ động quản lý bảo mật.
 
 ### 4. Phân Hệ Giám Thị AI Thời Gian Thực (Real-time AI Proctoring)
-Thuật toán Học máy và Thị giác máy tính tiên tiến chạy trực tiếp trên trình duyệt của thí sinh để đảm bảo tính minh bạch tối đa:
-*   **Theo Dõi Ánh Mắt (Gaze Tracking)**: Phân tích khoảng cách dịch chuyển tròng mắt (Iris Landmarks) cảnh báo tức thì khi thí sinh nhìn lệch hướng quá lâu khỏi màn hình.
-*   **Ước Lượng Tư Thế Đầu (3D Head Pose Estimation)**: Đo lường chính xác các góc quay đầu (Pitch/Yaw/Roll) để phát hiện hành vi cúi đầu hoặc quay đầu sang hai bên.
-*   **Phát Hiện Thiết Bị & Người Lạ**: Cảnh báo khi có điện thoại di động xuất hiện trong khung hình camera hoặc có nhiều hơn một người trước màn hình làm bài.
-*   **Tự Động Ghi Hình Vi Phạm**: Tự động trích xuất và lưu trữ tệp video bằng chứng dài **10 giây** (bao gồm 5 giây trước và 5 giây sau vi phạm) định dạng `.mp4` lên máy chủ khi phát hiện vi phạm liên tục vượt quá ngưỡng thời gian cấu hình.
+Thuật toán Học máy và Thị giác máy tính tiên tiến chạy trực tiếp trên luồng camera của thí sinh để đảm bảo tính minh bạch tối đa:
+*   **Theo Dõi Ánh Mắt (Gaze Tracking)**: Phân tích khoảng cách dịch chuyển tròng mắt (Iris Landmarks) cảnh báo tức thì khi thí sinh liếc nhìn hướng khác rời khỏi màn hình quá 3 giây.
+*   **Ước Lượng Tư Thế Đầu (3D Head Pose Estimation)**: Đo lường chính xác các góc quay đầu (Pitch/Yaw/Roll) thông qua thuật toán giải PnP để phát hiện hành vi cúi đầu quay cóp hoặc quay đầu sang hai bên.
+*   **Phát Hiện Vắng Mặt (No Face Detected)**: Tự động ghi nhận vi phạm quy chế thi khi camera hoàn toàn không phát hiện khuôn mặt của thí sinh trước màn hình làm bài.
+*   **Tự Động Ghi Hình Bằng Chứng**: Tự động trích xuất và lưu trữ tệp video bằng chứng dài **10 giây** (bao gồm 5 giây trước và 5 giây sau vi phạm) định dạng `.mp4` lên máy chủ khi phát hiện vi phạm liên tục vượt quá 3 giây.
+
 
 ---
 
