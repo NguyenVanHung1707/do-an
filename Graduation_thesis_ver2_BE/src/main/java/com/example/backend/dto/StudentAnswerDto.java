@@ -17,4 +17,5 @@ public class StudentAnswerDto {
     private Double latitude;
     private Double longitude;
     private Boolean mockLocationDetected;
+    private String faceImageBase64;
 }

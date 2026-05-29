@@ -24,4 +24,5 @@ public class FormDto {
     private OffsetDateTime expiredAt;
     private Long courseId;
     private String subject;
+    private Boolean isFaceVerificationRequired;
 }

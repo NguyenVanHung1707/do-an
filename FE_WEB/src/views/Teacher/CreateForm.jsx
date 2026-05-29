@@ -41,6 +41,7 @@ export default function CreateForm() {
   const [errorMsg, setErrorMsg] = useState('');
   const [isLocationRequired, setIsLocationRequired] = useState(false);
   const [allowedRadiusMeters, setAllowedRadiusMeters] = useState(100);
+  const [isFaceVerificationRequired, setIsFaceVerificationRequired] = useState(false);
 
   // States for multiple forms
   const [sessionForms, setSessionForms] = useState([]);
@@ -155,7 +156,8 @@ export default function CreateForm() {
         latitude: lat,
         longitude: lng,
         isLocationRequired,
-        allowedRadiusMeters
+        allowedRadiusMeters,
+        isFaceVerificationRequired
       }))
         .unwrap()
         .then((res) => {
@@ -266,6 +268,7 @@ export default function CreateForm() {
   const resetForm = () => {
     setGeneratedCode(null);
     setQuestions([{ id: 1, text: '', correctAnswer: 'true' }]);
+    setIsFaceVerificationRequired(false);
   };
 
   // Helper translate status
@@ -442,6 +445,19 @@ export default function CreateForm() {
                     )}
                   </div>
 
+                  <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/60 space-y-3">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isFaceVerificationRequired}
+                        onChange={(e) => setIsFaceVerificationRequired(e.target.checked)}
+                        className="w-4 h-4 accent-primary"
+                      />
+                      <UserCheck className="w-3.5 h-3.5 text-primary" />
+                      <span>Yêu cầu kiểm tra khuôn mặt sinh viên</span>
+                    </label>
+                  </div>
+
                   {/* Danh sách câu hỏi */}
                   <div className="space-y-3 pt-2">
                     <label className="text-slate-700 text-xs font-semibold block">Nội dung câu hỏi Đúng/Sai:</label>
@@ -580,6 +596,12 @@ export default function CreateForm() {
                             <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-600 font-semibold">
                               <MapPin className="w-3 h-3" />
                               <span>GPS bật, bán kính {form.allowedRadiusMeters || 100}m</span>
+                            </div>
+                          )}
+                          {form.isFaceVerificationRequired && (
+                            <div className="flex items-center gap-1 mt-1 text-[10px] text-primary font-semibold">
+                              <UserCheck className="w-3 h-3" />
+                              <span>Yêu cầu kiểm tra khuôn mặt</span>
                             </div>
                           )}
                         </div>

@@ -545,6 +545,7 @@ public class TeacherServiceImplement implements TeacherService {
         }while (formRepository.findByCode(uniqueCode).isPresent());
         form.setCode(uniqueCode);
         form.setCourse(course.get());
+        form.setIsFaceVerificationRequired(Boolean.TRUE.equals(formDto.getIsFaceVerificationRequired()));
         applyFormGeofenceConfig(form, formDto);
         formRepository.save(form);
         for(QuestionDto questionDto: formDto.getQuestions()){
@@ -588,6 +589,7 @@ public class TeacherServiceImplement implements TeacherService {
         formDto.setLongitude(form.get().getLongitude());
         formDto.setIsLocationRequired(Boolean.TRUE.equals(form.get().getIsLocationRequired()));
         formDto.setAllowedRadiusMeters(form.get().getAllowedRadiusMeters());
+        formDto.setIsFaceVerificationRequired(Boolean.TRUE.equals(form.get().getIsFaceVerificationRequired()));
 
         List<QuestionDto> questionDtos = new ArrayList<>();
         List<Question> questions = questionRepository.findByForm(form.get());

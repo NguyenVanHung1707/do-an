@@ -53,4 +53,7 @@ public class FormSubmission {
 
     @Column(name = "mock_location_detected")
     private Boolean mockLocationDetected;
+
+    @Column(name = "is_face_verified")
+    private Boolean isFaceVerified;
 }

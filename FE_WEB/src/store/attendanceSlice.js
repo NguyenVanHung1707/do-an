@@ -78,7 +78,8 @@ export const createAttendanceForm = createAsyncThunk(
     latitude,
     longitude,
     isLocationRequired = false,
-    allowedRadiusMeters = null
+    allowedRadiusMeters = null,
+    isFaceVerificationRequired = false
   }, { rejectWithValue }) => {
     try {
       const formattedQuestions = questions.map((q) => ({
@@ -96,6 +97,7 @@ export const createAttendanceForm = createAsyncThunk(
         longitude: longitude || null,
         isLocationRequired,
         allowedRadiusMeters: isLocationRequired ? parseInt(allowedRadiusMeters) : null,
+        isFaceVerificationRequired,
         questions: formattedQuestions
       };
 
@@ -112,6 +114,7 @@ export const createAttendanceForm = createAsyncThunk(
         expiryMinutes,
         isLocationRequired,
         allowedRadiusMeters,
+        isFaceVerificationRequired,
         questions
       };
     } catch (err) {

@@ -55,4 +55,7 @@ public class Form {
 
     @Column(name = "allowed_radius_meters")
     private Integer allowedRadiusMeters;
+
+    @Column(name = "is_face_verification_required")
+    private Boolean isFaceVerificationRequired = false;
 }

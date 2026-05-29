@@ -150,6 +150,7 @@ public class StudentServiceImplement implements StudentService {
         formDto.setExpiredAt(form.get().getExpiredAt());
         formDto.setCourseId(course.getId());
         formDto.setSubject(course.getSubject());
+        formDto.setIsFaceVerificationRequired(Boolean.TRUE.equals(form.get().getIsFaceVerificationRequired()));
         List<QuestionDto> questionDtos = new ArrayList<>();
         //set question dto
         for(Question question : form.get().getQuestions()){
@@ -251,6 +252,77 @@ public class StudentServiceImplement implements StudentService {
         Student studentEntity = student.get();
         Double calculatedDistance = validateFormLocation(studentEntity, formEntity, studentAnswerDto);
 
+        Boolean isFaceVerified = null;
+        if (Boolean.TRUE.equals(formEntity.getIsFaceVerificationRequired())) {
+            String base64Data = studentAnswerDto.getFaceImageBase64();
+            if (base64Data == null || base64Data.trim().isEmpty()) {
+                throw new CustomException("Vui lòng chụp ảnh khuôn mặt để xác thực chính chủ", HttpStatus.BAD_REQUEST);
+            }
+            
+            byte[] imageBytes;
+            try {
+                if (base64Data.contains(",")) {
+                    base64Data = base64Data.split(",")[1];
+                }
+                imageBytes = java.util.Base64.getDecoder().decode(base64Data);
+            } catch (Exception e) {
+                throw new CustomException("Định dạng ảnh khuôn mặt không hợp lệ", HttpStatus.BAD_REQUEST);
+            }
+            
+            java.nio.file.Path tempDir = java.nio.file.Paths.get("./temp");
+            java.nio.file.Path tempFilePath = null;
+            try {
+                java.nio.file.Files.createDirectories(tempDir);
+                String tempFileName = "temp_submit_" + studentEntity.getId() + "_" + System.currentTimeMillis() + ".jpg";
+                tempFilePath = tempDir.resolve(tempFileName);
+                java.nio.file.Files.write(tempFilePath, imageBytes);
+                
+                org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                headers.setContentType(org.springframework.http.MediaType.MULTIPART_FORM_DATA);
+                
+                org.springframework.util.LinkedMultiValueMap<String, Object> map = new org.springframework.util.LinkedMultiValueMap<>();
+                map.add("image_ids", String.valueOf(studentEntity.getId()));
+                org.springframework.core.io.FileSystemResource fileResource = new org.springframework.core.io.FileSystemResource(tempFilePath.toFile());
+                map.add("image_file", fileResource);
+                
+                org.springframework.http.HttpEntity<org.springframework.util.LinkedMultiValueMap<String, Object>> requestEntity = new org.springframework.http.HttpEntity<>(map, headers);
+                
+                String responseJson = restTemplate.postForObject("http://localhost:8888/attendance", requestEntity, String.class);
+                System.out.println("[Face Verification] FastAPI response: " + responseJson);
+                
+                if (responseJson != null && (responseJson.contains("\"isAttendance\": true") || responseJson.contains("\"isAttendance\":true"))) {
+                    isFaceVerified = true;
+                } else {
+                    isFaceVerified = false;
+                }
+            } catch (Exception e) {
+                System.out.println("Error calling FastAPI for face verification: " + e.getMessage());
+                isFaceVerified = false;
+            } finally {
+                if (tempFilePath != null) {
+                    try {
+                        java.nio.file.Files.deleteIfExists(tempFilePath);
+                    } catch (Exception ignored) {}
+                }
+            }
+            
+            if (Boolean.FALSE.equals(isFaceVerified)) {
+                FormSubmission submission = formSubmissionRepository.findByStudentAndForm(studentEntity, formEntity)
+                        .orElse(new FormSubmission());
+                submission.setStudent(studentEntity);
+                submission.setForm(formEntity);
+                submission.setIsCorrect(false);
+                submission.setIsFaceVerified(false);
+                submission.setSubmittedAt(OffsetDateTime.now());
+                applyFormSubmissionLocationEvidence(submission, studentAnswerDto, calculatedDistance,
+                        Boolean.TRUE.equals(formEntity.getIsLocationRequired()) ? true : null);
+                formSubmissionRepository.save(submission);
+                
+                throw new CustomException("Xác thực khuôn mặt thất bại! Vui lòng chụp lại rõ khuôn mặt chính chủ để điểm danh.", HttpStatus.FORBIDDEN);
+            }
+        }
+
         List<AnswerDto> answers = studentAnswerDto.getAnswers();
 
         boolean isCorrect = true;
@@ -271,6 +343,7 @@ public class StudentServiceImplement implements StudentService {
         submission.setStudent(studentEntity);
         submission.setForm(formEntity);
         submission.setIsCorrect(isCorrect);
+        submission.setIsFaceVerified(isFaceVerified);
         submission.setSubmittedAt(OffsetDateTime.now());
         applyFormSubmissionLocationEvidence(submission, studentAnswerDto, calculatedDistance,
                 Boolean.TRUE.equals(formEntity.getIsLocationRequired()) ? true : null);
