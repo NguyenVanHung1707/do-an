@@ -560,18 +560,18 @@ public class AssessmentServiceImplement implements AssessmentService {
         );
 
         if (required && (assessment.getAllowedRadiusMeters() == null || distance > assessment.getAllowedRadiusMeters())) {
-            Map<String, Object> details = new LinkedHashMap<>();
-            details.put("reason", "OUT_OF_RANGE");
-            details.put("allowedRadiusMeters", assessment.getAllowedRadiusMeters());
-            details.put("calculatedDistanceMeters", Math.round(distance));
-            details.put("teacherLatitude", assessment.getTeacherLatitude());
-            details.put("teacherLongitude", assessment.getTeacherLongitude());
-            details.put("studentLatitude", location.getLatitude());
-            details.put("studentLongitude", location.getLongitude());
             throw new CustomException(
                     "Bạn không ở trong phạm vi lớp học",
                     HttpStatus.FORBIDDEN,
-                    details
+                    Map.of(
+                            "reason", "OUT_OF_RANGE",
+                            "allowedRadiusMeters", assessment.getAllowedRadiusMeters(),
+                            "calculatedDistanceMeters", Math.round(distance),
+                            "teacherLatitude", assessment.getTeacherLatitude(),
+                            "teacherLongitude", assessment.getTeacherLongitude(),
+                            "studentLatitude", location.getLatitude(),
+                            "studentLongitude", location.getLongitude()
+                    )
             );
         }
 

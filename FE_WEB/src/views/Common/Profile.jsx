@@ -1,12 +1,65 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import Card from '../../components/Common/Card';
-import { User, Mail, Shield, UserCheck, Key, Landmark } from 'lucide-react';
+import { User, Mail, Shield, UserCheck, Key, Landmark, Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
+import { changeUserPassword } from '../../services/api';
 
 export default function Profile() {
   const { user } = useSelector((state) => state.auth);
 
+  // Change password states
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+
   if (!user) return null;
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setSuccessMsg('');
+    setErrorMsg('');
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setErrorMsg('Vui lòng điền đầy đủ tất cả các trường!');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setErrorMsg('Mật khẩu mới phải có ít nhất 6 ký tự!');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('Xác nhận mật khẩu mới không khớp!');
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setErrorMsg('Mật khẩu mới không được trùng với mật khẩu hiện tại!');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await changeUserPassword(currentPassword, newPassword);
+      setSuccessMsg('Mật khẩu của bạn đã được cập nhật thành công!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(err.message || 'Thay đổi mật khẩu thất bại!');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto py-4">
@@ -25,7 +78,7 @@ export default function Profile() {
             </p>
             <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
               <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold uppercase tracking-wider">
-                {user.role === 'teacher' ? 'Giảng viên' : 'Sinh viên'}
+                {user.role === 'admin' ? 'Quản trị viên' : user.role === 'teacher' ? 'Giảng viên' : 'Sinh viên'}
               </span>
               <span className="px-3 py-1 bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-300 rounded-full text-xs font-semibold">
                 OAuth2 Keycloak Active
@@ -105,6 +158,123 @@ export default function Profile() {
                 </div>
               </div>
             </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Change Password Card */}
+      <div className="grid grid-cols-1 gap-6">
+        <div className="md:col-span-12">
+          <Card title="Đổi mật khẩu tài khoản" subtitle="Cập nhật mật khẩu bảo mật mới trên hệ thống Keycloak SSO">
+            <form onSubmit={handleChangePassword} className="space-y-4 max-w-2xl">
+              {successMsg && (
+                <div className="p-4 bg-emerald-550/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-start gap-3 animate-fadeIn">
+                  <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm font-medium">{successMsg}</span>
+                </div>
+              )}
+
+              {errorMsg && (
+                <div className="p-4 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 rounded-xl flex items-start gap-3 animate-fadeIn">
+                  <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm font-medium">{errorMsg}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">
+                    Mật khẩu hiện tại
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                      <Lock className="w-4 h-4" />
+                    </span>
+                    <input
+                      type={showCurrent ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-10 pr-10 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-800 dark:text-slate-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrent(!showCurrent)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                    >
+                      {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">
+                    Mật khẩu mới
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                      <Lock className="w-4 h-4" />
+                    </span>
+                    <input
+                      type={showNew ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-10 pr-10 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-800 dark:text-slate-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNew(!showNew)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                    >
+                      {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">
+                    Xác nhận mật khẩu mới
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                      <Lock className="w-4 h-4" />
+                    </span>
+                    <input
+                      type={showConfirm ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-10 pr-10 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-800 dark:text-slate-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(!showConfirm)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                    >
+                      {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-start">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition duration-200 flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    'Cập nhật mật khẩu'
+                  )}
+                </button>
+              </div>
+            </form>
           </Card>
         </div>
       </div>

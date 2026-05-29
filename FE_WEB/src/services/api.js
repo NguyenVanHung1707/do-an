@@ -493,3 +493,11 @@ export const importQuestionsFromExcel = async (file) => {
     body: formData
   });
 };
+
+export const changeUserPassword = async (currentPassword, newPassword) => {
+  return await apiFetch('/user/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword })
+  });
+};
+

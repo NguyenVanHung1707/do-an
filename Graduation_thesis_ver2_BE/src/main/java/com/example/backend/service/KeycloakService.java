@@ -8,4 +8,6 @@ import org.springframework.stereotype.Service;
 public interface KeycloakService {
     SignUpResponseDto signUpStudent(SignUpDto signUpDto);
     SignUpResponseDto signUpTeacher(SignUpDto signUpDto);
+    void changePassword(String userId, String username, String currentPassword, String newPassword);
 }
+

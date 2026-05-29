@@ -138,4 +138,39 @@ public class KeycloakServiceImplement implements KeycloakService {
         return new SignUpResponseDto(userId, signUpDto.getUsername(), signUpDto.getEmail(), signUpDto.getFirstName(),
                 signUpDto.getLastName(), keycloakConfig.getRealm());
     }
+
+    @Override
+    public void changePassword(String userId, String username, String currentPassword, String newPassword) {
+        // 1. Verify the current password by trying to authenticate with Keycloak
+        try {
+            Keycloak userClient = KeycloakBuilder.builder()
+                    .serverUrl(keycloakConfig.getServerUrl())
+                    .realm(keycloakConfig.getRealm())
+                    .grantType(OAuth2Constants.PASSWORD)
+                    .clientId("admin-cli")
+                    .username(username)
+                    .password(currentPassword)
+                    .build();
+            userClient.tokenManager().getAccessToken();
+        } catch (Exception e) {
+            throw new jakarta.ws.rs.NotAuthorizedException("Mật khẩu hiện tại không chính xác", e);
+        }
+
+        // 2. Change/Reset the password using admin client
+        Keycloak adminKeycloak = KeycloakBuilder.builder()
+                .serverUrl(keycloakConfig.getServerUrl())
+                .realm("master")
+                .grantType(OAuth2Constants.PASSWORD)
+                .clientId("admin-cli")
+                .username(keycloakConfig.getAdminUsername())
+                .password(keycloakConfig.getAdminPassword())
+                .build();
+
+        CredentialRepresentation newCredential = new CredentialRepresentation();
+        newCredential.setType(CredentialRepresentation.PASSWORD);
+        newCredential.setValue(newPassword);
+        newCredential.setTemporary(false);
+
+        adminKeycloak.realm(keycloakConfig.getRealm()).users().get(userId).resetPassword(newCredential);
+    }
 }
