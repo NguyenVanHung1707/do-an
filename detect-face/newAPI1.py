@@ -148,20 +148,55 @@ def checkAttendence(imagePath, listID):
                 results.append({'id': id, 'isAttendance': False})
                 continue
 
+            # Determine the crop image path for the registered face
+            base_dir = os.path.dirname(ip)
+            base_name = os.path.basename(ip)
+            name_part, ext_part = os.path.splitext(base_name)
+            ip_crop = os.path.join(base_dir, f"{name_part}_crop{ext_part}")
+
+            # Automatically crop the registered image using RetinaFace on the first run
+            if not os.path.exists(ip_crop):
+                try:
+                    print(f"Creating lazy cropped face for student {id} registered image: {ip} -> {ip_crop}")
+                    detections_reg = RetinaFace.detect_faces(ip)
+                    if isinstance(detections_reg, dict) and "face_1" in detections_reg:
+                        reg_img = cv2.imread(ip)
+                        if reg_img is not None:
+                            rh, rw, _ = reg_img.shape
+                            rx1, ry1, rx2, ry2 = detections_reg["face_1"]["facial_area"]
+                            rx1, ry1 = max(0, rx1), max(0, ry1)
+                            rx2, ry2 = min(rw, rx2), min(rh, ry2)
+                            reg_face_crop = reg_img[ry1:ry2, rx1:rx2]
+                            cv2.imwrite(ip_crop, reg_face_crop)
+                            print(f"Successfully created cropped registered face at {ip_crop}")
+                    
+                    if not os.path.exists(ip_crop):
+                        shutil.copy(ip, ip_crop)
+                        print(f"RetinaFace could not find face in registered image of student {id}. Fallback to copying original.")
+                except Exception as e:
+                    print(f"Error while cropping registered image for student {id}: {e}")
+                    try:
+                        shutil.copy(ip, ip_crop)
+                    except Exception as copy_err:
+                        print(f"Failed to copy fallback: {copy_err}")
+
+            # Use the cropped version if successfully created, otherwise fall back to original
+            ip_verify = ip_crop if os.path.exists(ip_crop) else ip
+
             is_student_present = False
             for face_item in detected_faces:
                 try:
                     res = DeepFace.verify(
                         face_item["filename"], 
-                        ip, 
+                        ip_verify, 
                         model_name='ArcFace', 
-                        detector_backend='retinaface', 
+                        detector_backend='skip', 
                         enforce_detection=False
                     )
                     distance = res.get('distance', 0.0)
                     threshold = res.get('threshold', 0.0)
                     verified = res.get('verified', False)
-                    print(f"[AI Face ID] Student {id} ({s_name}): verified={verified}, distance={distance:.4f}, threshold={threshold:.4f}")
+                    print(f"[AI Face ID] Student {id} ({s_name}): verified={verified}, distance={distance:.4f}, threshold={threshold:.4f} (using {ip_verify})")
                     if verified:
                         is_student_present = True
                         face_item["identified"] = True
