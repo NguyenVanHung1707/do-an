@@ -263,41 +263,6 @@ export default function PhotoAttendance() {
                   className="w-full h-auto object-cover opacity-90"
                 />
 
-                {/* Overlaid face recognition bounding boxes */}
-                {!isProcessing && photoAttendanceResult && selectedClass && (
-                  <>
-                    {selectedClass.students.map((student, idx) => {
-                      const isPresent = photoAttendanceResult.recognizedStudents.includes(student.id);
-                      if (!isPresent) return null;
-                      const top = 15 + (idx * 18) % 45;
-                      const left = 12 + (idx * 22) % 65;
-                      return (
-                        <div
-                          key={student.id}
-                          className="absolute border-2 border-emerald-500 rounded shadow-lg shadow-emerald-500/20"
-                          style={{
-                            top: `${top}%`,
-                            left: `${left}%`,
-                            width: '16%',
-                            height: '24%'
-                          }}
-                        >
-                          <span className="absolute -top-6 left-0 bg-emerald-500 text-white text-[9px] font-black font-mono px-1.5 py-0.5 rounded shadow whitespace-nowrap">
-                            {student.fullName}
-                          </span>
-                        </div>
-                      );
-                    })}
-
-                    {/* Unidentified face decoration */}
-                    <div className="absolute top-[25%] left-[78%] w-[15%] h-[22%] border-2 border-rose-500 rounded shadow-lg shadow-rose-500/20">
-                      <span className="absolute -top-6 left-0 bg-rose-500 text-white text-[9px] font-black font-mono px-1.5 py-0.5 rounded shadow whitespace-nowrap">
-                        Người lạ (Unidentified)
-                      </span>
-                    </div>
-                  </>
-                )}
-
                 {/* Loading animation overlay */}
                 {isProcessing && (
                   <div className="absolute inset-0 bg-black/65 backdrop-blur-sm flex flex-col items-center justify-center text-center">
@@ -320,21 +285,21 @@ export default function PhotoAttendance() {
                 {/* Stats */}
                 <div className="space-y-3 bg-slate-50 p-4 border border-slate-100 rounded-xl">
                   <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-                    <span>Tổng phát hiện:</span>
+                    <span>Tổng sĩ số lớp:</span>
                     <span className="font-bold text-slate-700">
-                      {photoAttendanceResult.recognizedStudents.length + (photoAttendanceResult.recognizedStudents.length > 0 ? 1 : 0)} khuôn mặt
+                      {selectedClass.students.length} học viên
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-                    <span>Học viên nhận diện:</span>
+                    <span>Nhận diện (Có mặt):</span>
                     <span className="font-bold text-emerald-600">
-                      {photoAttendanceResult.recognizedStudents.length} có mặt
+                      {photoAttendanceResult.recognizedStudents.length} học viên
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-                    <span>Người lạ (Unidentified):</span>
+                    <span>Vắng mặt (Chưa nhận diện):</span>
                     <span className="font-bold text-rose-500">
-                      {photoAttendanceResult.recognizedStudents.length > 0 ? 1 : 0} khuôn mặt
+                      {selectedClass.students.length - photoAttendanceResult.recognizedStudents.length} học viên
                     </span>
                   </div>
                 </div>
