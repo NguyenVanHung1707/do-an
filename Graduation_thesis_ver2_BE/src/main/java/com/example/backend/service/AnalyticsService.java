@@ -94,7 +94,7 @@ public class AnalyticsService {
             double weightedScore = 0;
 
             for (Assessment ass : assessments) {
-                Optional<StudentSubmission> subOpt = studentSubmissionRepository.findByAssessmentIdAndStudentId(ass.getId(), keycloakId);
+                Optional<StudentSubmission> subOpt = studentSubmissionRepository.findFirstByAssessmentIdAndStudentIdOrderByStartedAtDesc(ass.getId(), keycloakId);
                 if (subOpt.isPresent() && "GRADED".equals(subOpt.get().getStatus())) {
                     Double score = subOpt.get().getFinalScore();
                     if (score != null) {
@@ -204,7 +204,7 @@ public class AnalyticsService {
             double weightedScore = 0;
 
             for (Assessment ass : assessments) {
-                Optional<StudentSubmission> subOpt = studentSubmissionRepository.findByAssessmentIdAndStudentId(ass.getId(), keycloakId);
+                Optional<StudentSubmission> subOpt = studentSubmissionRepository.findFirstByAssessmentIdAndStudentIdOrderByStartedAtDesc(ass.getId(), keycloakId);
                 if (subOpt.isPresent() && "GRADED".equals(subOpt.get().getStatus())) {
                     Double score = subOpt.get().getFinalScore();
                     if (score != null) {
@@ -289,7 +289,7 @@ public class AnalyticsService {
             double weightedScore = 0;
 
             for (Assessment ass : assessments) {
-                Optional<StudentSubmission> subOpt = studentSubmissionRepository.findByAssessmentIdAndStudentId(ass.getId(), keycloakId);
+                Optional<StudentSubmission> subOpt = studentSubmissionRepository.findFirstByAssessmentIdAndStudentIdOrderByStartedAtDesc(ass.getId(), keycloakId);
                 double w = ass.getWeight() != null ? ass.getWeight() : 0.0;
 
                 if (subOpt.isPresent() && "GRADED".equals(subOpt.get().getStatus())) {

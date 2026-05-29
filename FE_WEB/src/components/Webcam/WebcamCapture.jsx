@@ -102,6 +102,7 @@ export default function WebcamCapture({
         <div className="text-center p-6">
           <p className="text-rose-400 font-medium mb-3">{error}</p>
           <button
+            type="button"
             onClick={startWebcam}
             className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition font-medium"
           >
@@ -114,6 +115,7 @@ export default function WebcamCapture({
         <div className="text-center py-12">
           <p className="text-slate-400 mb-4">{emptyLabel}</p>
           <button
+            type="button"
             onClick={startWebcam}
             className="flex items-center gap-2 px-5 py-3 bg-primary hover:bg-primary-hover active:bg-primary-active text-white rounded-xl shadow-lg shadow-primary/20 transition font-medium mx-auto"
           >
@@ -135,6 +137,7 @@ export default function WebcamCapture({
           />
           <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 px-4">
             <button
+              type="button"
               onClick={capturePhoto}
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md shadow-emerald-600/20 transition"
             >
@@ -142,6 +145,7 @@ export default function WebcamCapture({
               <span>{captureLabel}</span>
             </button>
             <button
+              type="button"
               onClick={stopWebcam}
               className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition"
             >
@@ -164,6 +168,7 @@ export default function WebcamCapture({
 
           <div className="flex items-center justify-center gap-4 mt-4">
             <button
+              type="button"
               onClick={handleConfirm}
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition shadow-lg shadow-emerald-600/20"
             >
@@ -171,6 +176,7 @@ export default function WebcamCapture({
               <span>{confirmLabel}</span>
             </button>
             <button
+              type="button"
               onClick={handleRetake}
               className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition"
             >

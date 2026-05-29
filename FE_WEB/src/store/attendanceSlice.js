@@ -139,7 +139,7 @@ export const fetchFormByCode = createAsyncThunk(
 // 5. Submit Quiz Form Attendance (POST /student/submit-answer)
 export const submitStudentAttendance = createAsyncThunk(
   'attendance/submitStudentAttendance',
-  async ({ code, answers, latitude, longitude, mockLocationDetected = false }, { getState, rejectWithValue }) => {
+  async ({ code, answers, latitude, longitude, mockLocationDetected = false, faceImageBase64 = null }, { getState, rejectWithValue }) => {
     try {
       const state = getState();
       const activeForm = state.attendance.activeForm;
@@ -170,6 +170,7 @@ export const submitStudentAttendance = createAsyncThunk(
         latitude: latitude || null,
         longitude: longitude || null,
         mockLocationDetected,
+        faceImageBase64,
         answers: answersPayload
       };
 

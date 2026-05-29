@@ -169,7 +169,7 @@ public class AssessmentServiceImplement implements AssessmentService {
         for (Assessment a : assessments) {
             AssessmentDto d = getAssessmentDto(a);
             
-            Optional<StudentSubmission> subOpt = submissionRepository.findByAssessmentIdAndStudentId(a.getId(), studentId);
+            Optional<StudentSubmission> subOpt = submissionRepository.findFirstByAssessmentIdAndStudentIdOrderByStartedAtDesc(a.getId(), studentId);
             if (subOpt.isPresent()) {
                 StudentSubmission sub = subOpt.get();
                 d.setSubmissionId(sub.getId());
@@ -209,7 +209,7 @@ public class AssessmentServiceImplement implements AssessmentService {
 
         Double distance = validateAssessmentLocation(assessment, location);
 
-        Optional<StudentSubmission> existingOpt = submissionRepository.findByAssessmentIdAndStudentId(assessmentId, studentId);
+        Optional<StudentSubmission> existingOpt = submissionRepository.findFirstByAssessmentIdAndStudentIdOrderByStartedAtDesc(assessmentId, studentId);
         StudentSubmission sub;
         if (existingOpt.isPresent()) {
             sub = existingOpt.get();

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { submitStudentAttendance, fetchFormByCode } from '../../store/attendanceSlice';
-import { ShieldCheck, MapPin, CheckCircle2, ChevronRight, Lock, HelpCircle, Navigation, Info } from 'lucide-react';
+import { ShieldCheck, MapPin, CheckCircle2, ChevronRight, Lock, HelpCircle, Navigation, Info, Camera, RefreshCw } from 'lucide-react';
 import Card from '../../components/Common/Card';
+import WebcamCapture from '../../components/Webcam/WebcamCapture';
 
 export default function AnswerForm() {
   const dispatch = useDispatch();
@@ -19,6 +20,8 @@ export default function AnswerForm() {
   const [coords, setCoords] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState('');
+  const [faceImageBase64, setFaceImageBase64] = useState(null);
+  const [isFaceCaptureOpen, setIsFaceCaptureOpen] = useState(false);
 
   // Success screen state
   const [successData, setSuccessData] = useState(null);
@@ -92,6 +95,8 @@ export default function AnswerForm() {
         setSelectedForm(form);
         setCoords(null);
         setLocationError('');
+        setFaceImageBase64(null);
+        setIsFaceCaptureOpen(false);
         // Initialize empty answers
         const initialAnswers = {};
         form.questions.forEach(q => {
@@ -129,6 +134,11 @@ export default function AnswerForm() {
       return;
     }
 
+    if (selectedForm?.isFaceVerificationRequired && !faceImageBase64) {
+      setErrorMsg('Vui lòng chụp ảnh khuôn mặt để xác thực chính chủ trước khi nộp điểm danh.');
+      return;
+    }
+
     const now = new Date();
     const formattedDate = now.toLocaleDateString('vi-VN');
     const formattedTime = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
@@ -139,7 +149,8 @@ export default function AnswerForm() {
       answers,
       latitude: coords?.lat || null,
       longitude: coords?.lng || null,
-      mockLocationDetected: false
+      mockLocationDetected: false,
+      faceImageBase64
     }))
       .unwrap()
       .then(() => {
@@ -162,6 +173,8 @@ export default function AnswerForm() {
     setSelectedForm(null);
     setAnswers({});
     setCoords(null);
+    setFaceImageBase64(null);
+    setIsFaceCaptureOpen(false);
     setSuccessData(null);
     setErrorMsg('');
   };
@@ -323,6 +336,71 @@ export default function AnswerForm() {
               </button>
             </div>
           </Card>
+
+          {selectedForm?.isFaceVerificationRequired && (
+            <Card title="Xác thực khuôn mặt chính chủ" className="shadow-sm">
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      faceImageBase64 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                    }`}>
+                      <Camera className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-700 text-sm">Ảnh khuôn mặt sinh viên</h4>
+                      {faceImageBase64 ? (
+                        <p className="text-xs text-emerald-600 font-bold mt-0.5">
+                          Đã chụp ảnh khuôn mặt. Bạn có thể chụp lại nếu ảnh chưa rõ.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-amber-600 font-semibold mt-0.5">
+                          Form này yêu cầu chụp ảnh khuôn mặt trước khi nộp điểm danh.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsFaceCaptureOpen(true)}
+                    className={`border font-semibold text-xs px-4 py-2 rounded-xl transition duration-150 flex items-center gap-1.5 shrink-0 shadow-sm ${
+                      faceImageBase64
+                        ? 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                        : 'bg-primary border-primary text-white hover:bg-[#0056b3]'
+                    }`}
+                  >
+                    {faceImageBase64 ? <RefreshCw className="w-3.5 h-3.5" /> : <Camera className="w-3.5 h-3.5" />}
+                    <span>{faceImageBase64 ? 'Chụp lại' : 'Chụp ảnh khuôn mặt'}</span>
+                  </button>
+                </div>
+
+                {faceImageBase64 && !isFaceCaptureOpen && (
+                  <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-w-xs">
+                    <img
+                      src={faceImageBase64}
+                      alt="Ảnh khuôn mặt đã chụp"
+                      className="w-full aspect-video object-cover transform -scale-x-100"
+                    />
+                  </div>
+                )}
+
+                {isFaceCaptureOpen && (
+                  <WebcamCapture
+                    onCapture={(image) => {
+                      setFaceImageBase64(image);
+                      setIsFaceCaptureOpen(false);
+                    }}
+                    emptyLabel="Camera xác thực khuôn mặt đang tắt"
+                    startLabel="Mở camera để chụp khuôn mặt"
+                    captureLabel="Chụp ảnh khuôn mặt"
+                    confirmLabel="Dùng ảnh này"
+                    previewBadge="ẢNH XÁC THỰC"
+                  />
+                )}
+              </div>
+            </Card>
+          )}
 
           {/* Quiz list */}
           <Card title="Câu hỏi trắc nghiệm kiểm tra nhanh" className="shadow-sm">
