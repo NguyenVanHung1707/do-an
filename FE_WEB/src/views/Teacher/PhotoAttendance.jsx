@@ -85,11 +85,13 @@ export default function PhotoAttendance() {
 
     setIsProcessing(true);
     try {
-      const recognizedIds = photoAttendanceResult.recognizedStudents.join(',');
+      const recognizedIds = photoAttendanceResult.recognizedStudents.length > 0
+        ? photoAttendanceResult.recognizedStudents.join(',')
+        : '-1';
       const data = await apiFetch(`/teacher/preview-attendance-face?courseId=${selectedClass.id}&lectureNumber=${lectureNumber}&recognizedStudentIds=${recognizedIds}`);
       
-      // Filter to show only students whose status is changing
-      const changed = (data || []).filter(s => s.currentStatus !== s.proposedStatus);
+      // Filter to show only students whose status is changing (with robust array check)
+      const changed = Array.isArray(data) ? data.filter(s => s.currentStatus !== s.proposedStatus) : [];
       setPreviewStudents(changed);
       setShowPreviewModal(true);
     } catch (err) {
