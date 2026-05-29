@@ -23,7 +23,7 @@ jobs:
       DEMO_USER_PASSWORD: ${{ secrets.PROD_DEMO_USER_PASSWORD }}
     steps:
       - name: Reset demo data on VPS
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
