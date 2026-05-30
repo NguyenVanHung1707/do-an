@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import Card from '../../components/Common/Card';
-import { Clock, Save, Wifi, WifiOff, AlertTriangle, ChevronLeft, ChevronRight, HelpCircle, Send, MapPin, Camera } from 'lucide-react';
+import { Clock, Save, Wifi, WifiOff, AlertTriangle, ChevronLeft, ChevronRight, HelpCircle, Send, MapPin, Camera, Minimize2 } from 'lucide-react';
 import { apiFetch } from '../../services/api';
 
 export default function TakeAssessment({ assessmentId, submissionId, courseId, onBack }) {
@@ -19,6 +19,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [cameraStream, setCameraStream] = useState(null);
+  const [isCameraMinimized, setIsCameraMinimized] = useState(false);
 
   // AI Camera Proctoring refs
   const videoRef = useRef(null);
@@ -626,58 +627,85 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
 
       {/* AI WEBCAM MONITORING FLOATING PANEL */}
       {assessment.isCameraRequired && (
-        <div className="fixed bottom-4 left-4 md:bottom-16 md:left-[28px] z-50 bg-slate-900 text-white p-3 rounded-2xl shadow-2xl border border-slate-700 w-48 sm:w-56 transition-all duration-300">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <span className={`h-2.5 w-2.5 rounded-full ${isCameraActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-              <span className="text-[10px] font-black tracking-wider uppercase text-slate-300 font-sans">
-                {isCameraActive ? 'AI Proctor Active' : 'Camera Off'}
-              </span>
+        isCameraMinimized ? (
+          <button
+            onClick={() => setIsCameraMinimized(false)}
+            title="Mở rộng camera giám sát"
+            className="fixed bottom-4 left-4 md:bottom-16 md:left-[28px] z-50 w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xl border border-slate-700 hover:scale-110 active:scale-95 transition-all duration-200 group"
+          >
+            <div className="relative">
+              <Camera className="w-5 h-5 text-slate-300 group-hover:text-emerald-400 transition-colors" />
+              {isCameraActive && (
+                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+              )}
             </div>
-            {isCameraActive ? (
-              <Camera className="w-3.5 h-3.5 text-emerald-400" />
-            ) : (
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-            )}
-          </div>
-
-          <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-slate-800">
-            {cameraError ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center bg-slate-950/95">
-                <AlertTriangle className="w-6 h-6 text-rose-500 mb-1" />
-                <p className="text-[9px] text-rose-400 leading-tight font-medium">
-                  {cameraError}
-                </p>
+          </button>
+        ) : (
+          <div className="fixed bottom-4 left-4 md:bottom-16 md:left-[28px] z-50 bg-slate-900 text-white p-3 rounded-2xl shadow-2xl border border-slate-700 w-48 sm:w-56 transition-all duration-300">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <span className={`h-2.5 w-2.5 rounded-full ${isCameraActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                <span className="text-[10px] font-black tracking-wider uppercase text-slate-300 font-sans">
+                  {isCameraActive ? 'AI Proctor Active' : 'Camera Off'}
+                </span>
               </div>
-            ) : (
-              <>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover transform -scale-x-100"
-                />
-                {isCameraActive && (
-                  <div className="absolute bottom-1 right-1.5 bg-slate-950/60 px-1.5 py-0.5 rounded text-[8px] font-bold text-slate-300 font-mono tracking-wider">
-                    STREAMING
-                  </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsCameraMinimized(true)}
+                  title="Thu nhỏ camera"
+                  className="p-0.5 hover:bg-slate-800 rounded transition text-slate-400 hover:text-white"
+                >
+                  <Minimize2 className="w-3.5 h-3.5" />
+                </button>
+                {isCameraActive ? (
+                  <Camera className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
                 )}
-              </>
-            )}
+              </div>
+            </div>
+
+            <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-slate-800">
+              {cameraError ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center bg-slate-950/95">
+                  <AlertTriangle className="w-6 h-6 text-rose-500 mb-1" />
+                  <p className="text-[9px] text-rose-400 leading-tight font-medium">
+                    {cameraError}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover transform -scale-x-100"
+                  />
+                  {isCameraActive && (
+                    <div className="absolute bottom-1 right-1.5 bg-slate-950/60 px-1.5 py-0.5 rounded text-[8px] font-bold text-slate-300 font-mono tracking-wider">
+                      STREAMING
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            
+            <div className="mt-2 text-center">
+              <p className="text-[9px] text-slate-400 font-semibold leading-normal font-sans">
+                {isCameraActive 
+                  ? 'Góc nhìn & khuôn mặt đang được AI giám sát tự động' 
+                  : 'Vui lòng cấp quyền bật camera để tiếp tục làm bài'}
+              </p>
+            </div>
+            
+            {/* Hidden Canvas used for grabbing frames */}
+            <canvas ref={canvasRef} className="hidden" />
           </div>
-          
-          <div className="mt-2 text-center">
-            <p className="text-[9px] text-slate-400 font-semibold leading-normal font-sans">
-              {isCameraActive 
-                ? 'Góc nhìn & khuôn mặt đang được AI giám sát tự động' 
-                : 'Vui lòng cấp quyền bật camera để tiếp tục làm bài'}
-            </p>
-          </div>
-          
-          {/* Hidden Canvas used for grabbing frames */}
-          <canvas ref={canvasRef} className="hidden" />
-        </div>
+        )
       )}
     </div>
   );
