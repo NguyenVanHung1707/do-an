@@ -79,9 +79,15 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
-        state.role = action.payload.role;
-        state.isAuthenticated = true;
+        if (action.payload && action.payload.isPendingApproval) {
+          state.user = null;
+          state.role = null;
+          state.isAuthenticated = false;
+        } else {
+          state.user = action.payload;
+          state.role = action.payload.role;
+          state.isAuthenticated = true;
+        }
         state.error = null;
       })
       .addCase(registerUser.rejected, (state, action) => {

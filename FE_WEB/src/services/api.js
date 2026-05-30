@@ -237,6 +237,11 @@ export const keycloakRegister = async ({ username, email, fullName, code, passwo
     throw new Error(errMsg);
   }
 
+  // Auto-login only if not a teacher
+  if (role === 'teacher') {
+    return { role, isPendingApproval: true };
+  }
+
   // Auto-login
   return await keycloakLogin(username, password);
 };
