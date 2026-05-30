@@ -18,6 +18,8 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
   // AI Camera Proctoring states
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+  const [videoElement, setVideoElement] = useState(null);
+  const [cameraStream, setCameraStream] = useState(null);
 
   // AI Camera Proctoring refs
   const videoRef = useRef(null);
@@ -25,6 +27,11 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
   const wsRef = useRef(null);
   const streamIntervalRef = useRef(null);
   const cameraStreamRef = useRef(null);
+
+  const setVideoRef = (node) => {
+    videoRef.current = node;
+    setVideoElement(node);
+  };
 
   // Debouncing refs
   const saveTimeoutRef = useRef({});
@@ -57,6 +64,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
       cameraStreamRef.current.getTracks().forEach(track => track.stop());
       cameraStreamRef.current = null;
     }
+    setCameraStream(null);
     setIsCameraActive(false);
 
     if (wsRef.current) {
@@ -88,14 +96,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
       cameraStreamRef.current = stream;
       setIsCameraActive(true);
       setCameraError(null);
-
-      // Connect stream to video element dynamically
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(e => console.error("Video play failed:", e));
-        }
-      }, 500);
+      setCameraStream(stream);
 
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${wsProtocol}//${window.location.host}/api/proctor/stream/${assessmentId}/${user?.code}`;
@@ -138,6 +139,16 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
       alert("Bài thi này yêu cầu giám sát AI qua Camera trực tiếp. Vui lòng cấp quyền webcam để tiếp tục!");
     }
   }, [assessmentId, user]);
+
+  // Connect stream to video element when active and mounted
+  useEffect(() => {
+    if (videoElement && cameraStream) {
+      videoElement.srcObject = cameraStream;
+      videoElement.play().catch((err) => {
+        console.error("[AI Proctor] Error starting video playback:", err);
+      });
+    }
+  }, [videoElement, cameraStream]);
 
   const executeSubmit = useCallback(async (isAuto = false) => {
     setIsSubmitting(true);
@@ -292,6 +303,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
       if (cameraStreamRef.current) {
         cameraStreamRef.current.getTracks().forEach(track => track.stop());
       }
+      setCameraStream(null);
       if (wsRef.current) {
         if (wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.close();
@@ -631,7 +643,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
             ) : (
               <>
                 <video
-                  ref={videoRef}
+                  ref={setVideoRef}
                   autoPlay
                   playsInline
                   muted
