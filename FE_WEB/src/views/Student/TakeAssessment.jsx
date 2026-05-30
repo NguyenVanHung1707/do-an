@@ -21,6 +21,72 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
   const [cameraStream, setCameraStream] = useState(null);
   const [isCameraMinimized, setIsCameraMinimized] = useState(false);
 
+  // Dragging states for floating camera
+  const [cameraPosition, setCameraPosition] = useState({ x: 28, y: 500 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    setCameraPosition({ x: 28, y: window.innerHeight - 260 });
+  }, []);
+
+  const handleMouseDown = (e) => {
+    if (e.target.closest('button')) return;
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.clientX - cameraPosition.x,
+      y: e.clientY - cameraPosition.y
+    };
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.target.closest('button')) return;
+    const touch = e.touches[0];
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: touch.clientX - cameraPosition.x,
+      y: touch.clientY - cameraPosition.y
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging) return;
+      const clientX = e.clientX !== undefined ? e.clientX : e.touches?.[0]?.clientX;
+      const clientY = e.clientY !== undefined ? e.clientY : e.touches?.[0]?.clientY;
+      if (clientX === undefined || clientY === undefined) return;
+
+      let newX = clientX - dragStartRef.current.x;
+      let newY = clientY - dragStartRef.current.y;
+
+      const width = isCameraMinimized ? 48 : 224;
+      const height = isCameraMinimized ? 48 : 180;
+
+      newX = Math.max(10, Math.min(newX, window.innerWidth - width - 10));
+      newY = Math.max(10, Math.min(newY, window.innerHeight - height - 10));
+
+      setCameraPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleMouseMove, { passive: false });
+      window.addEventListener('touchend', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleMouseMove);
+      window.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [isDragging, isCameraMinimized]);
+
   // AI Camera Proctoring refs
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -143,7 +209,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
         console.error("[AI Proctor] Error starting video playback:", err);
       });
     }
-  }, [cameraStream]);
+  }, [cameraStream, isCameraMinimized]);
 
   const executeSubmit = useCallback(async (isAuto = false) => {
     setIsSubmitting(true);
@@ -630,8 +696,18 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
         isCameraMinimized ? (
           <button
             onClick={() => setIsCameraMinimized(false)}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            style={{
+              left: cameraPosition.x,
+              top: cameraPosition.y,
+              position: 'fixed',
+              cursor: isDragging ? 'grabbing' : 'grab',
+              userSelect: 'none',
+              touchAction: 'none'
+            }}
             title="Mở rộng camera giám sát"
-            className="fixed bottom-4 left-4 md:bottom-16 md:left-[28px] z-50 w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xl border border-slate-700 hover:scale-110 active:scale-95 transition-all duration-200 group"
+            className="fixed z-50 w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xl border border-slate-700 hover:scale-110 active:scale-95 transition-all duration-200 group"
           >
             <div className="relative">
               <Camera className="w-5 h-5 text-slate-300 group-hover:text-emerald-400 transition-colors" />
@@ -644,7 +720,19 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
             </div>
           </button>
         ) : (
-          <div className="fixed bottom-4 left-4 md:bottom-16 md:left-[28px] z-50 bg-slate-900 text-white p-3 rounded-2xl shadow-2xl border border-slate-700 w-48 sm:w-56 transition-all duration-300">
+          <div
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            style={{
+              left: cameraPosition.x,
+              top: cameraPosition.y,
+              position: 'fixed',
+              cursor: isDragging ? 'grabbing' : 'grab',
+              userSelect: 'none',
+              touchAction: 'none'
+            }}
+            className="fixed z-50 bg-slate-900 text-white p-3 rounded-2xl shadow-2xl border border-slate-700 w-48 sm:w-56 transition-all duration-300"
+          >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <span className={`h-2.5 w-2.5 rounded-full ${isCameraActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
