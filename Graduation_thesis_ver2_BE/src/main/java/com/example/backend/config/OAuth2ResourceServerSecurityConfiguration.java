@@ -23,6 +23,7 @@ public class OAuth2ResourceServerSecurityConfiguration {
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/api/public/swagger-ui.html").permitAll()
                         .requestMatchers("/api/anonymous/**").permitAll()
+                        .requestMatchers("/api/proctor/video").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));
         return http.build();
