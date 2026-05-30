@@ -18,7 +18,6 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
   // AI Camera Proctoring states
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
-  const [videoElement, setVideoElement] = useState(null);
   const [cameraStream, setCameraStream] = useState(null);
 
   // AI Camera Proctoring refs
@@ -27,11 +26,6 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
   const wsRef = useRef(null);
   const streamIntervalRef = useRef(null);
   const cameraStreamRef = useRef(null);
-
-  const setVideoRef = (node) => {
-    videoRef.current = node;
-    setVideoElement(node);
-  };
 
   // Debouncing refs
   const saveTimeoutRef = useRef({});
@@ -142,13 +136,13 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
 
   // Connect stream to video element when active and mounted
   useEffect(() => {
-    if (videoElement && cameraStream) {
-      videoElement.srcObject = cameraStream;
-      videoElement.play().catch((err) => {
+    if (videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream;
+      videoRef.current.play().catch((err) => {
         console.error("[AI Proctor] Error starting video playback:", err);
       });
     }
-  }, [videoElement, cameraStream]);
+  }, [cameraStream]);
 
   const executeSubmit = useCallback(async (isAuto = false) => {
     setIsSubmitting(true);
@@ -233,6 +227,15 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
 
 
 
+  const initCameraProctoringRef = useRef(initCameraProctoring);
+  initCameraProctoringRef.current = initCameraProctoring;
+
+  const handleAutoSubmitRef = useRef(handleAutoSubmit);
+  handleAutoSubmitRef.current = handleAutoSubmit;
+
+  const onBackRef = useRef(onBack);
+  onBackRef.current = onBack;
+
   // Load assessment metadata and existing session
   useEffect(() => {
     const loadSession = async () => {
@@ -258,7 +261,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
           setAssessment(matched);
           
           if (matched.isCameraRequired) {
-            initCameraProctoring();
+            initCameraProctoringRef.current();
           }
 
           // Setup countdown timer
@@ -274,7 +277,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
               if (diff <= 0) {
                 setTimeLeft(0);
                 clearInterval(timerRef.current);
-                handleAutoSubmit();
+                handleAutoSubmitRef.current();
               } else {
                 setTimeLeft(Math.floor(diff / 1000));
               }
@@ -289,7 +292,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
       } catch (e) {
         console.error('Lỗi khi tải phiên làm bài:', e);
         alert(e.message || 'Có lỗi xảy ra khi tải đề thi.');
-        onBack();
+        onBackRef.current();
       }
     };
     loadSession();
@@ -310,7 +313,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
         }
       }
     };
-  }, [assessmentId, submissionId, courseId, initCameraProctoring, handleAutoSubmit, onBack]);
+  }, [assessmentId, submissionId, courseId]);
 
 
 
@@ -643,7 +646,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
             ) : (
               <>
                 <video
-                  ref={setVideoRef}
+                  ref={videoRef}
                   autoPlay
                   playsInline
                   muted
