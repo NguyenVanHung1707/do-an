@@ -228,13 +228,19 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
 
 
   const initCameraProctoringRef = useRef(initCameraProctoring);
-  initCameraProctoringRef.current = initCameraProctoring;
+  useEffect(() => {
+    initCameraProctoringRef.current = initCameraProctoring;
+  }, [initCameraProctoring]);
 
   const handleAutoSubmitRef = useRef(handleAutoSubmit);
-  handleAutoSubmitRef.current = handleAutoSubmit;
+  useEffect(() => {
+    handleAutoSubmitRef.current = handleAutoSubmit;
+  }, [handleAutoSubmit]);
 
   const onBackRef = useRef(onBack);
-  onBackRef.current = onBack;
+  useEffect(() => {
+    onBackRef.current = onBack;
+  }, [onBack]);
 
   // Load assessment metadata and existing session
   useEffect(() => {
@@ -620,7 +626,7 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
 
       {/* AI WEBCAM MONITORING FLOATING PANEL */}
       {assessment.isCameraRequired && (
-        <div className="fixed bottom-4 right-4 z-50 bg-slate-900 text-white p-3 rounded-2xl shadow-2xl border border-slate-700 w-48 sm:w-56 transition-all duration-300">
+        <div className="fixed bottom-4 left-4 z-50 bg-slate-900 text-white p-3 rounded-2xl shadow-2xl border border-slate-700 w-48 sm:w-56 transition-all duration-300">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
               <span className={`h-2.5 w-2.5 rounded-full ${isCameraActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
