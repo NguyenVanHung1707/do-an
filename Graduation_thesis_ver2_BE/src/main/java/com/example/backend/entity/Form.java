@@ -41,6 +41,9 @@ public class Form {
     @OneToMany(mappedBy = "form", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions;
 
+    @OneToMany(mappedBy = "form", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FormSubmission> submissions;
+
     @Column(name = "lecture_number")
     private Integer lectureNumber;
 
