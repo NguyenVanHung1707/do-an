@@ -55,12 +55,6 @@ export default function MyCourses() {
   });
 
   const handleStartResumeAssessment = async (assessment) => {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (assessment.isCameraRequired && isMobile) {
-      alert('Bài thi này yêu cầu giám sát Camera trực tiếp (AI Proctoring) và chỉ có thể thực hiện trên phiên bản WEB (Máy tính). Vui lòng đăng nhập trên máy tính để thực hiện bài thi!');
-      return;
-    }
-
     const assessmentId = assessment.id;
     try {
       const options = { method: 'POST' };

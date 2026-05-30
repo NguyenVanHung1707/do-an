@@ -264,12 +264,6 @@ export default function TakeAssessment({ assessmentId, submissionId, courseId, o
         // Let's search by ID
         const matched = assDetail?.find(a => a.id === assessmentId);
         if (matched) {
-          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          if (matched.isCameraRequired && isMobile) {
-            alert('Bài thi này yêu cầu giám sát Camera trực tiếp (AI Proctoring) và chỉ có thể thực hiện trên phiên bản WEB (Máy tính). Vui lòng đăng nhập trên máy tính để thực hiện bài thi!');
-            onBackRef.current();
-            return;
-          }
           setAssessment(matched);
           
           if (matched.isCameraRequired) {
