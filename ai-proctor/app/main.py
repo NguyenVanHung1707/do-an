@@ -137,11 +137,43 @@ def save_violation_video(session_key: str, exam_id: str, student_id: str, frame_
 
         h, w, _ = frame_buffer[0].shape
         fourcc = cv2.VideoWriter_fourcc(*'mp4v') # Standard MP4 encoding
-        out = cv2.VideoWriter(file_path, fourcc, 15, (w, h))
+        
+        # Write to a temp file first
+        temp_file_path = os.path.join(output_dir, f"temp_{filename}")
+        out = cv2.VideoWriter(temp_file_path, fourcc, 15, (w, h))
 
         for frame in frame_buffer:
             out.write(frame)
         out.release()
+        
+        # Use ffmpeg to convert to H.264 (AVC) with baseline profile for maximum browser compatibility
+        import subprocess
+        try:
+            # ffmpeg -y -i temp.mp4 -vcodec libx264 -pix_fmt yuv420p -profile:v baseline -level 3.0 output.mp4
+            cmd = [
+                "ffmpeg", "-y", "-i", temp_file_path,
+                "-vcodec", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-profile:v", "baseline", "-level", "3.0",
+                file_path
+            ]
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if result.returncode == 0:
+                print(f"[AI Proctor] Converted video to H.264 successfully: {file_path}")
+                # Remove the temp file
+                if os.path.exists(temp_file_path):
+                    os.remove(temp_file_path)
+            else:
+                # Fallback to copy the temp file to original if ffmpeg failed
+                print(f"[AI Proctor] ffmpeg conversion failed (code {result.returncode}), falling back to raw mp4v: {result.stderr.decode()}")
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                os.rename(temp_file_path, file_path)
+        except Exception as ffmpeg_err:
+            print(f"[AI Proctor] ffmpeg execution error, falling back: {ffmpeg_err}")
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            os.rename(temp_file_path, file_path)
         
         # Log database entry
         log_entry = {
