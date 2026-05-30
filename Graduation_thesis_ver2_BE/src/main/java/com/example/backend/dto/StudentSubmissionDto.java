@@ -17,6 +17,7 @@ public class StudentSubmissionDto {
     private Long assessmentId;
     private String studentId;
     private String studentName;
+    private String studentCode;
     private OffsetDateTime startedAt;
     private OffsetDateTime submittedAt;
     private Double finalScore;

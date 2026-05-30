@@ -474,7 +474,10 @@ public class AssessmentServiceImplement implements AssessmentService {
         d.setStudentId(sub.getStudentId());
         
         Optional<Student> studentOpt = studentRepository.findByKeycloakId(sub.getStudentId());
-        studentOpt.ifPresent(student -> d.setStudentName(student.getName()));
+        studentOpt.ifPresent(student -> {
+            d.setStudentName(student.getName());
+            d.setStudentCode(student.getStudentCode());
+        });
 
         d.setStartedAt(sub.getStartedAt());
         d.setSubmittedAt(sub.getSubmittedAt());

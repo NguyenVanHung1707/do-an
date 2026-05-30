@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Card from '../../components/Common/Card';
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Send, RefreshCw, Award, User } from 'lucide-react';
-import { apiFetch } from '../../services/api';
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Send, RefreshCw, Award, User, ShieldAlert, Clock, Video, X } from 'lucide-react';
+import { apiFetch, BASE_API_URL } from '../../services/api';
 
 export default function GradeAssessment({ assessmentId, onBack }) {
   const [submissions, setSubmissions] = useState([]);
@@ -12,6 +12,45 @@ export default function GradeAssessment({ assessmentId, onBack }) {
   // Grading states for selected submission
   const [essayGrades, setEssayGrades] = useState({}); // questionId -> { score, comment }
   const [overallFeedback, setOverallFeedback] = useState('');
+
+  // AI Proctoring logs states
+  const [isProctorLogsOpen, setIsProctorLogsOpen] = useState(false);
+  const [proctorLogs, setProctorLogs] = useState([]);
+  const [isProctorLogsLoading, setIsProctorLogsLoading] = useState(false);
+  const [activeLog, setActiveLog] = useState(null);
+
+  const handleOpenProctorLogs = async () => {
+    if (!selectedSub) return;
+    setIsProctorLogsOpen(true);
+    setIsProctorLogsLoading(true);
+    try {
+      const examId = selectedSub.assessmentId;
+      const studentCode = selectedSub.studentCode || selectedSub.studentId;
+      const res = await apiFetch(`/proctor/violations?examId=${examId}&studentId=${studentCode}`);
+      if (res && res.logs) {
+        setProctorLogs(res.logs);
+        if (res.logs.length > 0) {
+          setActiveLog(res.logs[0]);
+        } else {
+          setActiveLog(null);
+        }
+      } else {
+        setProctorLogs([]);
+        setActiveLog(null);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Không thể tải nhật ký giám thị: ' + e.message);
+    } finally {
+      setIsProctorLogsLoading(false);
+    }
+  };
+
+  const getFullVideoUrl = (videoUrl) => {
+    if (!videoUrl) return '';
+    const relativePath = videoUrl.startsWith('/api') ? videoUrl.substring(4) : videoUrl;
+    return `${BASE_API_URL}${relativePath}`;
+  };
 
   const fetchSubmissions = useCallback(async () => {
     setIsLoading(true);
@@ -206,6 +245,16 @@ export default function GradeAssessment({ assessmentId, onBack }) {
                     <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
                       Bắt đầu: {new Date(selectedSub.startedAt).toLocaleString('vi-VN')} | Nộp: {selectedSub.submittedAt ? new Date(selectedSub.submittedAt).toLocaleString('vi-VN') : 'Tự động khóa'}
                     </p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <button
+                        type="button"
+                        onClick={handleOpenProctorLogs}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 hover:border-rose-200 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all shadow-sm active:scale-95"
+                      >
+                        <ShieldAlert className="w-3.5 h-3.5 animate-pulse" />
+                        Nhật ký AI Giám thị
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-slate-50 px-4 py-2 rounded-xl text-center">
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tổng điểm</p>
@@ -318,6 +367,180 @@ export default function GradeAssessment({ assessmentId, onBack }) {
           )}
         </div>
       </div>
+
+      {/* AI Proctoring logs modal */}
+      {isProctorLogsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm transition-all duration-300">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800 bg-slate-950/50">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/10 flex items-center justify-center border border-rose-500/20">
+                  <ShieldAlert className="w-5 h-5 text-rose-500 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-100">
+                    Nhật ký Giám thị AI - Thí sinh: {selectedSub?.studentName || selectedSub?.studentId}
+                  </h3>
+                  <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                    Mã số: {selectedSub?.studentCode || 'N/A'} | Đề thi: {selectedSub?.assessmentId}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsProctorLogsOpen(false);
+                  setActiveLog(null);
+                }}
+                className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+              {/* Timeline list (Left panel) */}
+              <div className="lg:col-span-5 border-r border-slate-800 flex flex-col max-h-[65vh] lg:max-h-[70vh] bg-slate-900/40">
+                <div className="p-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    Lịch sử vi phạm ({proctorLogs.length})
+                  </span>
+                  {proctorLogs.length > 0 && (
+                    <span className="text-[9px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20 uppercase animate-pulse">
+                      Phát hiện nghi vấn
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {isProctorLogsLoading ? (
+                    <div className="flex flex-col justify-center items-center py-20 space-y-3">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500"></div>
+                      <p className="text-xs text-slate-400 font-medium">Đang tải nhật ký từ máy chủ AI...</p>
+                    </div>
+                  ) : proctorLogs.length === 0 ? (
+                    <div className="flex flex-col justify-center items-center py-20 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                        <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-slate-200">Không phát hiện vi phạm</p>
+                        <p className="text-[10px] text-slate-400 mt-1 max-w-[200px] mx-auto leading-relaxed">
+                          Hệ thống AI không ghi nhận hành vi bất thường nào của thí sinh trong suốt thời gian làm bài.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {proctorLogs.map((log, index) => {
+                        const isActive = activeLog?.timestamp === log.timestamp;
+                        
+                        const formatTimestamp = (ts) => {
+                          if (!ts || ts.length < 15) return ts;
+                          const year = ts.substring(0, 4);
+                          const month = ts.substring(4, 6);
+                          const day = ts.substring(6, 8);
+                          const hour = ts.substring(9, 11);
+                          const min = ts.substring(11, 13);
+                          const sec = ts.substring(13, 15);
+                          return `${hour}:${min}:${sec} - ${day}/${month}/${year}`;
+                        };
+
+                        return (
+                          <button
+                            type="button"
+                            key={index}
+                            onClick={() => setActiveLog(log)}
+                            className={`w-full text-left p-3.5 rounded-2xl border transition-all duration-200 flex gap-3.5 items-start ${
+                              isActive
+                                ? 'bg-rose-500/10 border-rose-500/30 shadow-md shadow-rose-950/20 scale-[1.01]'
+                                : 'bg-slate-950/20 border-slate-800/80 hover:bg-slate-800/50 hover:border-slate-800'
+                            }`}
+                          >
+                            <div className="mt-1">
+                              <span className={`flex h-2.5 w-2.5 rounded-full ${isActive ? 'bg-rose-500 animate-ping' : 'bg-rose-600'}`} />
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-black text-slate-300 font-mono">
+                                  LẦN {proctorLogs.length - index}
+                                </span>
+                                <span className="text-[9px] font-semibold text-slate-400 flex items-center gap-1 font-sans">
+                                  <Clock className="w-3 h-3 text-slate-500" />
+                                  {formatTimestamp(log.timestamp)}
+                                </span>
+                              </div>
+                              <p className="text-[11px] font-bold text-slate-100 leading-snug">
+                                {log.details}
+                              </p>
+                              {log.videoUrl && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-rose-400 uppercase mt-1">
+                                  <Video className="w-3 h-3" /> Click xem video vi phạm
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Video Player (Right panel) */}
+              <div className="lg:col-span-7 bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-300 max-h-[65vh] lg:max-h-[70vh]">
+                {activeLog && activeLog.videoUrl ? (
+                  <div className="w-full h-full flex flex-col justify-between space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-sans">
+                        <Video className="w-4 h-4 text-rose-500" /> Video bằng chứng vi phạm
+                      </span>
+                      <span className="text-[9px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 uppercase font-sans">
+                        Đang phát
+                      </span>
+                    </div>
+
+                    <div className="flex-1 relative bg-black border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center min-h-[300px]">
+                      <video
+                        key={activeLog.timestamp}
+                        src={getFullVideoUrl(activeLog.videoUrl)}
+                        controls
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+
+                    <div className="bg-slate-900/60 p-4 border border-slate-850 rounded-xl">
+                      <p className="text-[10px] font-black text-rose-400 uppercase tracking-wider font-sans">Mô tả hành vi:</p>
+                      <p className="text-xs font-semibold text-slate-300 mt-1 leading-relaxed">
+                        {activeLog.details}
+                      </p>
+                      <p className="text-[9px] font-semibold text-slate-500 mt-2 font-mono italic">
+                        Đường dẫn lưu trữ máy chủ: {activeLog.video_path}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-4 p-8">
+                    <div className="w-16 h-16 rounded-3xl bg-slate-900 border border-slate-850 flex items-center justify-center mx-auto text-slate-500">
+                      <Video className="w-8 h-8 stroke-[1.5]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-200">Video Bằng Chứng</p>
+                      <p className="text-xs text-slate-400 mt-1 max-w-[280px] mx-auto leading-relaxed">
+                        Vui lòng chọn một phiên vi phạm từ danh sách bên trái để phát lại video bằng chứng ghi nhận hành vi thí sinh.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
