@@ -35,6 +35,9 @@ public class StudentServiceImplement implements StudentService {
     @Value("${app.upload.dir:E:\\Data\\student_faces}")
     private String uploadDir;
 
+    @Value("${app.face.verification.url:http://localhost:8888/attendance}")
+    private String faceVerificationUrl;
+
     public StudentServiceImplement(StudentRepository studentRepository, FormRepository formRepository, RegisterRepository registerRepository, CourseRepository courseRepository, AttendanceLogRepository attendanceLogRepository, AnswerRepository answerRepository, FormSubmissionRepository formSubmissionRepository) {
         this.studentRepository = studentRepository;
         this.formRepository = formRepository;
@@ -290,7 +293,7 @@ public class StudentServiceImplement implements StudentService {
                 
                 org.springframework.http.HttpEntity<org.springframework.util.LinkedMultiValueMap<String, Object>> requestEntity = new org.springframework.http.HttpEntity<>(map, headers);
                 
-                String responseJson = restTemplate.postForObject("http://localhost:8888/attendance", requestEntity, String.class);
+                String responseJson = restTemplate.postForObject(this.faceVerificationUrl, requestEntity, String.class);
                 System.out.println("[Face Verification] FastAPI response: " + responseJson);
                 
                 if (responseJson != null && (responseJson.contains("\"isAttendance\": true") || responseJson.contains("\"isAttendance\":true"))) {
