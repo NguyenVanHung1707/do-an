@@ -90,8 +90,8 @@ export default function Profile() {
 
       {/* Profile Details */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        {/* Left column: Profile card */}
-        <div className="md:col-span-7">
+        {/* Full-width Profile card */}
+        <div className="md:col-span-12">
           <Card title="Hồ sơ tài khoản" subtitle="Chi tiết định danh trên cơ sở dữ liệu chung">
             <div className="space-y-4">
               <div className="flex items-center justify-between py-2.5 border-b border-slate-100">
@@ -124,38 +124,6 @@ export default function Profile() {
                   <span className="text-sm font-medium">Quyền hạn hệ thống</span>
                 </div>
                 <span className="text-sm font-bold text-slate-800 capitalize">{user.role}</span>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Right column: Single Sign-On stats */}
-        <div className="md:col-span-5">
-          <Card title="Trạng thái Đăng Nhập SSO" subtitle="Thông tin tích hợp phiên đăng nhập">
-            <div className="space-y-4">
-              <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                <div className="flex items-center gap-2 mb-2">
-                  <Key className="w-4 h-4 text-amber-500" />
-                  <span className="text-xs font-bold text-slate-600 uppercase">Access Token (JWT)</span>
-                </div>
-                <p className="text-[10px] font-mono text-slate-400 break-all leading-tight bg-white p-2 rounded-lg border border-slate-200">
-                  eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmR2ZzM...2026_thesis_attendance_token_sso_sub_{user.code}
-                </p>
-              </div>
-
-              <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                <div className="flex items-center gap-2 mb-2">
-                  <Landmark className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-bold text-slate-600 uppercase">Realm Server</span>
-                </div>
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-                  <span>Realm ID:</span>
-                  <span className="font-mono bg-white px-2 py-1 rounded border border-slate-200">bkhn-realm</span>
-                </div>
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mt-2">
-                  <span>Client ID:</span>
-                  <span className="font-mono bg-white px-2 py-1 rounded border border-slate-200">attendance-web-app</span>
-                </div>
               </div>
             </div>
           </Card>
