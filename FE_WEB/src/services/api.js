@@ -1,3 +1,4 @@
+// API endpoints configuration for the microservices attendance & exam system
 const hostname = window.location.hostname;
 const protocol = window.location.protocol;
 const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || 'hung2004';
