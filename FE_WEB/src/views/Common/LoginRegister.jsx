@@ -116,7 +116,7 @@ export default function LoginRegister() {
                 <div className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 shrink-0" />
                   <p className="text-xs text-slate-655 dark:text-slate-400">
-                    Nếu cần phê duyệt khẩn cấp hoặc có thắc mắc, vui lòng liên hệ Ban quản trị qua email: <strong>admin@thuvienso.io.vn</strong>
+                    Nếu cần phê duyệt khẩn cấp hoặc có thắc mắc, vui lòng liên hệ Ban quản trị qua email: <strong>admin@lophocso.io.vn</strong>
                   </p>
                 </div>
               </div>

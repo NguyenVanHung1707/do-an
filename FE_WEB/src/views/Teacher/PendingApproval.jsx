@@ -85,7 +85,7 @@ export default function PendingApproval({ teacherData }) {
 
             <div className="flex items-center gap-3 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
               <HelpCircle className="w-4 h-4 text-primary shrink-0" />
-              <span>Nếu cần duyệt khẩn cấp hoặc có thắc mắc, vui lòng gửi email về: <strong className="text-slate-800 font-semibold">admin@thuvienso.io.vn</strong></span>
+              <span>Nếu cần duyệt khẩn cấp hoặc có thắc mắc, vui lòng gửi email về: <strong className="text-slate-800 font-semibold">admin@lophocso.io.vn</strong></span>
             </div>
           </div>
 

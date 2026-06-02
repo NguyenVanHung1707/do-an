@@ -4,7 +4,7 @@ Hệ thống thi trực tuyến hoàn chỉnh được thiết kế theo kiến 
 
 Nền tảng mang lại giải pháp chuyển đổi số toàn diện cho trường học, tối ưu hóa công tác tổ chức kiểm tra, quản lý lớp học và nâng cao tính minh bạch, khách quan trong kiểm tra trực tuyến.
 
-🌐 **Trải nghiệm trực tuyến tại địa chỉ chính thức**: [https://thuvienso.io.vn](https://thuvienso.io.vn)
+🌐 **Trải nghiệm trực tuyến tại địa chỉ chính thức**: [https://lophocso.io.vn](https://lophocso.io.vn)
 
 ---
 
