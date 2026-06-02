@@ -109,7 +109,7 @@ export const keycloakLogin = async (username, password) => {
   });
 
   if (!response.ok) {
-    let errorDescription = 'Đăng nhập Keycloak không thành công!';
+    let errorDescription = 'Đăng nhập không thành công!';
     try {
       const errData = await response.json();
       errorDescription = errData.error_description || errorDescription;
@@ -120,7 +120,7 @@ export const keycloakLogin = async (username, password) => {
   const data = await response.json();
   const decoded = decodeJWT(data.access_token);
   if (!decoded) {
-    throw new Error('Token JWT Keycloak không hợp lệ!');
+    throw new Error('Phiên đăng nhập không hợp lệ!');
   }
 
   let role = 'student';
@@ -159,7 +159,7 @@ export const keycloakExchangeCodeForToken = async (code) => {
   });
 
   if (!response.ok) {
-    let errorDescription = 'Trao đổi mã xác thực Keycloak không thành công!';
+    let errorDescription = 'Trao đổi mã xác thực không thành công!';
     try {
       const errData = await response.json();
       errorDescription = errData.error_description || errorDescription;
@@ -170,7 +170,7 @@ export const keycloakExchangeCodeForToken = async (code) => {
   const data = await response.json();
   const decoded = decodeJWT(data.access_token);
   if (!decoded) {
-    throw new Error('Token JWT Keycloak không hợp lệ!');
+    throw new Error('Phiên đăng nhập không hợp lệ!');
   }
 
   let role = 'student';

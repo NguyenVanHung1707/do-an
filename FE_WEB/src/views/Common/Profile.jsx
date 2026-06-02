@@ -81,7 +81,7 @@ export default function Profile() {
                 {user.role === 'admin' ? 'Quản trị viên' : user.role === 'teacher' ? 'Giảng viên' : 'Sinh viên'}
               </span>
               <span className="px-3 py-1 bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-300 rounded-full text-xs font-semibold">
-                OAuth2 Keycloak Active
+                OAuth2 SSO Active
               </span>
             </div>
           </div>
@@ -131,7 +131,7 @@ export default function Profile() {
 
         {/* Right column: Single Sign-On stats */}
         <div className="md:col-span-5">
-          <Card title="Trạng thái Keycloak SSO" subtitle="Thông tin tích hợp phiên đăng nhập">
+          <Card title="Trạng thái Đăng Nhập SSO" subtitle="Thông tin tích hợp phiên đăng nhập">
             <div className="space-y-4">
               <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
@@ -139,7 +139,7 @@ export default function Profile() {
                   <span className="text-xs font-bold text-slate-600 uppercase">Access Token (JWT)</span>
                 </div>
                 <p className="text-[10px] font-mono text-slate-400 break-all leading-tight bg-white p-2 rounded-lg border border-slate-200">
-                  eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmR2ZzM...2026_thesis_attendance_token_keycloak_sub_{user.code}
+                  eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmR2ZzM...2026_thesis_attendance_token_sso_sub_{user.code}
                 </p>
               </div>
 
@@ -165,7 +165,7 @@ export default function Profile() {
       {/* Change Password Card */}
       <div className="grid grid-cols-1 gap-6">
         <div className="md:col-span-12">
-          <Card title="Đổi mật khẩu tài khoản" subtitle="Cập nhật mật khẩu bảo mật mới trên hệ thống Keycloak SSO">
+          <Card title="Đổi mật khẩu tài khoản" subtitle="Cập nhật mật khẩu bảo mật mới trên hệ thống">
             <form onSubmit={handleChangePassword} className="space-y-4 max-w-2xl">
               {successMsg && (
                 <div className="p-4 bg-emerald-550/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-start gap-3 animate-fadeIn">

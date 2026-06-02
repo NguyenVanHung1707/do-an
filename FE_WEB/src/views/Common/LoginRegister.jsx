@@ -86,7 +86,7 @@ export default function LoginRegister() {
           </div>
 
           <div className="z-10 border-t border-white/10 pt-4 text-xs font-mono text-slate-400">
-            Hạ tầng tích hợp: Keycloak OAuth2 • PostgreSQL • Spring Boot
+            Hạ tầng tích hợp: OAuth2 • PostgreSQL • Spring Boot
           </div>
         </div>
 
@@ -137,13 +137,13 @@ export default function LoginRegister() {
               <div className="mb-6">
                 <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 px-2 rounded-md w-fit">
                   <KeyRound className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                  <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Keycloak SSO Server</span>
+                  <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Hệ Thống Đăng Nhập SSO</span>
                 </div>
                 <h1 className="font-headline text-2xl font-bold text-slate-800 dark:text-slate-100 mt-3 tracking-tight">
                   {isRegister ? 'Tạo tài khoản mới' : 'Đăng nhập hệ thống'}
                 </h1>
                 <p className="font-inter text-[13px] text-slate-500 dark:text-slate-400 mt-1">
-                  {isRegister ? 'Đăng ký thông tin định danh dùng chung' : 'Nhập tài khoản Keycloak hoặc dùng tài khoản dùng thử nhanh'}
+                  {isRegister ? 'Đăng ký thông tin định danh dùng chung' : 'Nhập tài khoản hệ thống hoặc dùng tài khoản dùng thử nhanh'}
                 </p>
               </div>
 
