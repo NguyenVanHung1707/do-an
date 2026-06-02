@@ -59,9 +59,14 @@ public class StudentController {
         java.util.Map<String, Object> realmAccess = jwt.getClaim("realm_access");
         if (realmAccess != null && realmAccess.get("roles") instanceof java.util.List) {
             java.util.List<?> roles = (java.util.List<?>) realmAccess.get("roles");
-            return roles.contains("student");
+            if (roles.contains("student")) {
+                return true;
+            }
+            if (roles.contains("teacher") || roles.contains("admin")) {
+                return false;
+            }
         }
-        return false;
+        return true;
     }
 
     @GetMapping("/profile")
