@@ -164,9 +164,18 @@ def checkAttendence(imagePath, listID):
             name_part, ext_part = os.path.splitext(base_name)
             ip_crop = os.path.join(base_dir, f"{name_part}_crop{ext_part}")
 
-            # Automatically crop the registered image using RetinaFace on the first run
-            if not os.path.exists(ip_crop):
+            # Automatically crop the registered image using RetinaFace on the first run or if original image was updated
+            should_crop = False
+            if os.path.exists(ip):
+                mtime_orig = os.path.getmtime(ip)
+                mtime_crop = os.path.getmtime(ip_crop) if os.path.exists(ip_crop) else 0
+                if not os.path.exists(ip_crop) or mtime_orig > mtime_crop:
+                    should_crop = True
+
+            if should_crop:
                 try:
+                    if os.path.exists(ip_crop):
+                        os.remove(ip_crop)
                     print(f"Creating lazy cropped face for student {id} registered image: {ip} -> {ip_crop}")
                     detections_reg = RetinaFace.detect_faces(ip)
                     if isinstance(detections_reg, dict) and "face_1" in detections_reg:
