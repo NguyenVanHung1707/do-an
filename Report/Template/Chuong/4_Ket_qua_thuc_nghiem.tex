@@ -1,0 +1,88 @@
+% !TeX root = ../DoAn.tex
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Chương 2 đã xác định các yêu cầu chức năng và phi chức năng của hệ thống, trong đó trọng tâm là tối ưu hóa quy trình điểm danh, tổ chức thi trực tuyến, quản lý lớp học phần và bảo đảm tính xác thực của người học. Trên cơ sở đó, Chương 3 đã trình bày các nền tảng công nghệ được lựa chọn, bao gồm Keycloak SSO \cite{keycloak2026}, Spring Boot \cite{spring_boot_docs2026}, PostgreSQL \cite{postgresql_docs2026}, React \cite{react_docs2026}, React Native \cite{react_native_docs2026}, FastAPI \cite{fastapi_docs2026}, các mô hình RetinaFace \cite{Deng_2020_CVPR}, ArcFace \cite{Deng_2019_CVPR}, MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} và solvePnP/EPnP \cite{Lepetit2009EPnP}. Tiếp nối hai chương trước, Chương 4 trình bày cách các yêu cầu và công nghệ này được chuyển hóa thành thiết kế, triển khai và đánh giá trong mã nguồn thực tế của đồ án.
+
+Nội dung chương bắt đầu từ thiết kế kiến trúc tổng thể của hệ thống, trong đó làm rõ cách phân chia các phân hệ \path{FE_WEB}, \path{frontend_student}, \path{frontend_teacher}, \path{backend-core}, \path{detect-face} và \path{ai-proctor}. Sau đó, chương tiếp tục trình bày thiết kế chi tiết, quá trình xây dựng ứng dụng, các thành phần triển khai bằng Docker Compose \cite{docker_compose_docs2026}, cấu hình phục vụ giao diện Web bằng NGINX \cite{nginx_docs2026}, cũng như định hướng kiểm thử và đánh giá kết quả đạt được của hệ thống.
+
+\section{Thiết kế kiến trúc}
+\label{section:4.1}
+\subsection{Lựa chọn kiến trúc phần mềm}
+\label{subsection:4.1.1}
+Với đặc thù của đề tài là một hệ thống quản lý học tập có nhiều nhóm người dùng và đồng thời tích hợp các tác vụ AI xử lý ảnh, kiến trúc được lựa chọn không phải là một khối đơn ứng dụng thuần túy. Hệ thống được thiết kế theo hướng kiến trúc lai, kết hợp mô hình phân tầng trong backend nghiệp vụ với cách tách dịch vụ độc lập cho các thành phần có đặc thù xử lý riêng. Cách tiếp cận này phù hợp với nguyên tắc của kiến trúc microservices ở mức triển khai chức năng trọng yếu, trong đó các thành phần có vòng đời, tài nguyên và phụ thuộc thư viện khác nhau được đóng gói, chạy và mở rộng độc lập \cite{newman2021buildingmicroservices}. Tuy nhiên, để tránh làm hệ thống bị phân mảnh quá mức, các nghiệp vụ quản lý đào tạo cốt lõi vẫn được tập trung trong một backend Spring Boot duy nhất \cite{spring_boot_docs2026}.
+
+Ở tầng giao diện, hệ thống có ba điểm truy cập chính. Phân hệ Web quản trị và đào tạo \path{FE_WEB} được xây dựng bằng React \cite{react_docs2026}, phục vụ các thao tác của quản trị viên, giảng viên và học viên trên trình duyệt như quản lý lớp học phần, soạn đề thi, chấm thi, xem lịch sử vi phạm và duyệt kết quả điểm danh. Hai ứng dụng di động \path{frontend_student} và \path{frontend_teacher} được xây dựng bằng React Native \cite{react_native_docs2026}, tập trung vào các thao tác cần tính cơ động như đăng nhập, nhận thông báo, xem lịch học, điểm danh GPS, đăng ký ảnh Face ID và quản lý lớp học trên thiết bị di động. Trong bản đóng gói Web, mã nguồn \path{FE_WEB} được build thành tài nguyên tĩnh và phục vụ qua NGINX \cite{nginx_docs2026}; các ứng dụng phía client gửi yêu cầu đến backend thông qua các API được cấu hình trong mã nguồn.
+
+Tầng nghiệp vụ trung tâm là phân hệ \path{backend-core}, được triển khai bằng Spring Boot \cite{spring_boot_docs2026}. Bên trong backend, mã nguồn được tổ chức theo cấu trúc phân tầng gồm \path{controller}, \path{service}, \path{repository}, \path{entity}, \path{dto}, \path{config} và \path{util}. Lớp \path{controller} tiếp nhận yêu cầu HTTP từ Web/App; lớp \path{service} xử lý nghiệp vụ như quản lý học kỳ, lớp học phần, tài liệu, bài thi, điểm danh và thông báo; lớp \path{repository} truy xuất dữ liệu thông qua Spring Data JPA; còn lớp \path{entity} biểu diễn các bảng dữ liệu chính như học viên, giảng viên, lớp học phần, bài thi, câu hỏi, bài nộp, biểu mẫu điểm danh và nhật ký chuyên cần. Dữ liệu nghiệp vụ được lưu trữ trong PostgreSQL \cite{postgresql_docs2026}, trong khi xác thực truy cập được kiểm soát bằng Keycloak SSO \cite{keycloak2026}; backend hoạt động như một OAuth2 Resource Server, xác minh JWT dựa trên JWK Set URI được cấu hình trong \path{application.properties}.
+
+Các tác vụ AI được tách khỏi backend nghiệp vụ thành hai dịch vụ FastAPI độc lập \cite{fastapi_docs2026}. Dịch vụ \path{detect-face} đảm nhiệm điểm danh nhận diện khuôn mặt nhóm. Khi học viên hoặc giảng viên thực hiện quy trình cần xác thực khuôn mặt, backend gửi ảnh đến endpoint \path{/attendance} của dịch vụ này. Dịch vụ đọc thông tin ảnh đăng ký của học viên từ PostgreSQL, phát hiện khuôn mặt bằng RetinaFace \cite{Deng_2020_CVPR}, cắt vùng mặt với vùng đệm 15\%, trích xuất embedding bằng ArcFace \cite{Deng_2019_CVPR}, sau đó so khớp cosine distance để trả về danh sách học viên được nhận diện. Việc tách riêng dịch vụ này giúp backend không phải mang theo các phụ thuộc nặng của xử lý ảnh và học sâu như OpenCV, DeepFace, TensorFlow hoặc PyTorch.
+
+Dịch vụ \path{ai-proctor} đảm nhiệm giám sát thi trực tuyến bằng webcam. Dịch vụ này cung cấp các endpoint REST để bắt đầu, kết thúc, truy xuất log giám sát, đồng thời mở kênh WebSocket theo chuẩn RFC 6455 \cite{fette2011websocket} tại đường dẫn \path|/api/proctor/stream/{exam_id}/{student_id}| để nhận luồng ảnh từ trình duyệt. Trong quá trình xử lý, dịch vụ sử dụng MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} để trích xuất các điểm mốc khuôn mặt, dùng OpenCV solvePnP dựa trên bài toán EPnP \cite{Lepetit2009EPnP} để ước lượng tư thế đầu, kết hợp phân tích vị trí đồng tử nhằm phát hiện hướng nhìn bất thường. Nếu vi phạm kéo dài quá ngưỡng cấu hình, dịch vụ lưu video bằng chứng vào thư mục dữ liệu dùng chung và chuyển mã video sang H.264 để giảng viên xem lại trong giao diện chấm thi.
+
+Về triển khai, tệp \path{docker-compose.yml} mô tả các container chính gồm \path{postgres}, \path{keycloak}, \path{backend}, \path{detect_face}, \path{fe_web} và \path{ai_proctor} \cite{docker_compose_docs2026}. Backend giao tiếp với dịch vụ nhận diện khuôn mặt thông qua biến môi trường \path{APP_FACE_VERIFICATION_URL} và giao tiếp với dịch vụ giám thị AI thông qua \path{APP_AI_PROCTOR_URL}. Các file dữ liệu như ảnh khuôn mặt, tài liệu lớp học và video bằng chứng được đặt trong volume dùng chung \path{/app/data}, giúp các container liên quan có thể phối hợp mà không cần nhúng trực tiếp dữ liệu nhị phân vào cơ sở dữ liệu. Ở môi trường triển khai thực tế, cấu hình NGINX reverse proxy định tuyến các API nghiệp vụ về backend, các kết nối diễn đàn thời gian thực về WebSocket của Spring Boot, và riêng luồng \path{/api/proctor/stream/} về dịch vụ \path{ai-proctor} \cite{nginx_docs2026}. Nhờ vậy, hệ thống vừa giữ được một điểm truy cập thống nhất cho người dùng, vừa tách được các tác vụ AI có tải xử lý cao khỏi luồng nghiệp vụ chính.
+
+Nhìn chung, kiến trúc được lựa chọn cân bằng giữa tính dễ phát triển và khả năng mở rộng. Backend Spring Boot đóng vai trò trung tâm điều phối nghiệp vụ và bảo vệ dữ liệu nhất quán; PostgreSQL đảm nhiệm lưu trữ quan hệ; Keycloak tách riêng bài toán định danh; các dịch vụ FastAPI đảm nhiệm xử lý AI chuyên biệt; còn Web và ứng dụng di động đóng vai trò các client phù hợp với từng ngữ cảnh sử dụng. Cách tổ chức này giúp hệ thống đáp ứng các use case đã đặc tả ở Chương 2, đồng thời tạo cơ sở rõ ràng cho các phần thiết kế tổng quan, thiết kế chi tiết, kiểm thử và triển khai được trình bày ở các mục tiếp theo.
+
+\subsection{Thiết kế tổng quan}
+Sinh viên vẽ biểu đồ gói UML (UML package diagram), nêu rõ sự phụ thuộc giữa các gói (package). SV cần vẽ các gói sao cho chúng được phân theo các tầng rõ ràng, không được sắp đặt package lộn xộn trong hình vẽ. Sinh viên chú ý các quy tắc thiết kế (Các gói không phụ thuộc lẫn nhau, gói tầng dưới không phụ thuộc gói tầng trên, không phụ thuộc bỏ qua tầng, v.v.) và cần giải thích sơ lược về mục đích/nhiệm vụ của từng package. SV tham khảo ví dụ minh họa trong Hình \ref{fig:Fig1}
+\begin{figure}[H]
+    \centering
+    \includegraphics{Hinhve/Picture1.png}
+    \caption{Ví dụ biểu đồ phụ thuộc gói}
+    \label{fig:Fig1}
+\end{figure}
+\subsection{Thiết kế chi tiết gói}
+Sinh viên thiết kế và lần lượt vẽ biểu đồ thiết kế cho từng package, hoặc một nhóm các package liên quan để giải quyết một vấn đề gì đó. Khi vẽ thiết kế gói, sinh viên chỉ cần đưa tên lớp, không cần chỉ ra các thành viên phương thức và thuộc tính. SV tham khảo ví dụ minh họa trong Hình \ref{fig:Fig2}.
+
+Sinh viên cần vẽ rõ ràng quan hệ giữa các lớp trong biểu đồ. Các quan hệ bao gồm: phụ thuộc (dependency), kết hợp (association), kết tập (aggregation), hợp thành (composition), kế thừa (inheritance), và thực thi (implementation). Các quan hệ này đều đã được minh họa trong \ref{fig:Fig2}.
+
+Sau khi vẽ hình minh họa, sinh viên cần giải thích ngắn gọn về thiết kế của mình.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{Hinhve/Picture2.png}
+    \caption{Ví dụ thiết kế gói}
+    \label{fig:Fig2}
+\end{figure}
+
+\section{Thiết kế chi tiết}
+\subsection{Thiết kế giao diện}
+Phần này có độ dài từ hai đến ba trang. Sinh viên đặc tả thông tin về màn hình mà ứng dụng của mình hướng tới, bao gồm độ phân giải màn hình, kích thước màn hình, số lượng màu sắc hỗ trợ, v.v. Tiếp đến, sinh viên đưa ra các thống nhất/chuẩn hóa của mình khi thiết kế giao diện như thiết kế nút, điều khiển, vị trí hiển thị thông điệp phản hồi, phối màu, v.v. Sau cùng sinh viên đưa ra một số hình ảnh minh họa thiết kế giao diện cho các chức năng quan trọng nhất. Lưu ý, sinh viên không nhầm lẫn giao diện thiết kế với giao diện của sản phẩm sau cùng.
+\subsection{Thiết kế lớp}
+Phần này có độ dài từ ba đến bốn trang. Sinh viên trình bày thiết kế chi tiết các thuộc tính và phương thức cho một số lớp chủ đạo/quan trọng nhất của ứng dụng (từ 2-4 lớp). Thiết kế chi tiết cho các lớp khác, nếu muốn trình bày, sinh viên đưa vào phần phụ lục.
+
+Để minh họa thiết kế lớp, sinh viên thiết kế luồng truyền thông điệp giữa các đối tượng tham gia cho 2 đến 3 use case quan trọng nào đó bằng biểu đồ trình tự (hoặc biểu đồ giao tiếp).
+\subsection{Thiết kế cơ sở dữ liệu}
+Phần này có độ dài từ hai đến bốn trang. Sinh viên thiết kế, vẽ và giải thích biểu đồ thực thể liên kết (E-R diagram). Từ đó, sinh viên thiết kế cơ sở dữ liệu tùy theo hệ quản trị cơ sở dữ liệu mà mình sử dụng (SQL, NoSQL, Firebase, v.v.)
+
+\section{Xây dựng ứng dụng}
+\subsection{Thư viện và công cụ sử dụng}
+Sinh viên liệt kê các công cụ, ngôn ngữ lập trình, API, thư viện, IDE, công cụ kiểm thử, v.v. mà mình sử dụng để phát triển ứng dụng. Mỗi công cụ phải được chỉ rõ phiên bản sử dụng. SV nên kẻ bảng mô tả tương tự như Bảng \ref{table:my_label}. Nếu có nhiều nội dung trình bày, sinh viên cần xoay ngang bảng.
+
+\begin{center}
+    \captionof{table}{Danh sách thư viện và công cụ sử dụng}
+    \label{table:my_label}
+    \begin{tabular}{lll}
+        \hline
+        \textbf{Mục đích} & \textbf{Công cụ}       & \textbf{Địa chỉ URL}    \\ \hline
+        IDE lập trình     & Eclipse Oxygen a64 bit & http://www.eclipse.org/ \\ \hline
+        v.v.              & v.v.                   & v.v.                    \\ \hline
+    \end{tabular}
+\end{center}
+
+\subsection{Kết quả đạt được}
+Sinh viên trước tiên mô tả kết quả đạt được của mình là gì, ví dụ như các sản phẩm được đóng gói là gì, bao gồm những thành phần nào, ý nghĩa, vai trò?
+
+Sinh viên cần thống kê các thông tin về ứng dụng của mình như: số dòng code, số lớp, số gói, dung lượng toàn bộ mã nguồn, dung lượng của từng sản phẩm đóng gói, v.v. Tương tự như phần liệt kê về công cụ sử dụng, sinh viên cũng nên dùng bảng để mô tả phần thông tin thống kê này.
+
+\subsection{Minh họa các chức năng chính}
+Sinh viên lựa chọn và đưa ra màn hình cho các chức năng chính, quan trọng, và thú vị nhất. Mỗi giao diện cần phải có lời giải thích ngắn gọn. Khi giải thích, sinh viên có thể kết hợp với các chú thích ở trong hình ảnh giao diện.
+
+\section{Kiểm thử}
+Phần này có độ dài từ hai đến ba trang. Sinh viên thiết kế các trường hợp kiểm thử cho hai đến ba chức năng quan trọng nhất. Sinh viên cần chỉ rõ các kỹ thuật kiểm thử đã sử dụng. Chi tiết các trường hợp kiểm thử khác, nếu muốn trình bày, sinh viên đưa vào phần phụ lục.
+Sinh viên sau cùng tổng kết về số lượng các trường hợp kiểm thử và kết quả kiểm thử. Sinh viên cần phân tích lý do nếu kết quả kiểm thử không đạt.
+\section{Triển khai}
+Sinh viên trình bày mô hình và/hoặc cách thức triển khai thử nghiệm/thực tế. Ứng dụng của sinh viên được triển khai trên server/thiết bị gì, cấu hình như thế nào. Kết quả triển khai thử nghiệm nếu có (số lượng người dùng, số lượng truy cập, thời gian phản hồi, phản hồi người dùng, khả năng chịu tải, các thống kê, v.v.)
+
+\end{document}

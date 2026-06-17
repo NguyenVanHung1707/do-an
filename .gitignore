@@ -1,5 +1,5 @@
 # Mobile Apps to exclude (as requested by user)
-Graduation_thesis_ver2_FE_2/
+frontend_teacher/
 frontend_student/
 
 # Dependency directories
@@ -58,3 +58,4 @@ data/
 uploads/
 future_ai_feature/
 backup/
+Astah/

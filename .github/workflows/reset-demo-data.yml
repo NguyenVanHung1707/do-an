@@ -42,7 +42,7 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            cd Graduation_thesis_ver2_BE
+            cd backend-core
             chmod +x scripts/reset-demo-data.sh
             export CONFIRM_RESET=RESET_PRODUCTION_DEMO_DATA
             ./scripts/reset-demo-data.sh

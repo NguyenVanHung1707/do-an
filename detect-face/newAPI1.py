@@ -141,24 +141,15 @@ def checkAttendence(imagePath, listID):
                     })
 
         student_data = getImagePaths(listID)
-        results = []
-        
+        student_verify_paths = {}
         for id in listID:
             s_info = student_data.get(id)
             if not s_info:
-                print(f"Student {id}: No registered image found in DB.")
-                results.append({'id': id, 'isAttendance': False})
+                continue
+            ip = s_info.get("image_path")
+            if not ip or not os.path.exists(ip):
                 continue
                 
-            ip = s_info.get("image_path")
-            s_name = s_info.get("name", f"Student #{id}")
-            
-            if not ip or not os.path.exists(ip):
-                print(f"Student {id}: Registered image at '{ip}' does not exist on disk.")
-                results.append({'id': id, 'isAttendance': False})
-                continue
-
-            # Determine the crop image path for the registered face
             base_dir = os.path.dirname(ip)
             base_name = os.path.basename(ip)
             name_part, ext_part = os.path.splitext(base_name)
@@ -208,35 +199,128 @@ def checkAttendence(imagePath, listID):
                         shutil.copy(ip, ip_crop)
                     except Exception as copy_err:
                         print(f"Failed to copy fallback: {copy_err}")
+            
+            student_verify_paths[id] = {
+                "verify_path": ip_crop if os.path.exists(ip_crop) else ip,
+                "name": s_info.get("name", f"Student #{id}")
+            }
 
-            # Use the cropped version if successfully created, otherwise fall back to original
-            ip_verify = ip_crop if os.path.exists(ip_crop) else ip
+        # Extract embeddings for all students (only once per student)
+        student_embeddings = {}
+        for id in listID:
+            s_verify_info = student_verify_paths.get(id)
+            if not s_verify_info:
+                print(f"Student {id}: No registered image verified path.")
+                continue
+            ip_verify = s_verify_info["verify_path"]
+            s_name = s_verify_info["name"]
+            
+            try:
+                rep = DeepFace.represent(
+                    img_path=ip_verify,
+                    model_name='ArcFace',
+                    detector_backend='skip',
+                    enforce_detection=False
+                )
+                if rep and len(rep) > 0:
+                    # Compatibility fix for different DeepFace versions
+                    if isinstance(rep[0], dict):
+                        emb = rep[0]["embedding"]
+                    else:
+                        emb = rep
+                        
+                    student_embeddings[id] = {
+                        "embedding": emb,
+                        "name": s_name
+                    }
+                    print(f"[AI Embeddings] Extracted embedding for Student {id} ({s_name})")
+            except Exception as e:
+                print(f"Error extracting embedding for student {id} ({s_name}): {e}")
 
-            is_student_present = False
-            for face_item in detected_faces:
+        # Extract embeddings for all detected classroom faces (only once per face)
+        face_embeddings = []
+        for idx, face_item in enumerate(detected_faces):
+            try:
+                rep = DeepFace.represent(
+                    img_path=face_item["filename"],
+                    model_name='ArcFace',
+                    detector_backend='skip',
+                    enforce_detection=False
+                )
+                if rep and len(rep) > 0:
+                    # Compatibility fix for different DeepFace versions
+                    if isinstance(rep[0], dict):
+                        emb = rep[0]["embedding"]
+                    else:
+                        emb = rep
+                        
+                    face_embeddings.append({
+                        "idx": idx,
+                        "embedding": emb,
+                        "filename": face_item["filename"]
+                    })
+                    print(f"[AI Embeddings] Extracted embedding for face_{idx+1}")
+            except Exception as e:
+                print(f"Error extracting embedding for face_{idx+1}: {e}")
+
+        # Compute cosine distance matrix cross-product
+        import numpy as np
+        def dst_cosine(a, b):
+            a = np.array(a)
+            b = np.array(b)
+            return 1 - (np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+
+        all_matches = []
+        threshold = 0.68  # ArcFace standard Cosine threshold in DeepFace
+        
+        for id, s_info in student_embeddings.items():
+            s_emb = s_info["embedding"]
+            s_name = s_info["name"]
+            
+            for f_info in face_embeddings:
+                f_idx = f_info["idx"]
+                f_emb = f_info["embedding"]
+                
                 try:
-                    res = DeepFace.verify(
-                        face_item["filename"], 
-                        ip_verify, 
-                        model_name='ArcFace', 
-                        detector_backend='skip', 
-                        enforce_detection=False
-                    )
-                    distance = res.get('distance', 0.0)
-                    threshold = res.get('threshold', 0.0)
-                    verified = res.get('verified', False)
-                    print(f"[AI Face ID] Student {id} ({s_name}): verified={verified}, distance={distance:.4f}, threshold={threshold:.4f} (using {ip_verify})")
+                    distance = float(dst_cosine(s_emb, f_emb))
+                    verified = distance <= threshold
+                    print(f"[AI Face ID Evaluation] Student {id} ({s_name}) vs face_{f_idx+1}: distance={distance:.4f}, threshold={threshold:.4f}, verified={verified}")
+                    
                     if verified:
-                        is_student_present = True
-                        face_item["identified"] = True
-                        face_item["studentId"] = id
-                        face_item["studentName"] = s_name
-                        print(f"Match found: Student {id} ({s_name}) matched {face_item['filename']}")
-                        break
+                        all_matches.append({
+                            "student_id": id,
+                            "student_name": s_name,
+                            "face_idx": f_idx,
+                            "distance": distance
+                        })
                 except Exception as e:
-                    print(f"Error verifying student {id} with {face_item['filename']}: {e}")
+                    print(f"Error computing cosine distance for Student {id} vs face_{f_idx+1}: {e}")
 
-            results.append({'id': id, 'isAttendance': is_student_present})
+        # Sort matches by distance (best matches first)
+        all_matches.sort(key=lambda x: x["distance"])
+
+        assigned_students = set()
+        assigned_faces = set()
+        
+        for match in all_matches:
+            s_id = match["student_id"]
+            f_idx = match["face_idx"]
+            dist = match["distance"]
+            s_name = match["student_name"]
+            
+            if s_id not in assigned_students and f_idx not in assigned_faces:
+                detected_faces[f_idx]["identified"] = True
+                detected_faces[f_idx]["studentId"] = s_id
+                detected_faces[f_idx]["studentName"] = s_name
+                
+                assigned_students.add(s_id)
+                assigned_faces.add(f_idx)
+                print(f"[AI Match Assigned] Student {s_id} ({s_name}) -> face_{f_idx+1}.jpg with distance={dist:.4f}")
+
+        results = []
+        for id in listID:
+            is_present = id in assigned_students
+            results.append({'id': id, 'isAttendance': is_present})
 
         return_faces = []
         for face_item in detected_faces:

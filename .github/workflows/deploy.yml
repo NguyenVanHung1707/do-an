@@ -29,7 +29,7 @@ jobs:
 
       - name: Test Spring Boot Backend
         run: |
-          cd Graduation_thesis_ver2_BE
+          cd backend-core
           chmod +x ./mvnw
           ./mvnw test
 
@@ -59,7 +59,7 @@ jobs:
           KEYCLOAK_ADMIN: ci-keycloak-admin
           KEYCLOAK_ADMIN_PASSWORD: ci-keycloak-admin-password
           KEYCLOAK_ADMIN_CLIENT_SECRET: ci-admin-client-secret
-        run: docker compose -f Graduation_thesis_ver2_BE/docker-compose.prod.yml config
+        run: docker compose -f backend-core/docker-compose.prod.yml config
 
 
   build-images:
@@ -70,8 +70,8 @@ jobs:
       matrix:
         include:
           - service: backend
-            context: ./Graduation_thesis_ver2_BE
-            dockerfile: ./Graduation_thesis_ver2_BE/Dockerfile
+            context: ./backend-core
+            dockerfile: ./backend-core/Dockerfile
           - service: fe-web
             context: ./FE_WEB
             dockerfile: ./FE_WEB/Dockerfile
@@ -174,7 +174,7 @@ jobs:
             git pull --ff-only origin main
 
             # Di chuyển vào thư mục chứa Docker Compose
-            cd Graduation_thesis_ver2_BE
+            cd backend-core
 
             # Ghi cấu hình production từ GitHub Secrets. Các secret đã lộ cần được rotate trước khi deploy.
             cat > .env.next <<'EOF'
