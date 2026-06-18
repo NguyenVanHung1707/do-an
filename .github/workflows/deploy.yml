@@ -215,7 +215,7 @@ jobs:
 
             # Đăng nhập vào GHCR trên VPS để pull các private packages nếu có
             echo "Đăng nhập GHCR trên VPS..."
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin || true
 
             # Dừng tất cả các phiên bản ứng dụng cũ (cả Dev và Prod) để tránh chạy song song 2 ứng dụng
             echo "Đang dừng tất cả các container cũ (Dev & Prod)..."
