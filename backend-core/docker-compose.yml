@@ -107,3 +107,4 @@ services:
 
 volumes:
   postgres_data:
+    name: graduation_thesis_ver2_be_postgres_data

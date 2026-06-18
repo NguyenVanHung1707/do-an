@@ -224,7 +224,7 @@ jobs:
 
             # Dọn dẹp toàn bộ các container dừng, volume và image rác trước khi kéo mới để giải phóng tối đa ổ đĩa VPS
             echo "Dọn dẹp các container và images cũ để giải phóng ổ đĩa..."
-            docker system prune -af --volumes || true
+            docker system prune -af || true
 
             # Pull các image mới nhất đã build trên GitHub Runner
             echo "Kéo các Docker images mới nhất từ GHCR..."
