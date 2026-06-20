@@ -1,0 +1,71 @@
+% !TeX root = ../DoAn.tex
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Chương 1 giới thiệu tổng quan về đồ án tốt nghiệp với đề tài "Xây dựng phần mềm tối ưu hóa quy trình điểm danh và quản lý học sinh". Nội dung chương sẽ cung cấp cái nhìn khái quát về lý do thực hiện đề tài, xác định rõ ràng mục tiêu, phạm vi nghiên cứu, đề xuất định hướng giải pháp kỹ thuật và trình bày cấu trúc tổng thể của quyển báo cáo.
+
+\section{Đặt vấn đề}
+\label{section:1.1}
+Trong bối cảnh chuyển đổi số giáo dục đang diễn ra mạnh mẽ, việc tối ưu hóa quản lý đào tạo và đảm bảo tính minh bạch trong kiểm tra, đánh giá học sinh, sinh viên trở thành một yêu cầu cấp thiết của các cơ sở giáo dục. Tuy nhiên, quy trình quản lý học tập truyền thống hiện nay đang đối mặt với nhiều bất cập lớn:
+
+Thứ nhất, quy trình điểm danh truyền thống bằng cách gọi tên thủ công hoặc ký tên trên giấy tiêu tốn đáng kể thời gian giảng dạy, dễ xảy ra sai sót và tình trạng điểm danh hộ. Điều này làm giảm hiệu suất quản lý và không phản ánh chính xác chuyên cần thực tế của học sinh.
+
+Thứ hai, việc tổ chức các kỳ thi trực tuyến tuy mang lại sự linh hoạt nhưng lại tiềm ẩn nguy cơ gian lận cao. Giảng viên gặp khó khăn lớn trong việc giám sát thí sinh từ xa, từ các hành vi như liếc bài, quay đầu, rời khỏi màn hình, cho đến việc có người thi hộ. Các phương thức giám sát thủ công qua phần mềm hội thoại video thông thường không thể bao quát toàn bộ và tự động ghi nhận bằng chứng vi phạm của hàng trăm thí sinh cùng lúc.
+
+Thứ ba, sự thiếu đồng bộ giữa hệ thống quản lý học tập, lưu trữ tài liệu, diễn đàn trao đổi lớp học và các công cụ tổ chức thi khiến dữ liệu bị phân mảnh. Giảng viên và học sinh phải chuyển đổi giữa nhiều nền tảng khác nhau, làm giảm trải nghiệm học tập và tăng rủi ro bảo mật thông tin tài khoản.
+
+Vì vậy, việc nghiên cứu phát triển một giải pháp phần mềm toàn diện nhằm tự động hóa quy trình điểm danh nhận diện khuôn mặt, tích hợp công nghệ AI giám sát thi cử thời gian thực, đồng thời thống nhất các hoạt động quản lý lớp học trên một nền tảng đồng bộ là một bài toán thực tiễn vô cùng cấp thiết.
+
+\section{Mục tiêu và phạm vi đề tài}
+\label{section:1.2}
+Các giải pháp quản lý học sinh và tổ chức thi trực tuyến hiện nay trên thị trường thường được chia thành hai nhóm chính:
+Nhóm thứ nhất bao gồm các hệ thống quản lý học tập (LMS) phổ biến như Moodle \cite{moodle_attendance_plugin}, Google Classroom hay Canvas. Ưu điểm của nhóm này là khả năng quản lý tài liệu và diễn đàn tốt, nhưng lại thiếu hoàn toàn các tính năng giám sát thi thông minh bằng AI và điểm danh sinh trắc học tự động.
+Nhóm thứ hai là các phần mềm giám thị chuyên dụng (Proctoring) thương mại. Mặc dù các phần mềm này cung cấp khả năng chống gian lận tốt, nhưng chi phí bản quyền rất cao, khó tích hợp sâu vào quy trình giảng dạy hàng ngày của trường học và thường không hỗ trợ tối ưu hóa quy trình điểm danh học sinh trên lớp học trực tiếp.
+
+Nhận thấy những hạn chế đó, đề tài hướng tới mục tiêu xây dựng một phần mềm tối ưu hóa quy trình điểm danh và quản lý học sinh, tích hợp hệ thống thi trực tuyến và giám thị AI đồng bộ trên cả nền tảng Web và Ứng dụng di động (iOS/Android). Phạm vi của đề tài tập trung giải quyết các bài toán cốt lõi:
+\begin{itemize}
+    \item \textbf{Tối ưu hóa điểm danh}: Hỗ trợ giảng viên điểm danh nhanh nhóm lớp thông qua nhận diện khuôn mặt sinh trắc học từ ảnh chụp lớp học, kết hợp với cơ chế check-in dựa trên Geofencing và chống giả lập vị trí (GPS Anti-Spoofing) trên ứng dụng di động của học viên.
+    \item \textbf{Giám sát thi trực tuyến thông minh}: Tích hợp các thuật toán thị giác máy tính chạy trực tiếp trên camera của thí sinh để tự động phát hiện các hành vi gian lận (như rời mắt khỏi màn hình, tư thế đầu bất thường, không phát hiện khuôn mặt) và tự động ghi lại video bằng chứng vi phạm.
+    \item \textbf{Quản lý học tập tích hợp}: Cung cấp đầy đủ các tính năng quản lý lớp học, chia sẻ tài liệu phân quyền, soạn đề thi (hỗ trợ import Excel), chấm thi tự động/thủ công và diễn đàn thảo luận thời gian thực trên cùng một hệ thống thống nhất, bảo mật bằng cơ chế đăng nhập một lần (SSO).
+\end{itemize}
+
+\section{Định hướng giải pháp}
+\label{section:1.3}
+Để hiện thực hóa các mục tiêu trên, đề tài đề xuất định hướng giải pháp kỹ thuật dựa trên kiến trúc Microservices phân tán kết hợp với các mô hình Trí tuệ nhân tạo (AI) chuyên sâu:
+\begin{itemize}
+    \item \textbf{Xác thực và phân quyền}: Sử dụng giải pháp Keycloak SSO làm trung tâm định danh, hỗ trợ đăng nhập sinh trắc học (Face ID/Vân tay) trên ứng dụng di động thông qua cơ chế quản lý token bảo mật ở cấp phần cứng.
+    \item \textbf{Xử lý điểm danh nhận diện khuôn mặt}: Áp dụng mô hình học sâu ArcFace \cite{Deng_2019_CVPR} kết hợp RetinaFace \cite{Deng_2020_CVPR} để phát hiện và so khớp khuôn mặt học sinh từ ảnh chụp nhóm lớp, cho phép nhận diện nhanh chóng và chính xác.
+    \item \textbf{Giám sát hành vi thi cử}: Phát triển động cơ AI thời gian thực sử dụng MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} để trích xuất các điểm mốc khuôn mặt, kết hợp giải thuật solvePnP (dựa trên giải thuật EPnP \cite{Lepetit2009EPnP}) xác định tư thế đầu 3D và thuật toán Gaze Tracking \cite{kaundinya2026inbrowser} theo dõi ánh mắt thí sinh. Khi phát hiện vi phạm, hệ thống sử dụng thư viện \texttt{ffmpeg} để tự động cắt và chuyển mã video bằng chứng sang định dạng H.264 nhằm tương thích tốt với trình phát web.
+    \item \textbf{Kiến trúc hệ thống}: Phân hệ Backend chính được xây dựng bằng Java Spring Boot 3.2.3 và PostgreSQL. Phân hệ Frontend Web được phát triển bằng ReactJS/Vite/Tailwind CSS. Ứng dụng di động dành cho giảng viên và học viên được xây dựng bằng React Native. Các dịch vụ xử lý AI được triển khai độc lập thông qua FastAPI.
+\end{itemize}
+
+Đóng góp chính của đồ án bao gồm:
+\begin{enumerate}
+    \item Thiết kế và triển khai hoàn chỉnh một hệ thống phần mềm đồng bộ trên cả Web và Di động, tối ưu hóa toàn bộ quy trình điểm danh chuyên cần và tổ chức thi trực tuyến.
+    \item Ứng dụng thành công các mô hình thị giác máy tính tiên tiến vào việc tự động phát hiện hành vi gian lận thi cử và điểm danh tự động trực tiếp trên thiết bị di động, đảm bảo độ chính xác và tính khách quan.
+    \item Đóng gói hệ thống linh hoạt bằng Docker và cấu hình Nginx Reverse Proxy, sẵn sàng cho việc triển khai thực tế trên môi trường máy chủ đám mây.
+\end{enumerate}
+
+\section{Bố cục đồ án}
+\label{section:1.4}
+Phần còn lại của báo cáo đồ án tốt nghiệp này được tổ chức như sau. 
+
+Chương 2 trình bày về v.v. 
+
+Trong Chương 3, em/tôi giới thiệu về v.v.
+
+\textbf{Chú ý:} Sinh viên cần viết mô tả thành đoạn văn đầy đủ về nội dung chương. Tuyệt đối không viết ý hay gạch đầu dòng. Chương 1 không cần mô tả trong phần này. 
+
+Ví dụ tham khảo mô tả chương trong phần bố cục đồ án tốt nghiệp: Chương *** trình bày đóng góp chính của đồ án, đó là một nền tảng ABC cho phép khai phá và tích hợp nhiều nguồn dữ liệu, trong đó mỗi nguồn dữ liệu lại có định dạng đặc thù riêng. Nền tảng ABC được phát triển dựa trên khái niệm DEF, là các module ngữ nghĩa trợ giúp người dùng tìm kiếm, tích hợp và hiển thị trực quan dữ liệu theo mô hình cộng tác và mô hình phân tán.
+
+\textbf{Chú ý:} Trong phần nội dung chính, mỗi chương của đồ án nên có phần Tổng quan và Kết chương. Hai phần này đều có định dạng văn bản “Normal”, sinh viên không cần tạo định dạng riêng, ví dụ như không in đậm/in nghiêng, không đóng khung, v.v. 
+
+Trong phần Tổng quan của chương N, sinh viên nên có sự liên kết với chương N-1 rồi trình bày sơ qua lý do có mặt của chương N và sự cần thiết của chương này trong đồ án. Sau đó giới thiệu những vấn đề sẽ trình bày trong chương này là gì, trong các đề mục lớn nào.
+
+Ví dụ về phần Tổng quan: Chương 3 đã thảo luận về nguồn gốc ra đời, cơ sở lý thuyết và các nhiệm vụ chính của bài toán tích hợp dữ liệu. Chương 4 này sẽ trình bày chi tiết các công cụ tích hợp dữ liệu theo hướng tiếp cận “mashup”. Với mục đích và phạm vi của đề tài, sáu nhóm công cụ tích hợp dữ liệu chính được trình bày bao gồm: (i) nhóm công cụ ABC trong phần 4.1, (ii) nhóm công cụ DEF trong phần 4.2, nhóm công cụ GHK trong phần 4.3, v.v.
+
+Trong phần Kết chương, sinh viên đưa ra một số kết luận quan trọng của chương. Những vấn đề mở ra trong Tổng quan cần được tóm tắt lại nội dung và cách giải quyết/thực hiện như thế nào. Sinh viên lưu ý không viết Kết chương giống hệt Tổng quan. Sau khi đọc phần Kết chương, người đọc sẽ nắm được sơ bộ nội dung và giải pháp cho các vấn đề đã trình bày trong chương. Trong Kết chương, Sinh viên nên có thêm câu liên kết tới chương tiếp theo.
+
+Ví dụ về phần Kết chương: Chương này đã phân tích chi tiết sáu nhóm công cụ tích hợp dữ liệu. Nhóm công cụ ABC và DEF thích hợp với những bài toán tích hợp dữ liệu phạm vi nhỏ. Trong khi đó, nhóm công cụ GHK lại chứng tỏ thế mạnh của mình với những bài toán cần độ chính xác cao, v.v. Từ kết quả nghiên cứu và phân tích về sáu nhóm công cụ tích hợp dữ liệu này, tôi đã thực hiện phát triển phần mềm tự động bóc tách và tích hợp dữ liệu sử dụng nhóm công cụ GHK. Phần này được trình bày trong chương tiếp theo – Chương 5.
+
+\end{document}

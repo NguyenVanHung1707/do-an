@@ -164,9 +164,73 @@ Giao diện được chia theo vai trò đăng nhập, không dùng một menu c
 
 Về tương tác, các thao tác ảnh hưởng đến dữ liệu quan trọng đều có bước kiểm tra trước khi ghi nhận. Với điểm danh bằng ảnh lớp học, hệ thống tạo danh sách xem trước để giảng viên đối soát rồi mới xác nhận lưu. Với bài thi trực tuyến, hệ thống kiểm soát thời gian mở/đóng và chỉ cho phép nộp khi thỏa mãn điều kiện nghiệp vụ. Cách thiết kế này giúp giao diện vừa gọn, vừa phù hợp với đặc thù của hệ thống quản lý học tập tích hợp điểm danh và giám sát AI.
 \subsection{Thiết kế lớp}
-Phần này có độ dài từ ba đến bốn trang. Sinh viên trình bày thiết kế chi tiết các thuộc tính và phương thức cho một số lớp chủ đạo/quan trọng nhất của ứng dụng (từ 2-4 lớp). Thiết kế chi tiết cho các lớp khác, nếu muốn trình bày, sinh viên đưa vào phần phụ lục.
+Thiết kế lớp đặc tả cấu trúc của các thuộc tính và phương thức trong những lớp đối tượng chủ đạo, đồng thời mô tả luồng thông điệp động qua biểu đồ trình tự để giải quyết hai nghiệp vụ cốt lõi: thi trực tuyến giám sát AI và điểm danh FaceID nhóm kết hợp định vị GPS.
 
-Để minh họa thiết kế lớp, sinh viên thiết kế luồng truyền thông điệp giữa các đối tượng tham gia cho 2 đến 3 use case quan trọng nào đó bằng biểu đồ trình tự (hoặc biểu đồ giao tiếp).
+\subsubsection{Đặc tả cấu trúc các lớp chính}
+Hệ thống sử dụng các lớp cốt lõi được tổ chức theo kiến trúc phân tầng của Spring Boot. Nhóm \texttt{entity} biểu diễn dữ liệu lưu trong PostgreSQL, nhóm \texttt{repository} truy xuất dữ liệu, nhóm \texttt{service}/\texttt{implement} xử lý nghiệp vụ, còn nhóm \texttt{dto} chuẩn hóa dữ liệu trao đổi giữa client và backend. Trong phạm vi đồ án, phần thiết kế lớp tập trung vào hai nghiệp vụ chính: thi trực tuyến có giám sát AI và điểm danh thông minh bằng FaceID/GPS.
+
+\begin{itemize}
+    \item \textbf{Lớp thực thể \texttt{Assessment}}: Đại diện cho bài thi, lưu thông tin như tên bài thi, thời gian mở/đóng, danh sách câu hỏi và các cấu hình kiểm soát như \texttt{isLocationRequired}, \texttt{isCameraRequired}, \texttt{allowedRadiusMeters}, \texttt{teacherLatitude}, \texttt{teacherLongitude}. Các thuộc tính này cho phép từng bài thi tự xác định yêu cầu GPS, camera và bán kính làm bài hợp lệ.
+    
+    \item \textbf{Nhóm lớp bài làm}: Gồm \texttt{StudentSubmission} và \texttt{StudentAnswer}. \texttt{StudentSubmission} lưu một lần làm bài của học viên, bao gồm trạng thái làm bài, thời điểm bắt đầu, thời điểm nộp và tổng điểm; \texttt{StudentAnswer} lưu câu trả lời cụ thể cho từng câu hỏi. Nhóm lớp này giúp tách dữ liệu đề thi khỏi dữ liệu bài làm, thuận tiện cho lưu nháp, nộp bài và chấm điểm tự động.
+    
+    \item \textbf{Lớp nghiệp vụ \texttt{AssessmentServiceImplement}}: Điều phối nghiệp vụ thi trực tuyến giữa controller, repository và dịch vụ giám sát AI. Các phương thức chính gồm:
+    \begin{itemize}
+        \item \texttt{startAssessment(assessmentId, studentId, location)}: Khởi tạo bài thi, gọi \texttt{validateAssessmentLocation} để kiểm tra GPS và lưu trạng thái \texttt{IN\_PROGRESS}.
+        \item \texttt{submitAssessment(submissionId, studentId, location)}: Xác thực vị trí lần cuối, tự động chấm điểm trắc nghiệm và câu trả lời ngắn qua \texttt{autoGradeMultipleChoice} và \texttt{autoGradeShortAnswer}, cập nhật trạng thái bài thi thành \texttt{GRADED} hoặc \texttt{SUBMITTED}.
+        \item \texttt{validateAssessmentLocation(assessment, location)}: Áp dụng công thức Haversine \cite{sinnott1984virtues} để tính khoảng cách địa lý thực tế và quét cờ giả lập vị trí (\texttt{mockLocationDetected}).
+    \end{itemize}
+    
+    \item \textbf{Nhóm lớp điểm danh}: Gồm \texttt{Form}, \texttt{FormSubmission}, \texttt{Register} và \texttt{AttendanceLog}. \texttt{Form} biểu diễn phiên điểm danh, chứa mã OTP, thời gian mở và cấu hình vị trí; \texttt{FormSubmission} lưu từng lượt check-in; \texttt{Register} lưu hồ sơ FaceID gốc; còn \texttt{AttendanceLog} lưu lịch sử chuyên cần sau khi kết quả được xác nhận.
+    
+    \item \textbf{Lớp nghiệp vụ \texttt{TeacherServiceImplement}}: Thực thi nghiệp vụ điểm danh phía giảng viên, từ tạo phiên điểm danh, nhận kết quả nhận diện từ dịch vụ \texttt{detect-face}, tạo danh sách xem trước đến lưu kết quả chính thức. Các phương thức chính gồm:
+    \begin{itemize}
+        \item \texttt{createForm(courseId, formDto, sub)}: Tạo phiên điểm danh kèm mã OTP và cấu hình Geofencing.
+        \item \texttt{previewAttendanceFace(courseId, lectureNumber, recognizedStudentIds, sub)}: Nhận danh sách ID sinh viên được AI phát hiện từ ảnh tập thể để chuẩn bị bảng xem trước đối sánh.
+        \item \texttt{confirmAttendanceChanges(dto, sub)}: Giảng viên duyệt chỉnh sửa và lưu chính thức kết quả điểm danh vào \texttt{AttendanceLog}, đồng thời chạy stored procedure tự động cập nhật số liệu chuyên cần.
+    \end{itemize}
+    
+    \item \textbf{Lớp nghiệp vụ \texttt{StudentServiceImplement}}: Xử lý các thao tác phía học viên như đăng ký hồ sơ khuôn mặt, nhập OTP, gửi tọa độ GPS và check-in cá nhân. Lớp này phối hợp với các repository liên quan để xác minh điều kiện điểm danh trước khi tạo bản ghi hợp lệ.
+\end{itemize}
+
+Như vậy, các lớp chính tạo thành một chuỗi xử lý rõ ràng: controller tiếp nhận yêu cầu, DTO chuẩn hóa dữ liệu, service kiểm tra nghiệp vụ, repository thao tác dữ liệu và entity phản ánh trạng thái lưu trữ cuối cùng. Cấu trúc này giúp hệ thống dễ mở rộng thêm điều kiện bảo mật hoặc thuật toán AI mới mà không phải thay đổi toàn bộ luồng xử lý.
+
+\subsubsection{Biểu đồ trình tự mô tả luồng truyền thông điệp}
+
+\paragraph{1. UC-10: Làm bài thi trực tuyến và Giám sát AI}
+Biểu đồ trình tự mô tả quy trình học viên làm bài thi trực tuyến dưới sự giám sát liên tục của dịch vụ AI thời gian thực và ghi nhận vi phạm về máy chủ Backend, được minh họa ở Hình \ref{fig:UC10_sequence_diagram}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Hinhve/UC_10_Thi_truc_tuyen_Giam_sat_AI.png}
+    \caption{Biểu đồ trình tự UC-10: Làm bài thi trực tuyến và Giám sát AI}
+    \label{fig:UC10_sequence_diagram}
+\end{figure}
+\FloatBarrier
+
+Quy trình tương tác diễn ra như sau:
+\begin{enumerate}
+    \item \textbf{Khởi tạo thi}: Học viên truy cập trang thi từ client (\texttt{FE\_WEB / App}), ứng dụng gửi yêu cầu lấy đề thi thông qua \texttt{getAssessmentsForCourse}. Khi bắt đầu làm bài, client gọi API \texttt{startAssessment} của \texttt{AssessmentController}. Lớp nghiệp vụ \texttt{AssessmentService} gọi phương thức \texttt{validateAssessmentLocation} để kiểm tra định vị GPS và chống giả lập, sau đó tạo bản ghi bài nộp \texttt{StudentSubmission} với trạng thái \texttt{IN\_PROGRESS} trong PostgreSQL.
+    \item \textbf{Giám sát AI trực tuyến}: Client kết nối WebSocket tới dịch vụ AI (\texttt{ai-proctor}) truyền liên tục luồng frame hình ảnh từ webcam. Dịch vụ AI gọi MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} để tính góc quay đầu và hướng nhìn (sử dụng EPnP \cite{Lepetit2009EPnP} giải PnP). Nếu phát hiện bất thường liên tục quá 3 giây, dịch vụ AI trích xuất video vi phạm độ dài 10 giây lưu vào máy chủ và gửi cảnh báo vi phạm về backend.
+    \item \textbf{Nộp bài}: Học viên kết thúc bài làm, ứng dụng gửi yêu cầu \texttt{submitAssessment} kèm GPS. Hệ thống chấm điểm tự động các câu trắc nghiệm và điền khuyết rồi lưu kết quả với trạng thái \texttt{GRADED} hoặc \texttt{SUBMITTED}.
+\end{enumerate}
+
+\paragraph{2. UC-06: Điểm danh nhận diện FaceID nhóm và Định vị GPS}
+Biểu đồ trình tự mô tả quy trình giảng viên điểm danh nhóm bằng AI FaceID kết hợp với học viên check-in cá nhân bằng định vị GPS phòng học và mã OTP bổ sung, được minh họa ở Hình \ref{fig:UC06_sequence_diagram}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Hinhve/UC_06_Diem_danh_FaceID_nhom_GPS.png}
+    \caption{Biểu đồ trình tự UC-06: Điểm danh nhận diện FaceID nhóm và Định vị GPS}
+    \label{fig:UC06_sequence_diagram}
+\end{figure}
+\FloatBarrier
+
+Quy trình tương tác diễn ra như sau:
+\begin{enumerate}
+    \item \textbf{Điểm danh nhóm FaceID}: Giảng viên gửi ảnh lớp học tới AI Service (\texttt{detect-face}). Dịch vụ sử dụng RetinaFace \cite{Deng_2020_CVPR} để phát hiện khuôn mặt và đối sánh đặc trưng qua ArcFace \cite{Deng_2019_CVPR} để tìm ID học viên. Kết quả nhận diện được gửi về \texttt{TeacherController} để tạo danh sách xem trước. Giảng viên đối soát và lưu chính thức kết quả qua \texttt{confirmAttendanceChanges}, hệ thống tự động chạy stored procedure cập nhật tổng số buổi đi học của học viên.
+    \item \textbf{Check-in cá nhân}: Giảng viên phát mã OTP trên màn chiếu. Học viên nhập mã OTP, chụp ảnh selfie xác thực khuôn mặt (qua ArcFace) và gửi định vị GPS. Lớp nghiệp vụ \texttt{StudentService} xác thực định vị bằng Geofencing phòng học và kiểm tra cấm giả lập GPS, sau đó lưu kết quả vào bảng \texttt{FormSubmission} trong cơ sở dữ liệu.
+\end{enumerate}
 \subsection{Thiết kế cơ sở dữ liệu}
 Phần này có độ dài từ hai đến bốn trang. Sinh viên thiết kế, vẽ và giải thích biểu đồ thực thể liên kết (E-R diagram). Từ đó, sinh viên thiết kế cơ sở dữ liệu tùy theo hệ quản trị cơ sở dữ liệu mà mình sử dụng (SQL, NoSQL, Firebase, v.v.)
 

@@ -1,0 +1,142 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Chương 3 tập trung trình bày nền tảng lý thuyết và công nghệ sử dụng để giải quyết các yêu cầu đặt ra đối với hệ thống điểm danh và quản lý học sinh tích hợp giám thị AI. Nội dung chương sẽ phân tích lý do lựa chọn từng giải pháp công nghệ dựa trên việc so sánh ưu, nhược điểm với các giải pháp thay thế.
+
+\section{Công nghệ xác thực tập trung Single Sign-On (SSO) với Keycloak}
+\label{section:3.1}
+
+\subsection{Yêu cầu nghiệp vụ giải quyết}
+Tính năng xác thực và đăng nhập một lần (SSO) là yêu cầu nền tảng của hệ thống để đồng bộ danh tính người dùng trên cả ba phân hệ: ứng dụng Web quản lý (\mbox{\texttt{FE\_WEB}}), ứng dụng di động dành cho học viên (\mbox{\texttt{frontend\_student}}) và ứng dụng di động dành cho giảng viên (\mbox{\texttt{frontend\_teacher}}). Yêu cầu này đã được mô tả chi tiết trong đặc tả use case UC-12 (Đặc tả Đăng nhập \& Bảo mật).
+
+\subsection{Các giải pháp thay thế}
+Để hiện thực hóa tính năng xác thực và phân quyền cho hệ thống, các hướng tiếp cận sau đã được cân nhắc:
+\begin{itemize}
+    \item \textbf{Tự xây dựng module xác thực (Custom Auth Service)}: Sử dụng Spring Security kết hợp với mã token tự sinh (JWT) được lưu trữ trong cơ sở dữ liệu PostgreSQL.
+    \item \textbf{Sử dụng dịch vụ định danh đám mây (Cloud Identity Providers - IDPs)}: Các giải pháp thương mại như Auth0 hoặc Firebase Authentication của Google.
+    \item \textbf{Sử dụng hệ thống định danh mã nguồn mở tự triển khai}: Keycloak SSO \cite{keycloak2026}.
+\end{itemize}
+
+\subsection{Lý do lựa chọn}
+Hệ thống quyết định sử dụng \textbf{Keycloak} \cite{keycloak2026} làm máy chủ quản lý định danh và xác thực vì các lý do sau:
+\begin{itemize}
+    \item \textbf{Độ tin cậy và bảo mật cao}: Keycloak hỗ trợ đầy đủ các giao thức bảo mật tiêu chuẩn công nghiệp bao gồm OAuth 2.0, OpenID Connect (OIDC) và SAML 2.0. So với phương án tự xây dựng (dễ gặp các lỗi cấu hình bảo mật hoặc lỗ hổng lưu trữ token), Keycloak cung cấp một giải pháp đã được kiểm định nghiêm ngặt với các tính năng nâng cao có sẵn như brute-force protection, quản lý phiên làm việc (session management), và đổi mật khẩu an toàn.
+    \item \textbf{Tối ưu chi phí và kiểm soát dữ liệu}: So với Auth0 hay Firebase Authentication vốn tính phí theo số lượng người dùng hoạt động hàng tháng (MAU) và giới hạn quyền kiểm soát cơ sở hạ tầng, Keycloak là mã nguồn mở hoàn toàn, có thể tự cài đặt trên Docker container riêng, giúp trường học tự chủ $100\%$ về mặt dữ liệu học viên và không phát sinh chi phí vận hành tăng thêm khi quy mô người dùng mở rộng.
+    \item \textbf{Khả năng tích hợp linh hoạt}: Keycloak cung cấp sẵn thư viện admin client hỗ trợ Java/Spring Boot (thư viện \mbox{\texttt{keycloak-admin-client}} và \mbox{\texttt{keycloak-core}}), giúp backend dễ dàng thực hiện các tác vụ quản lý tài khoản như phê duyệt giảng viên mới, kích hoạt/khóa tài khoản, và đồng bộ dữ liệu người dùng.
+\end{itemize}
+
+\section{Kiến trúc Backend và Hệ quản trị cơ sở dữ liệu (Spring Boot \& PostgreSQL)}
+\label{section:3.2}
+
+\subsection{Yêu cầu nghiệp vụ giải quyết}
+Hệ thống cần một nền tảng backend vững chắc để xử lý toàn bộ các logic nghiệp vụ phức tạp của phân hệ quản lý đào tạo, bao gồm: quản lý lớp học phần (UC-04), soạn thảo đề thi và import câu hỏi từ Excel bằng thư viện Apache POI (UC-05), chấm thi trực tuyến (UC-07) và quản lý tài liệu phân cấp (UC-14). Đồng thời, backend phải đảm bảo tính nhất quán dữ liệu chuyên cần và điểm số của học viên.
+
+\subsection{Các giải pháp thay thế}
+\begin{itemize}
+    \item \textbf{Về Backend Framework}: Lựa chọn giữa Java Spring Boot, Node.js (Express/NestJS) hoặc Python (FastAPI/Django).
+    \item \textbf{Về Cơ sở dữ liệu}: Lựa chọn giữa hệ quản trị cơ sở dữ liệu quan hệ (PostgreSQL, MySQL) hoặc cơ sở dữ liệu phi quan hệ (NoSQL như MongoDB).
+\end{itemize}
+
+\subsection{Lý do lựa chọn}
+\begin{itemize}
+    \item \textbf{Lựa chọn Java Spring Boot}: Spring Boot (phiên bản 3.2.3 chạy trên nền Java 21) được lựa chọn nhờ khả năng xử lý nghiệp vụ doanh nghiệp (Enterprise) cực kỳ mạnh mẽ. Java cung cấp cơ chế an toàn kiểu dữ liệu (Type-safety), tính đóng gói tốt và hiệu năng xử lý đa luồng ưu việt giúp hệ thống vận hành ổn định khi có hàng ngàn yêu cầu đồng thời. So với Node.js vốn chạy đơn luồng (Single-thread Event Loop), Spring Boot hiệu quả hơn trong các tác vụ xử lý IO nặng và đồng bộ hóa đa dịch vụ. So với Python FastAPI (phù hợp cho các API xử lý dữ liệu và AI), Spring Boot có hệ sinh thái thư viện quản lý kết nối cơ sở dữ liệu (Spring Data JPA/Hibernate) và bảo mật (Spring Security) phát triển hoàn thiện hơn, rất thích hợp cho việc phát triển REST API Gateway chính của hệ thống.
+    \item \textbf{Lựa chọn PostgreSQL}: PostgreSQL được chọn thay vì MySQL hay MongoDB nhờ khả năng tuân thủ nghiêm ngặt chuẩn giao dịch ACID (Atomicity, Consistency, Isolation, Durability), đảm bảo dữ liệu điểm số và lịch sử điểm danh của học viên không bị sai lệch trong bất kỳ sự cố hệ thống nào. Ngoài ra, PostgreSQL hỗ trợ xử lý dữ liệu định dạng JSONB rất tốt (tiện lợi cho việc lưu trữ câu trả lời trắc nghiệm động của đề thi) và hỗ trợ mở rộng các kiểu dữ liệu hình học hỗ trợ tính toán khoảng cách địa lý (kết hợp với công thức Haversine để kiểm tra Geofencing).
+\end{itemize}
+
+\section{Công nghệ phát triển ứng dụng di động đa nền tảng (React Native)}
+\label{section:3.3}
+
+\subsection{Yêu cầu nghiệp vụ giải quyết}
+Sinh viên và giảng viên cần các công cụ di động tiện lợi để thực hiện điểm danh GPS kết hợp chống giả lập vị trí (UC-12), đăng ký hồ sơ Face ID (UC-13), và nhận thông báo đẩy FCM thời gian thực về lịch học/lịch thi (UC-08). Do đó, hệ thống yêu cầu phát triển hai ứng dụng di động tương thích tốt trên cả hai hệ điều hành phổ biến là Android và iOS.
+
+\subsection{Các giải pháp thay thế}
+\begin{itemize}
+    \item \textbf{Phát triển ứng dụng gốc (Native App)}: Sử dụng ngôn ngữ Kotlin/Java cho hệ điều hành Android và Swift/Objective-C cho hệ điều hành iOS.
+    \item \textbf{Sử dụng các Framework đa nền tảng (Cross-platform)}: Cân nhắc giữa React Native và Flutter.
+\end{itemize}
+
+\subsection{Lý do lựa chọn}
+Hệ thống sử dụng \textbf{React Native} (phiên bản 0.74.2) làm nền tảng phát triển ứng dụng di động vì:
+\begin{itemize}
+    \item \textbf{Tối ưu hóa tài nguyên phát triển}: React Native cho phép chia sẻ đến hơn $85\%$ mã nguồn giữa hai nền tảng Android và iOS. Điều này giúp giảm một nửa thời gian thiết kế giao diện và phát triển logic nghiệp vụ so với phương pháp viết Native App riêng biệt cho từng hệ điều hành.
+    \item \textbf{Khả năng tương tác phần cứng tốt}: React Native cung cấp các cầu nối native (Native Bridges) rất mạnh mẽ và ổn định để truy cập trực tiếp vào phần cứng thiết bị bao gồm: cảm biến định vị GPS (\mbox{\texttt{react-native-geolocation-service}}), camera để thu thập ảnh Face ID (\mbox{\texttt{react-native-image-picker}}), và truy cập phân hệ bảo mật phần cứng của hệ điều hành để lưu khóa mã hóa vân tay/Face ID thiết bị (\mbox{\texttt{react-native-keychain}}).
+    \item \textbf{Đồng bộ tư thế phát triển với Web Frontend}: Do ứng dụng Web quản trị sử dụng React, việc chọn React Native cho thiết bị di động giúp nhóm phát triển tận dụng tối đa tư duy xây dựng component và quản lý luồng dữ liệu (Sử dụng Redux Toolkit).
+\end{itemize}
+
+\section{Mô hình học sâu cho sinh trắc học khuôn mặt (RetinaFace \& ArcFace)}
+\label{section:3.4}
+
+\subsection{Yêu cầu nghiệp vụ giải quyết}
+Quy trình chuyên cần yêu cầu giảng viên có thể điểm danh tự động toàn bộ lớp học thông qua một bức ảnh tập thể lớp (UC-06). Để làm được điều này, hệ thống AI Backend cần thực hiện hai bước: tự động phát hiện tất cả các khuôn mặt có trong ảnh (Face Detection) và đối khớp từng khuôn mặt đó với hồ sơ chân dung gốc của học viên đã đăng ký trước đó (Face Recognition).
+
+\subsection{Các giải pháp thay thế}
+\begin{itemize}
+    \item \textbf{Về phát hiện khuôn mặt}: Thuật toán truyền thống Haar Cascades (OpenCV), HOG + SVM, hoặc mô hình mạng nơ-ron MTCNN.
+    \item \textbf{Về trích xuất đặc trưng khuôn mặt}: Mô hình FaceNet của Google hoặc VGGFace2.
+\end{itemize}
+
+\subsection{Lý do lựa chọn}
+\begin{itemize}
+    \item \textbf{Lựa chọn RetinaFace}: RetinaFace \cite{Deng_2020_CVPR} là mô hình phát hiện khuôn mặt đơn tầng (single-shot) đạt độ chính xác hàng đầu hiện nay. Khác với Haar Cascades vốn rất nhạy cảm với ánh sáng và dễ bỏ sót khuôn mặt nghiêng, hoặc MTCNN có tốc độ xử lý chậm khi ảnh có nhiều khuôn mặt, RetinaFace sử dụng kiến trúc Feature Pyramid Network kết hợp dự đoán đa nhiệm (Bounding boxes, Facial landmarks và 3D face mesh). Điều này giúp RetinaFace phát hiện cực kỳ chính xác các khuôn mặt có kích thước nhỏ, bị mờ do khoảng cách xa hoặc bị che khuất một phần trong bức ảnh chụp tập thể giảng đường từ $50$ đến $80$ học viên.
+    \item \textbf{Lựa chọn ArcFace}: ArcFace \cite{Deng_2019_CVPR} (Additive Angular Margin Loss) được chọn thay vì FaceNet. Hàm mất mát của ArcFace tối ưu hóa trực tiếp khoảng cách góc trên không gian vector đặc trưng (geodesic distance on hypersphere). Nhờ đó, mô hình tạo ra các vector đặc trưng khuôn mặt $512$ chiều có tính phân tách rất cao giữa các cá nhân khác nhau, đồng thời thu hẹp khoảng cách vector đối với ảnh của cùng một người dưới các điều kiện ánh sáng hay góc chụp khác nhau. ArcFace đạt độ chính xác nhận diện vượt trội, giảm thiểu tối đa tỷ lệ nhận diện nhầm học viên khi điểm danh nhóm.
+\end{itemize}
+
+\section{Mô hình giám sát tư thế đầu và hướng nhìn trực tuyến (MediaPipe FaceMesh \& solvePnP)}
+\label{section:3.5}
+
+\subsection{Yêu cầu nghiệp vụ giải quyết}
+Trong quá trình làm bài thi trực tuyến (UC-10), phân hệ giám thị AI cần chạy trực tiếp trên trình duyệt Web Client của học viên để tự động phát hiện hành vi gian lận (UC-15). Các hành vi cần phát hiện bao gồm: liếc mắt khỏi màn hình quá 3 giây (theo dõi hướng nhìn - Gaze Tracking) và quay đầu sang hai bên hoặc cúi đầu quá giới hạn cho phép (quay đầu - 3D Head Pose).
+
+\subsection{Các giải pháp thay thế}
+\begin{itemize}
+    \item \textbf{Về ước lượng tư thế đầu 3D}: Sử dụng các mô hình học sâu tích chập (CNN) dự đoán trực tiếp góc quay (như HopeNet) hoặc sử dụng thư viện dlib kết hợp mô hình 68 điểm mốc.
+    \item \textbf{Về theo dõi hướng nhìn}: Sử dụng các thiết bị phần cứng theo dõi chuyên dụng (Eye Tracker chuyên dụng) hoặc các mô hình mạng nơ-ron học sâu nặng chạy trên Server.
+\end{itemize}
+
+\subsection{Lý do lựa chọn}
+Hệ thống kết hợp thư viện \textbf{MediaPipe FaceMesh} \cite{Lugaresi2019MediaPipe} và giải thuật hình học \textbf{solvePnP} (thuật toán EPnP \cite{Lepetit2009EPnP}) vì:
+\begin{itemize}
+    \item \textbf{Tối ưu hiệu năng thời gian thực trên CPU}: MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} là mô hình học máy gọn nhẹ của Google, có khả năng trích xuất thời gian thực $468$ điểm mốc tọa độ $3D$ trên khuôn mặt trực tiếp từ luồng webcam của trình duyệt mà không yêu cầu card đồ họa (GPU) rời. So với thư viện dlib (chỉ trích xuất được 68 điểm và dễ bị mất dấu khi quay đầu góc rộng), MediaPipe FaceMesh hoạt động ổn định và chi tiết hơn rất nhiều.
+    \item \textbf{Thuật toán solvePnP chính xác và nhanh chóng}: Bằng cách lấy ra $6$ điểm mốc khuôn mặt đặc trưng (tất lê, mắt trái, mắt phải, mũi, khóe miệng trái/phải) từ MediaPipe FaceMesh và đối khớp chúng với một mô hình đầu $3D$ chuẩn (generic 3D head model), hệ thống sử dụng thuật toán solvePnP (EPnP \cite{Lepetit2009EPnP}) trong OpenCV để tính toán ma trận xoay và dịch chuyển của đầu. Giải pháp hình học này cực kỳ nhanh, tiêu tốn rất ít CPU và cho kết quả đo góc quay đầu (yaw, pitch, roll) chính xác đến từng độ, giúp phát hiện hành vi quay đầu hiệu quả mà không cần cài đặt các mô hình học sâu cồng kềnh.
+    \item \textbf{Gaze Tracking bằng phân tích hình học đồng tử}: Thay vì sử dụng phần cứng theo dõi đắt tiền hoặc các mô hình CNN nặng nề khó chạy trên trình duyệt của học viên, hệ thống áp dụng thuật toán phân tích tỷ lệ hình học giữa tâm con ngươi (Iris Landmarks) và các điểm mốc khóe mắt do MediaPipe cung cấp \cite{kaundinya2026inbrowser}. Tỷ lệ này được tính toán trực tiếp trên Client để xác định hướng nhìn rời khỏi màn hình, mang lại tính khả thi cao cho mọi môi trường máy tính thông thường của học viên.
+\end{itemize}
+
+\section{Công nghệ truyền thông thời gian thực và thông báo đẩy (WebSockets \& FCM)}
+\label{section:3.6}
+
+\subsection{Yêu cầu nghiệp vụ giải quyết}
+Hệ thống yêu cầu truyền tải luồng hình ảnh webcam từ Client của học viên về Backend AI (`ai-proctor`) liên tục để phân tích hành vi thời gian thực trong lúc làm bài thi (UC-10). Đồng thời, hệ thống cần gửi thông báo tức thời (lịch thi, kết quả điểm số) đến thiết bị di động của học viên và giảng viên (UC-07, UC-12).
+
+\subsection{Các giải pháp thay thế}
+\begin{itemize}
+    \item \textbf{Về truyền dữ liệu webcam}: Gửi ảnh liên tục bằng các yêu cầu HTTP POST thông thường (HTTP Polling), sử dụng giao thức WebRTC.
+    \item \textbf{Về gửi thông báo di động}: Tự xây dựng socket kết nối chạy ngầm trên di động, sử dụng các dịch vụ thông báo đẩy riêng biệt của Apple (APNs) và Google (FCM/GCM).
+\end{itemize}
+
+\subsection{Lý do lựa chọn}
+\begin{itemize}
+    \item \textbf{Lựa chọn WebSockets}: WebSockets cung cấp một kênh truyền thông hai chiều (full-duplex), duy trì kết nối TCP liên tục giữa Client và Server. So với HTTP Polling (gây lãng phí tài nguyên do liên tục thiết lập lại kết nối TCP và gửi tiêu đề HTTP), WebSockets giúp truyền luồng ảnh với độ trễ cực thấp và băng thông tối thiểu. So với WebRTC vốn có cơ chế thiết lập kết nối ngang hàng (P2P) rất phức tạp và khó cấu hình qua các lớp tường lửa/NAT, WebSockets là lựa chọn tối ưu hơn khi cần truyền tải hình ảnh tập trung về máy chủ AI Backend để xử lý.
+    \item \textbf{Lựa chọn Firebase Cloud Messaging (FCM)}: FCM \cite{fcm2026} được Google cung cấp hoàn toàn miễn phí, hỗ trợ gửi thông báo đẩy đến cả hai hệ điều hành Android và iOS thông qua một API thống nhất từ Spring Boot Backend. FCM hoạt động cực kỳ ổn định, tích hợp sẵn cơ chế đánh thức ứng dụng di động chạy ngầm và hỗ trợ điều hướng sâu (Deep Linking), đảm bảo học viên không bỏ lỡ bất kỳ thông tin đào tạo quan trọng nào.
+\end{itemize}
+
+\section{Công nghệ phát triển giao diện Web (React \& TailwindCSS)}
+\label{section:3.7}
+
+\subsection{Yêu cầu nghiệp vụ giải quyết}
+Hệ thống yêu cầu xây dựng trang Web quản trị dành cho Giảng viên và Admin (\mbox{\texttt{FE\_WEB}}) hiển thị đầy đủ thông tin, có giao diện hiện đại, cập nhật dữ liệu thời gian thực (như danh sách phòng thi, tài nguyên máy chủ, kết quả điểm danh sinh trắc học) và tương thích tốt trên nhiều loại màn hình.
+
+\subsection{Các giải pháp thay thế}
+\begin{itemize}
+    \item \textbf{Frontend Framework}: React, Angular hoặc Vue.js.
+    \item \textbf{Styling Framework}: Bootstrap, Vanilla CSS.
+\end{itemize}
+
+\subsection{Lý do lựa chọn}
+\begin{itemize}
+    \item \textbf{Lựa chọn React}: React (kết hợp công cụ build Vite) sử dụng cơ chế Virtual DOM giúp tối ưu hóa hiệu năng cập nhật giao diện, chỉ cập nhật những thành phần thay đổi trên màn hình mà không cần tải lại toàn bộ trang. Điều này rất hữu ích cho các màn hình theo dõi phòng thi thời gian thực hoặc hiển thị kết quả khoanh vùng khuôn mặt học viên trên ảnh tập thể. Vite mang lại tốc độ khởi chạy server dev và build sản phẩm nhanh vượt trội so với các công cụ cũ như Webpack.
+    \item \textbf{Lựa chọn TailwindCSS}: TailwindCSS là framework CSS hướng tiện ích (utility-first), cho phép xây dựng giao diện nhanh chóng bằng cách viết các class trực tiếp trong HTML/JSX. So với Bootstrap vốn có sẵn các thành phần (components) giao diện cố định dễ gây trùng lặp thiết kế, TailwindCSS mang lại sự linh hoạt tối đa để tùy biến giao diện Premium độc đáo cho hệ thống. Ngoài ra, TailwindCSS hỗ trợ cơ chế loại bỏ CSS thừa (Tree-shaking) khi build giúp giảm thiểu tối đa dung lượng tệp tin giao diện gửi về trình duyệt của người dùng.
+\end{itemize}
+
+Kết chương, Chương 3 đã phân tích các lựa chọn công nghệ chính nhằm đáp ứng những yêu cầu đã xác định ở Chương 2. Cơ chế xác thực tập trung được định hướng dựa trên Keycloak SSO \cite{keycloak2026}; phân hệ điểm danh sinh trắc học sử dụng RetinaFace \cite{Deng_2020_CVPR} để phát hiện khuôn mặt và ArcFace \cite{Deng_2019_CVPR} để trích xuất đặc trưng đối khớp; phân hệ giám sát thi trực tuyến kết hợp MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe}, Gaze Tracking \cite{kaundinya2026inbrowser} và solvePnP/EPnP \cite{Lepetit2009EPnP} để nhận biết hướng nhìn, tư thế đầu và các bất thường trong khung hình; đồng thời cơ chế thông báo đẩy được hỗ trợ bởi FCM \cite{fcm2026}. Các lựa chọn về backend, cơ sở dữ liệu, ứng dụng di động, giao diện Web và truyền thông thời gian thực được đặt trong mối quan hệ trực tiếp với các use case nghiệp vụ, giúp bảo đảm tính nhất quán giữa yêu cầu và hướng triển khai. Trên nền tảng công nghệ đã được xác lập trong chương này, Chương 4 sẽ tiếp tục trình bày thiết kế kiến trúc, thiết kế chi tiết, quá trình xây dựng, kiểm thử và triển khai hệ thống.
+
+\end{document}
