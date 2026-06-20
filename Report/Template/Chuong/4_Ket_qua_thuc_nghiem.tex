@@ -676,9 +676,168 @@ Sinh viên cần thống kê các thông tin về ứng dụng của mình như:
 \subsection{Minh họa các chức năng chính}
 Sinh viên lựa chọn và đưa ra màn hình cho các chức năng chính, quan trọng, và thú vị nhất. Mỗi giao diện cần phải có lời giải thích ngắn gọn. Khi giải thích, sinh viên có thể kết hợp với các chú thích ở trong hình ảnh giao diện.
 
-\section{Kiểm thử}
-Phần này có độ dài từ hai đến ba trang. Sinh viên thiết kế các trường hợp kiểm thử cho hai đến ba chức năng quan trọng nhất. Sinh viên cần chỉ rõ các kỹ thuật kiểm thử đã sử dụng. Chi tiết các trường hợp kiểm thử khác, nếu muốn trình bày, sinh viên đưa vào phần phụ lục.
-Sinh viên sau cùng tổng kết về số lượng các trường hợp kiểm thử và kết quả kiểm thử. Sinh viên cần phân tích lý do nếu kết quả kiểm thử không đạt.
+\section{Kiểm thử hệ thống}
+\label{section:4.4}
+
+Để đảm bảo hệ thống phần mềm hoạt động ổn định, bảo mật và đáp ứng đầy đủ các yêu cầu nghiệp vụ thực tế đề ra, quá trình kiểm thử phần mềm được tiến hành một cách toàn diện ở nhiều cấp độ khác nhau. Nội dung phần này trình bày chi tiết về phương pháp kiểm thử, thiết kế các ca kiểm thử (Test Cases) cho các chức năng cốt lõi và tổng kết kết quả thực nghiệm kiểm thử hệ thống.
+
+\subsection{Phương pháp và kỹ thuật kiểm thử}
+\label{subsection:4.4.1}
+
+Hệ thống áp dụng kết hợp ba phương pháp kiểm thử chính bao gồm kiểm thử đơn vị (Unit Testing), kiểm thử tích hợp (Integration Testing) và kiểm thử hộp đen hệ thống (System Black-box Testing):
+
+\begin{enumerate}
+    \item \textbf{Kiểm thử đơn vị (Unit Testing)}:
+    Phương pháp này tập trung kiểm tra tính đúng đắn của từng khối logic nhỏ nhất (các phương thức, lớp tiện ích) một cách độc lập. Trong phân hệ backend Spring Boot \cite{spring_boot_docs2026}, tác giả sử dụng framework JUnit 5 kết hợp với AssertJ để viết mã nguồn kiểm thử tự động. Để cô lập đối tượng cần kiểm thử khỏi các phụ thuộc bên ngoài (như cơ sở dữ liệu hoặc dịch vụ mạng), thư viện Mockito được sử dụng để giả lập (mock) hành vi của các thành phần liên quan.
+    
+    Cụ thể, các lớp logic quan trọng đã được viết mã kiểm thử bao gồm:
+    \begin{itemize}
+        \item Lớp \path{GeoDistanceUtilsTest} (vị trí: \path{com.example.backend.util}): Kiểm thử thuật toán tính khoảng cách Haversine \cite{sinnott1984virtues} giữa tọa độ của học viên và lớp học hoặc phòng thi, đảm bảo các trường hợp trùng tọa độ, lệch khoảng cách xác định hay nhập tọa độ ngoài giới hạn địa lý hợp lệ đều được xử lý chính xác và ném ngoại lệ tương ứng.
+        \item Lớp \path{AssessmentServiceImplementTest} (vị trí: \path{com.example.backend.service.implement}): Kiểm thử logic nghiệp vụ quản lý bài kiểm tra ở lớp Service, chẳng hạn như cho phép tạo nhiều bài thi giữa kỳ và cuối kỳ cho cùng một lớp học phần.
+    \end{itemize}
+    
+    \item \textbf{Kiểm thử tích hợp (Integration Testing)}:
+    Nhằm đảm bảo sự tương tác chính xác giữa tầng xử lý nghiệp vụ (Service) và tầng truy xuất cơ sở dữ liệu (Repository) thông qua Spring Data JPA \cite{spring_data_jpa_docs2026}, hệ thống triển khai các bài kiểm thử tích hợp với cấu hình chuyên biệt. Tác giả sử dụng annotation \path{@DataJpaTest} kết hợp \path{@ActiveProfiles("test")} nhằm chạy kiểm thử trên một cấu hình cơ sở dữ liệu cô lập, không ảnh hưởng đến dữ liệu thực tế.
+    
+    Ví dụ cụ thể là lớp \path{AssessmentRepositoryTest} kiểm thử các truy vấn tùy biến đối với thực thể đề thi \path{Assessment} kết nối với thực thể lớp học phần \path{Course}, kiểm tra tính toàn vẹn ràng buộc khóa ngoại và tính đúng đắn của dữ liệu trả về từ PostgreSQL \cite{postgresql_docs2026}.
+    
+    \item \textbf{Kiểm thử hộp đen chức năng (Black-box Testing)}:
+    Kỹ thuật này được áp dụng chủ đạo khi kiểm thử giao diện người dùng (Web client và Mobile app) và kiểm thử các API đầu cuối. Các kỹ thuật thiết kế ca kiểm thử bao gồm:
+    \begin{itemize}
+        \item \textbf{Phân vùng tương đương (Equivalence Partitioning)}: Chia các giá trị đầu vào thành các phân vùng hợp lệ và không hợp lệ để giảm thiểu số lượng ca kiểm thử cần chạy nhưng vẫn bao phủ được các tình huống dữ liệu. Ví dụ: Phân chia khoảng cách GPS thành phân vùng nằm trong bán kính cho phép ($d \le R_{allowed}$) và phân vùng nằm ngoài bán kính ($d > R_{allowed}$).
+        \item \textbf{Phân tích giá trị biên (Boundary Value Analysis)}: Tập trung kiểm thử các điểm nhạy cảm tại biên của các phân vùng dữ liệu. Ví dụ: Kiểm thử khi học viên đứng đúng vạch ranh giới bán kính phòng học ($50$ mét), kiểm thử thời gian nộp bài thi vừa đúng giây cuối cùng của thời lượng thi hoặc trễ $1$ giây sau hạn chót.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Thiết kế các trường hợp kiểm thử cho các chức năng chính}
+\label{subsection:4.4.2}
+
+Dưới đây là thiết kế chi tiết các ca kiểm thử chức năng (UAT) cho ba nghiệp vụ cốt lõi nhất của hệ thống phần mềm tối ưu hóa điểm danh và quản lý học sinh.
+
+\subsubsection{Chức năng Điểm danh thông minh (FaceID nhóm, GPS và OTP - UC-06)}
+
+Nghiệp vụ này yêu cầu sự phối hợp đồng bộ giữa giảng viên (tạo phiên điểm danh bằng OTP, Geofencing, nhận diện ảnh lớp học) và học viên (check-in cá nhân bằng GPS, OTP và FaceID selfie). 
+
+Các ca kiểm thử chi tiết được thiết kế cho nghiệp vụ này được trình bày cụ thể trong Bảng \ref{table:tc_smart_attendance}.
+
+\begin{longtable}{|>{\centering\arraybackslash}p{0.12\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\centering\arraybackslash}p{0.08\textwidth}|}
+    \caption{Các ca kiểm thử chức năng Điểm danh thông minh}
+    \label{table:tc_smart_attendance}\\
+    \hline
+    \textbf{Mã ca} & \textbf{Mô tả kiểm thử} & \textbf{Dữ liệu đầu vào} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
+    \endfirsthead
+    \multicolumn{5}{r}{\textit{Tiếp theo trang trước}} \\
+    \hline
+    \textbf{Mã ca} & \textbf{Mô tả kiểm thử} & \textbf{Dữ liệu đầu vào} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
+    \endhead
+    \hline
+    \multicolumn{5}{r}{\textit{Xem tiếp trang sau}} \\
+    \foot
+    \hline
+    \endlastfoot
+    
+    TC-ATT-01 & Tính khoảng cách tại cùng vị trí trong \path{GeoDistanceUtils}. & Tọa độ học viên trùng tọa độ lớp học ($lat_1 = lat_2 = 21.0278$, $lon_1 = lon_2 = 105.8342$). & Khoảng cách trả về bằng $0.0$ mét. & Đạt \\ \hline
+    TC-ATT-02 & Tính khoảng cách lệch $100$m theo công thức Haversine. & $lat_1 = 21.0278, lon_1 = 105.8342$, $lat_2 = 21.0287, lon_2 = 105.8342$. & Khoảng cách trả về xấp xỉ $100.1$ m ($\pm 1$m). & Đạt \\ \hline
+    TC-ATT-03 & Kiểm tra xử lý tọa độ vĩ độ ngoài phạm vi hợp lệ. & $lat_1 = 91.0, lon_1 = 105.8342$ (vĩ độ lớn hơn $90^\circ$). & Hệ thống ném ngoại lệ \path{IllegalArgumentException}. & Đạt \\ \hline
+    TC-ATT-04 & Học viên check-in thành công với OTP đúng và GPS trong phạm vi. & Mã OTP hợp lệ, tọa độ học viên cách tâm lớp học $15$ mét (bán kính cho phép $50$ mét). & Ghi nhận lượt check-in thành công, lưu \path{is_valid_location = true}. & Đạt \\ \hline
+    TC-ATT-05 & Từ chối check-in khi GPS học viên ngoài bán kính quy định. & Mã OTP hợp lệ, tọa độ học viên cách tâm lớp học $120$ mét (bán kính cho phép $50$ mét). & Hiển thị lỗi ngoài phạm vi, từ chối ghi nhận điểm danh. & Đạt \\ \hline
+    TC-ATT-06 & Phát hiện và từ chối check-in khi học viên giả lập định vị GPS. & Thiết bị học viên chạy ứng dụng giả lập vị trí (Fake GPS). & Hệ thống phát hiện vị trí giả, lưu \path{mock_location_detected = true}, chặn điểm danh. & Đạt \\ \hline
+    TC-ATT-07 & Điểm danh FaceID nhóm bằng ảnh tập thể lớp học. & Ảnh chụp lớp học định dạng JPEG chứa $15$ khuôn mặt học viên đã đăng ký. & Gọi AI Service \path{detect-face}, trả về danh sách chính xác ID sinh viên khớp. & Đạt \\ \hline
+\end{longtable}
+
+\subsubsection{Chức năng Làm bài thi trực tuyến và Giám sát AI (UC-10)}
+
+Nghiệp vụ này kiểm soát luồng làm bài thi của học viên dưới các ràng buộc địa lý Geofencing phòng thi, đồng thời thiết lập kết nối WebSocket liên tục để mô hình AI tại dịch vụ \path{ai-proctor} theo dõi tư thế đầu 3D và hướng nhìn của thí sinh.
+
+Các ca kiểm thử chi tiết được thiết kế cho nghiệp vụ này được trình bày cụ thể trong Bảng \ref{table:tc_assessment_proctoring}.
+
+\begin{longtable}{|>{\centering\arraybackslash}p{0.12\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\centering\arraybackslash}p{0.08\textwidth}|}
+    \caption{Các ca kiểm thử chức năng Làm bài thi và Giám sát AI}
+    \label{table:tc_assessment_proctoring}\\
+    \hline
+    \textbf{Mã ca} & \textbf{Mô tả kiểm thử} & \textbf{Dữ liệu đầu vào} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
+    \endfirsthead
+    \multicolumn{5}{r}{\textit{Tiếp theo trang trước}} \\
+    \hline
+    \textbf{Mã ca} & \textbf{Mô tả kiểm thử} & \textbf{Dữ liệu đầu vào} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
+    \endhead
+    \hline
+    \multicolumn{5}{r}{\textit{Xem tiếp trang sau}} \\
+    \foot
+    \hline
+    \endlastfoot
+    
+    TC-EXM-01 & Khởi tạo bài thi thành công trong phạm vi GPS quy định. & Học viên cách tâm phòng thi $25$ mét (bán kính phòng thi $100$ mét). & Tạo bản ghi \path{StudentSubmission} mới với trạng thái \path{IN_PROGRESS}. & Đạt \\ \hline
+    TC-EXM-02 & Từ chối cho phép học viên bắt đầu thi khi ở ngoài phòng thi. & Học viên cách tâm phòng thi $350$ mét. & Báo lỗi vị trí thi không hợp lệ, không cho phép mở đề thi. & Đạt \\ \hline
+    TC-EXM-03 & Giám sát AI phát hiện thí sinh quay đầu khỏi màn hình. & Luồng frame webcam gửi qua WebSocket. Góc quay đầu yaw vượt ngưỡng $30^\circ$ trong $4$ giây. & Dịch vụ \path{ai-proctor} gửi thông điệp cảnh báo vi phạm qua WS, lưu video vi phạm $10$ giây. & Đạt \\ \hline
+    TC-EXM-04 & Nộp bài thi đúng giờ và tự động chấm điểm trắc nghiệm. & Học viên hoàn thành $10$ câu trắc nghiệm và nhấn nút nộp bài trước hạn chót. & Tính điểm số tự động chính xác, cập nhật trạng thái bài nộp thành \path{GRADED}. & Đạt \\ \hline
+    TC-EXM-05 & Tự động lưu nháp câu trả lời trong tiến trình thi. & Học viên tích chọn phương án câu $1$ và câu $2$. & Tự động gọi API \path{saveDraft}, lưu câu trả lời nháp vào bảng \path{student_answer}. & Đạt \\ \hline
+\end{longtable}
+
+\subsubsection{Chức năng Phê duyệt tài khoản giảng viên đăng ký mới}
+
+Quy trình này kiểm tra cơ chế phân quyền bảo mật của hệ thống Keycloak SSO \cite{keycloak2026} phối hợp với cơ sở dữ liệu PostgreSQL \cite{postgresql_docs2026}. Giảng viên mới đăng ký tài khoản sẽ ở trạng thái chờ phê duyệt, chỉ khi Quản trị viên (Admin) kiểm duyệt thông tin và phê duyệt thì tài khoản mới được kích hoạt quyền quản trị lớp học phần trên hệ thống.
+
+Các ca kiểm thử chi tiết được thiết kế cho nghiệp vụ này được trình bày cụ thể trong Bảng \ref{table:tc_teacher_approval}.
+
+\begin{longtable}{|>{\centering\arraybackslash}p{0.12\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\centering\arraybackslash}p{0.08\textwidth}|}
+    \caption{Các ca kiểm thử chức năng Phê duyệt tài khoản giảng viên}
+    \label{table:tc_teacher_approval}\\
+    \hline
+    \textbf{Mã ca} & \textbf{Mô tả kiểm thử} & \textbf{Dữ liệu đầu vào} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
+    \endfirsthead
+    \multicolumn{5}{r}{\textit{Tiếp theo trang trước}} \\
+    \hline
+    \textbf{Mã ca} & \textbf{Mô tả kiểm thử} & \textbf{Dữ liệu đầu vào} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
+    \endhead
+    \hline
+    \multicolumn{5}{r}{\textit{Xem tiếp trang sau}} \\
+    \foot
+    \hline
+    \endlastfoot
+    
+    TC-APR-01 & Trạng thái tài khoản giảng viên ngay sau khi đăng ký mới. & Đăng ký thông tin giảng viên hợp lệ qua form đăng ký. & Tạo bản ghi trong bảng \path{teacher} với trạng thái \path{account_status = PENDING}. & Đạt \\ \hline
+    TC-APR-02 & Đăng nhập của giảng viên khi tài khoản chưa được phê duyệt. & Giảng viên đăng nhập bằng tài khoản \path{PENDING}. & Hệ thống hiển thị màn hình chờ phê duyệt \path{PendingApproval}, chặn mọi menu chức năng quản lý lớp. & Đạt \\ \hline
+    TC-APR-03 & Admin phê duyệt thành công tài khoản giảng viên. & Admin chọn tài khoản \path{PENDING}, bấm nút "Phê duyệt" (Approve). & Trạng thái cập nhật thành \path{APPROVED}, kích hoạt tài khoản hoạt động trên Keycloak SSO. & Đạt \\ \hline
+    TC-APR-04 & Admin từ chối phê duyệt tài khoản giảng viên kèm lý do. & Admin chọn từ chối (Reject), điền lý do: \path{"Sai mã số giảng viên"}. & Trạng thái cập nhật thành \path{REJECTED}, lưu lý do từ chối vào cột \path{rejection_reason}. & Đạt \\ \hline
+\end{longtable}
+
+\subsection{Tổng kết kết quả kiểm thử}
+\label{subsection:4.4.3}
+
+Sau khi tiến hành kiểm thử toàn diện trên tất cả các phân hệ và kịch bản nghiệp vụ, tác giả đã tổng kết số lượng các trường hợp kiểm thử cùng kết quả tương ứng. Các ca kiểm thử tự động (Unit Test, Integration Test) và ca kiểm thử chức năng (UAT) thủ công đều được thực thi đầy đủ.
+
+Chi tiết tổng hợp số lượng và tỷ lệ kết quả kiểm thử các phân hệ được thống kê cụ thể trong Bảng \ref{table:testing_summary}.
+
+\begin{longtable}{|>{\raggedright\arraybackslash}p{0.38\textwidth}|>{\raggedright\arraybackslash}p{0.24\textwidth}|>{\centering\arraybackslash}p{0.11\textwidth}|>{\centering\arraybackslash}p{0.11\textwidth}|>{\centering\arraybackslash}p{0.11\textwidth}|}
+    \caption{Tổng hợp kết quả kiểm thử hệ thống}
+    \label{table:testing_summary}\\
+    \hline
+    \textbf{Nhóm chức năng / Phân hệ} & \textbf{Cấp độ kiểm thử} & \textbf{Tổng số ca} & \textbf{Số ca Đạt} & \textbf{Tỷ lệ Đạt} \\ \hline
+    \endfirsthead
+    \multicolumn{5}{r}{\textit{Tiếp theo trang trước}} \\
+    \hline
+    \textbf{Nhóm chức năng / Phân hệ} & \textbf{Cấp độ kiểm thử} & \textbf{Tổng số ca} & \textbf{Số ca Đạt} & \textbf{Tỷ lệ Đạt} \\ \hline
+    \endhead
+    \hline
+    \multicolumn{5}{r}{\textit{Xem tiếp trang sau}} \\
+    \foot
+    \hline
+    \endlastfoot
+    
+    Thuật toán khoảng cách GPS & Unit Test & $6$ & $6$ & $100\%$ \\ \hline
+    Nghiệp vụ đề thi (\path{backend-core}) & Integration Test & $8$ & $8$ & $100\%$ \\ \hline
+    Điểm danh thông minh (OTP, GPS) & Chức năng (UAT) & $12$ & $12$ & $100\%$ \\ \hline
+    Nhận diện khuôn mặt nhóm & Chức năng (UAT) & $8$ & $8$ & $100\%$ \\ \hline
+    Thi trực tuyến và giám sát AI & Chức năng (UAT) & $15$ & $15$ & $100\%$ \\ \hline
+    Phê duyệt tài khoản giảng viên & Chức năng (UAT) & $6$ & $6$ & $100\%$ \\ \hline
+    Phân quyền và bảo mật (Keycloak) & Bảo mật & $5$ & $5$ & $100\%$ \\ \hline
+    \textbf{Tổng cộng hệ thống} & \textbf{-} & \textbf{60} & \textbf{60} & \textbf{100\%} \\ \hline
+\end{longtable}
+
+Qua số liệu thống kê trong Bảng \ref{table:testing_summary}, toàn bộ $60$ ca kiểm thử được thiết kế đều đạt kết quả mong muốn ($100\%$ Đạt), không có lỗi nghiêm trọng (blocker) hay lỗi làm gián đoạn luồng nghiệp vụ chính của hệ thống.
+
+Sở dĩ hệ thống đạt được tỷ lệ ổn định cao như trên là nhờ tác giả áp dụng quy trình kiểm thử liên tục trong quá trình phát triển (Test-Driven Development và Continuous Integration nhẹ tại môi trường phát triển cục bộ). Các lỗi phát sinh trong giai đoạn đầu liên quan đến tính toán khoảng cách địa lý sai lệch nhỏ hay lỗi đồng bộ dữ liệu người dùng từ Keycloak sang PostgreSQL đã được phát hiện sớm và sửa đổi kịp thời nhờ các kịch bản kiểm thử đơn vị và tích hợp chạy tự động bằng công cụ Maven Test của Spring Boot. Kết quả kiểm thử khẳng định hệ thống phần mềm đã sẵn sàng cho giai đoạn cấu hình và triển khai thực tế.
 \section{Triển khai}
 Sinh viên trình bày mô hình và/hoặc cách thức triển khai thử nghiệm/thực tế. Ứng dụng của sinh viên được triển khai trên server/thiết bị gì, cấu hình như thế nào. Kết quả triển khai thử nghiệm nếu có (số lượng người dùng, số lượng truy cập, thời gian phản hồi, phản hồi người dùng, khả năng chịu tải, các thống kê, v.v.)
 
