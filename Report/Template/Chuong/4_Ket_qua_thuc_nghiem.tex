@@ -193,8 +193,6 @@ Hệ thống sử dụng các lớp cốt lõi được tổ chức theo kiến 
     \item \textbf{Lớp nghiệp vụ \texttt{StudentServiceImplement}}: Xử lý các thao tác phía học viên như đăng ký hồ sơ khuôn mặt, nhập OTP, gửi tọa độ GPS và check-in cá nhân. Lớp này phối hợp với các repository liên quan để xác minh điều kiện điểm danh trước khi tạo bản ghi hợp lệ.
 \end{itemize}
 
-Như vậy, các lớp chính tạo thành một chuỗi xử lý rõ ràng: controller tiếp nhận yêu cầu, DTO chuẩn hóa dữ liệu, service kiểm tra nghiệp vụ, repository thao tác dữ liệu và entity phản ánh trạng thái lưu trữ cuối cùng. Cấu trúc này giúp hệ thống dễ mở rộng thêm điều kiện bảo mật hoặc thuật toán AI mới mà không phải thay đổi toàn bộ luồng xử lý.
-
 \subsubsection{Biểu đồ trình tự mô tả luồng truyền thông điệp}
 
 \paragraph{1. UC-10: Làm bài thi trực tuyến và Giám sát AI}
@@ -232,7 +230,226 @@ Quy trình tương tác diễn ra như sau:
     \item \textbf{Check-in cá nhân}: Giảng viên phát mã OTP trên màn chiếu. Học viên nhập mã OTP, chụp ảnh selfie xác thực khuôn mặt (qua ArcFace) và gửi định vị GPS. Lớp nghiệp vụ \texttt{StudentService} xác thực định vị bằng Geofencing phòng học và kiểm tra cấm giả lập GPS, sau đó lưu kết quả vào bảng \texttt{FormSubmission} trong cơ sở dữ liệu.
 \end{enumerate}
 \subsection{Thiết kế cơ sở dữ liệu}
-Phần này có độ dài từ hai đến bốn trang. Sinh viên thiết kế, vẽ và giải thích biểu đồ thực thể liên kết (E-R diagram). Từ đó, sinh viên thiết kế cơ sở dữ liệu tùy theo hệ quản trị cơ sở dữ liệu mà mình sử dụng (SQL, NoSQL, Firebase, v.v.)
+\label{subsection:4.2.3}
+
+Hệ thống sử dụng hệ quản trị cơ sở dữ liệu PostgreSQL \cite{postgresql_docs2026} để lưu trữ thông tin nghiệp vụ và hỗ trợ tính toán khoảng cách GPS thông qua kiểu dữ liệu số thực chính xác kép (\path{double precision}). Các bảng dữ liệu được thiết kế chuẩn hóa, ràng buộc khóa ngoại chặt chẽ nhằm bảo đảm tính toàn vẹn và hạn chế dư thừa dữ liệu.
+
+\subsubsection{Biểu đồ quan hệ thực thể (ERD)}
+Mối quan hệ giữa các thực thể cốt lõi trong hệ thống được thể hiện chi tiết qua Biểu đồ quan hệ thực thể (E-R Diagram) trong Hình \ref{fig:BieuDoQuanHeThucThe}.
+
+\FloatBarrier
+\begin{center}
+    \centering
+    \includegraphics[width=0.95\textwidth]{Hinhve/BieuDoQuanHeThucThe.png}
+    \captionof{figure}{Biểu đồ quan hệ thực thể (E-R) của hệ thống}
+    \label{fig:BieuDoQuanHeThucThe}
+\end{center}
+\FloatBarrier
+
+Sơ đồ cơ sở dữ liệu gồm ba nhóm thực thể chính:
+\begin{itemize}
+    \item \textbf{Nhóm thực thể quản lý người dùng và đào tạo}: Gồm các bảng \path{student}, \path{teacher}, \path{semester}, \path{course}, và bảng liên kết trung gian \path{register}. Bảng \path{student} và \path{teacher} được liên kết với hệ thống định danh tập trung thông qua trường \path{keycloak_id}.
+    \item \textbf{Nhóm thực thể chuyên cần và điểm danh}: Gồm các bảng \path{attendance_log}, \path{form}, \path{form_submission}, \path{question}, và \path{answer}. Bảng \path{form} cấu hình phiên điểm danh, lưu trữ tọa độ lớp học (\path{latitude}, \path{longitude}) và bán kính cho phép điểm danh (\path{allowed_radius_meters}). Học viên thực hiện gửi yêu cầu điểm danh được ghi nhận vào \path{form_submission}, lưu trữ tọa độ check-in, cờ phát hiện giả lập định vị (\path{mock_location_detected}) và cờ xác thực khuôn mặt (\path{is_face_verified}). Kết quả chuyên cần tổng hợp chính thức được chốt vào bảng \path{attendance_log}.
+    \item \textbf{Nhóm thực thể quản lý thi và giám sát AI}: Gồm các bảng \path{assessment}, \path{assessment_question}, \path{student_submission}, và \path{student_answer}. Đề thi được mô tả trong bảng \path{assessment} kèm cấu hình yêu cầu vị trí (\path{is_location_required}) và yêu cầu camera giám sát (\path{is_camera_required}). Khi làm bài, tọa độ thi của sinh viên và cờ giả lập GPS được cập nhật vào \path{student_submission}. Chi tiết câu trả lời của từng câu hỏi được lưu trữ trong \path{student_answer}.
+\end{itemize}
+
+\subsubsection{Chi tiết các bảng dữ liệu chính}
+Dưới đây là đặc tả chi tiết cấu trúc các cột, kiểu dữ liệu và ràng buộc của các bảng dữ liệu cốt lõi trong hệ thống.
+
+\paragraph{1. Bảng student (Học viên)}
+Bảng này lưu trữ thông tin cá nhân của học viên và đường dẫn đến ảnh khuôn mẫu gốc phục vụ đối sánh FaceID.
+\begin{longtable}{|p{0.25\textwidth}|p{0.22\textwidth}|p{0.46\textwidth}|}
+    \caption{Đặc tả cấu trúc bảng student}
+    \label{table:db_student}\\
+    \hline
+    \textbf{Tên trường} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa/Ràng buộc} \\ \hline
+    \path{id} & \path{bigint} & Khóa chính, tự động tăng. \\ \hline
+    \path{student_code} & \path{varchar} & Mã số sinh viên (Duy nhất, không null). \\ \hline
+    \path{name} & \path{varchar} & Họ và tên học viên. \\ \hline
+    \path{email} & \path{varchar} & Địa chỉ email của học viên. \\ \hline
+    \path{keycloak_id} & \path{varchar} & ID định danh của tài khoản trên hệ thống Keycloak SSO. \\ \hline
+    \path{image_path} & \path{varchar} & Đường dẫn tệp ảnh FaceID mẫu của học viên lưu trên server. \\ \hline
+    \path{is_active} & \path{boolean} & Trạng thái kích hoạt tài khoản. \\ \hline
+    \path{created_at} & \path{timestamp} & Thời điểm tạo bản ghi. \\ \hline
+    \path{updated_at} & \path{timestamp} & Thời điểm cập nhật bản ghi gần nhất. \\ \hline
+\end{longtable}
+
+\paragraph{2. Bảng teacher (Giảng viên)}
+Bảng này lưu trữ thông tin giảng viên và trạng thái phê duyệt tài khoản của hệ thống quản trị.
+\begin{longtable}{|p{0.25\textwidth}|p{0.22\textwidth}|p{0.46\textwidth}|}
+    \caption{Đặc tả cấu trúc bảng teacher}
+    \label{table:db_teacher}\\
+    \hline
+    \textbf{Tên trường} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa/Ràng buộc} \\ \hline
+    \path{id} & \path{bigint} & Khóa chính, tự động tăng. \\ \hline
+    \path{teacher_code} & \path{varchar} & Mã giảng viên (Duy nhất, không null). \\ \hline
+    \path{name} & \path{varchar} & Họ và tên giảng viên. \\ \hline
+    \path{email} & \path{varchar} & Địa chỉ email của giảng viên. \\ \hline
+    \path{keycloak_id} & \path{varchar} & ID định danh của tài khoản trên Keycloak SSO. \\ \hline
+    \path{account_status} & \path{varchar} & Trạng thái phê duyệt (\path{PENDING}, \path{APPROVED}, \path{REJECTED}). \\ \hline
+    \path{rejection_reason} & \path{varchar} & Lý do từ chối tài khoản (nếu trạng thái là \path{REJECTED}). \\ \hline
+    \path{is_active} & \path{boolean} & Trạng thái hoạt động. \\ \hline
+    \path{created_at} & \path{timestamp} & Thời điểm tạo bản ghi. \\ \hline
+    \path{updated_at} & \path{timestamp} & Thời điểm cập nhật gần nhất. \\ \hline
+\end{longtable}
+
+\paragraph{3. Bảng course (Lớp học phần)}
+Lớp học phần liên kết giữa môn học, giảng viên phụ trách và học kỳ tương ứng.
+\begin{longtable}{|p{0.25\textwidth}|p{0.22\textwidth}|p{0.46\textwidth}|}
+    \caption{Đặc tả cấu trúc bảng course}
+    \label{table:db_course}\\
+    \hline
+    \textbf{Tên trường} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa/Ràng buộc} \\ \hline
+    \path{id} & \path{bigint} & Khóa chính, tự động tăng. \\ \hline
+    \path{course_code} & \path{varchar} & Mã lớp học phần (Ví dụ: INT3306 1, không null). \\ \hline
+    \path{subject} & \path{varchar} & Tên môn học học phần. \\ \hline
+    \path{description} & \path{varchar} & Mô tả chi tiết về lớp học phần. \\ \hline
+    \path{teacher_id} & \path{bigint} & Khóa ngoại liên kết bảng \path{teacher(id)}. \\ \hline
+    \path{semester_id} & \path{bigint} & Khóa ngoại liên kết bảng \path{semester(id)}. \\ \hline
+    \path{is_active} & \path{boolean} & Trạng thái hoạt động của lớp học phần. \\ \hline
+    \path{created_at} & \path{timestamp} & Thời điểm tạo bản ghi. \\ \hline
+    \path{updated_at} & \path{timestamp} & Thời điểm cập nhật gần nhất. \\ \hline
+\end{longtable}
+
+\paragraph{4. Bảng register (Đăng ký lớp học phần)}
+Bảng liên kết nhiều-nhiều giữa học viên và lớp học phần, đồng thời lưu trữ tổng hợp số liệu chuyên cần để phục vụ đối soát nhanh.
+\begin{longtable}{|p{0.25\textwidth}|p{0.22\textwidth}|p{0.46\textwidth}|}
+    \caption{Đặc tả cấu trúc bảng register}
+    \label{table:db_register}\\
+    \hline
+    \textbf{Tên trường} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa/Ràng buộc} \\ \hline
+    \path{student_id} & \path{bigint} & Khóa chính \& Khóa ngoại liên kết bảng \path{student(id)}. \\ \hline
+    \path{course_id} & \path{bigint} & Khóa chính \& Khóa ngoại liên kết bảng \path{course(id)}. \\ \hline
+    \path{register_time} & \path{timestamp} & Thời điểm học viên đăng ký vào lớp học phần. \\ \hline
+    \path{note} & \path{varchar} & Ghi chú thêm. \\ \hline
+    \path{number_of_attendance} & \path{integer} & Tổng số buổi học viên đi học thực tế (Được cập nhật tự động). \\ \hline
+    \path{number_of_absence} & \path{integer} & Tổng số buổi học viên vắng mặt (Được cập nhật tự động). \\ \hline
+    \path{can_upload_documents} & \path{boolean} & Quyền tải tài liệu lên thư mục học phần. \\ \hline
+    \path{can_download_documents} & \path{boolean} & Quyền tải tài liệu từ thư mục học phần. \\ \hline
+\end{longtable}
+
+\paragraph{5. Bảng attendance\_log (Nhật ký chuyên cần)}
+Lưu kết quả điểm danh chính thức của từng học viên cho từng buổi học (sau khi giảng viên đã đối soát và phê duyệt).
+\begin{longtable}{|p{0.25\textwidth}|p{0.22\textwidth}|p{0.46\textwidth}|}
+    \caption{Đặc tả cấu trúc bảng attendance\_log}
+    \label{table:db_attendance_log}\\
+    \hline
+    \textbf{Tên trường} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa/Ràng buộc} \\ \hline
+    \path{id} & \path{bigint} & Khóa chính, tự động tăng. \\ \hline
+    \path{student_id} & \path{bigint} & Khóa ngoại liên kết bảng \path{student(id)}. \\ \hline
+    \path{course_id} & \path{bigint} & Khóa ngoại liên kết bảng \path{course(id)}. \\ \hline
+    \path{lecture_number} & \path{integer} & Số thứ tự buổi học của học phần (Ví dụ: Buổi 1, 2, ...). \\ \hline
+    \path{attendance_time} & \path{timestamp} & Thời gian chốt chuyên cần của buổi học. \\ \hline
+    \path{is_attendance} & \path{boolean} & Kết quả điểm danh (\path{true}: Có mặt, \path{false}: Vắng mặt). \\ \hline
+\end{longtable}
+
+\paragraph{6. Bảng form (Phiên điểm danh)}
+Cấu hình chi tiết một phiên điểm danh do giảng viên tạo, chứa mã OTP và các quy định về vị trí GPS và sinh trắc học.
+\begin{longtable}{|p{0.25\textwidth}|p{0.22\textwidth}|p{0.46\textwidth}|}
+    \caption{Đặc tả cấu trúc bảng form}
+    \label{table:db_form}\\
+    \hline
+    \textbf{Tên trường} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa/Ràng buộc} \\ \hline
+    \path{id} & \path{bigint} & Khóa chính, tự động tăng. \\ \hline
+    \path{course_id} & \path{bigint} & Khóa ngoại liên kết bảng \path{course(id)}. \\ \hline
+    \path{code} & \path{varchar} & Mã OTP điểm danh (giảng viên công bố). \\ \hline
+    \path{lecture_number} & \path{integer} & Số thứ tự buổi học của phiên điểm danh này. \\ \hline
+    \path{latitude} & \path{double} & Vĩ độ của vị trí lớp học do giảng viên thiết lập khi tạo form. \\ \hline
+    \path{longitude} & \path{double} & Kinh độ của vị trí lớp học do giảng viên thiết lập khi tạo form. \\ \hline
+    \path{is_location_required} & \path{boolean} & Cờ yêu cầu kiểm tra GPS Geofencing khi check-in. \\ \hline
+    \path{allowed_radius_meters} & \path{integer} & Bán kính GPS tối đa cho phép để check-in hợp lệ (mét). \\ \hline
+    \path{is_face_verification_required} & \path{boolean} & Cờ yêu cầu xác thực FaceID cá nhân khi check-in. \\ \hline
+    \path{expired_at} & \path{timestamp} & Thời điểm phiên điểm danh hết hạn. \\ \hline
+    \path{created_at} & \path{timestamp} & Thời điểm tạo phiên điểm danh. \\ \hline
+\end{longtable}
+
+\paragraph{7. Bảng form\_submission (Lượt check-in điểm danh)}
+Lưu trữ thông tin chi tiết từng lượt gửi check-in điểm danh từ thiết bị di động của học viên để đối soát điều kiện GPS và FaceID.
+\begin{longtable}{|p{0.25\textwidth}|p{0.22\textwidth}|p{0.46\textwidth}|}
+    \caption{Đặc tả cấu trúc bảng form\_submission}
+    \label{table:db_form_submission}\\
+    \hline
+    \textbf{Tên trường} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa/Ràng buộc} \\ \hline
+    \path{id} & \path{bigint} & Khóa chính, tự động tăng. \\ \hline
+    \path{student_id} & \path{bigint} & Khóa ngoại liên kết bảng \path{student(id)}. \\ \hline
+    \path{form_id} & \path{bigint} & Khóa ngoại liên kết bảng \path{form(id)}. \\ \hline
+    \path{is_correct} & \path{boolean} & Xác nhận học viên nhập đúng mã OTP điểm danh. \\ \hline
+    \path{student_latitude} & \path{double} & Vĩ độ GPS thực tế của thiết bị học viên khi check-in. \\ \hline
+    \path{student_longitude} & \path{double} & Kinh độ GPS thực tế của thiết bị học viên khi check-in. \\ \hline
+    \path{calculated_distance} & \path{double} & Khoảng cách từ học viên tới lớp học tính bằng Haversine \cite{sinnott1984virtues}. \\ \hline
+    \path{is_valid_location} & \path{boolean} & Xác nhận tọa độ hợp lệ (khoảng cách nhỏ hơn bán kính cấu hình). \\ \hline
+    \path{mock_location_detected} & \path{boolean} & Cờ ghi nhận việc phát hiện ứng dụng giả lập GPS trên thiết bị. \\ \hline
+    \path{is_face_verified} & \path{boolean} & Xác nhận khuôn mặt selfie trùng khớp ảnh mẫu sinh trắc học gốc. \\ \hline
+    \path{submitted_at} & \path{timestamp} & Thời điểm thực hiện check-in. \\ \hline
+\end{longtable}
+
+\paragraph{8. Bảng assessment (Đề thi / Bài tập)}
+Cấu hình đề thi trắc nghiệm/tự luận, thời gian thi, và quy chế giám sát thi trực tuyến bằng camera/AI.
+\begin{longtable}{|p{0.25\textwidth}|p{0.22\textwidth}|p{0.46\textwidth}|}
+    \caption{Đặc tả cấu trúc bảng assessment}
+    \label{table:db_assessment}\\
+    \hline
+    \textbf{Tên trường} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa/Ràng buộc} \\ \hline
+    \path{id} & \path{bigint} & Khóa chính, tự động tăng. \\ \hline
+    \path{course_id} & \path{bigint} & Khóa ngoại liên kết bảng \path{course(id)}. \\ \hline
+    \path{title} & \path{varchar} & Tiêu đề bài thi/bài tập (Không null). \\ \hline
+    \path{description} & \path{varchar} & Mô tả và hướng dẫn làm bài. \\ \hline
+    \path{type} & \path{varchar} & Loại bài (\path{EXAM}: Thi/Kiểm tra, \path{ASSIGNMENT}: Bài tập). \\ \hline
+    \path{max_score} & \path{double} & Điểm số tối đa của bài thi. \\ \hline
+    \path{duration_minutes} & \path{integer} & Thời lượng làm bài (tính bằng phút). \\ \hline
+    \path{deadline} & \path{timestamp} & Hạn chót cho phép làm bài và nộp bài. \\ \hline
+    \path{score_release_mode} & \path{varchar} & Chế độ công bố điểm (\path{AUTO}: Tự động, \path{MANUAL}: Thủ công). \\ \hline
+    \path{is_published} & \path{boolean} & Trạng thái đã xuất bản đề thi tới học viên. \\ \hline
+    \path{is_location_required} & \path{boolean} & Cờ bắt buộc kiểm tra GPS phòng thi khi làm bài. \\ \hline
+    \path{is_camera_required} & \path{boolean} & Cờ bắt buộc mở camera để AI giám sát trong suốt quá trình. \\ \hline
+    \path{allowed_radius_meters} & \path{integer} & Bán kính giới hạn địa lý của phòng thi (mét). \\ \hline
+    \path{teacher_latitude} & \path{double} & Vĩ độ tâm của phòng thi (Geofencing). \\ \hline
+    \path{teacher_longitude} & \path{double} & Kinh độ tâm của phòng thi (Geofencing). \\ \hline
+    \path{weight} & \path{double} & Trọng số của điểm thi trong điểm học phần (từ 0.0 đến 1.0). \\ \hline
+    \path{created_at} & \path{timestamp} & Thời điểm tạo đề thi. \\ \hline
+    \path{updated_at} & \path{timestamp} & Thời điểm chỉnh sửa gần nhất. \\ \hline
+\end{longtable}
+
+\paragraph{9. Bảng student\_submission (Bài nộp thi học viên)}
+Lưu trữ trạng thái làm bài, điểm số cuối cùng, tọa độ làm bài thi, và ghi nhận gian lận của học viên khi tham gia thi trực tuyến.
+\begin{longtable}{|p{0.25\textwidth}|p{0.22\textwidth}|p{0.46\textwidth}|}
+    \caption{Đặc tả cấu trúc bảng student\_submission}
+    \label{table:db_student_submission}\\
+    \hline
+    \textbf{Tên trường} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa/Ràng buộc} \\ \hline
+    \path{id} & \path{bigint} & Khóa chính, tự động tăng. \\ \hline
+    \path{assessment_id} & \path{bigint} & Khóa ngoại liên kết bảng \path{assessment(id)}. \\ \hline
+    \path{student_id} & \path{varchar} & ID tài khoản học viên (Liên kết Keycloak ID, không null). \\ \hline
+    \path{status} & \path{varchar} & Trạng thái bài làm (\path{IN_PROGRESS}, \path{SUBMITTED}, \path{GRADED}). \\ \hline
+    \path{final_score} & \path{double} & Điểm số cuối cùng đạt được sau khi chấm bài. \\ \hline
+    \path{teacher_feedback} & \path{varchar} & Nhận xét, đánh giá của giảng viên chấm thi. \\ \hline
+    \path{student_latitude} & \path{double} & Vĩ độ GPS thực tế của học viên khi thực hiện làm bài. \\ \hline
+    \path{student_longitude} & \path{double} & Kinh độ GPS thực tế của học viên khi thực hiện làm bài. \\ \hline
+    \path{calculated_distance} & \path{double} & Khoảng cách thực tế đến tọa độ phòng thi cấu hình. \\ \hline
+    \path{is_valid_location} & \path{boolean} & Xác nhận học viên thi đúng vị trí phòng thi hợp lệ. \\ \hline
+    \path{mock_location_detected} & \path{boolean} & Cờ phát hiện giả lập GPS khi đang thực hiện thi. \\ \hline
+    \path{started_at} & \path{timestamp} & Thời điểm bắt đầu vào bài thi. \\ \hline
+    \path{submitted_at} & \path{timestamp} & Thời điểm học viên nhấn nộp bài hoặc hết giờ thu bài. \\ \hline
+    \path{graded_at} & \path{timestamp} & Thời điểm chấm bài. \\ \hline
+    \path{created_at} & \path{timestamp} & Thời điểm tạo bản ghi. \\ \hline
+\end{longtable}
+
+\paragraph{10. Bảng student\_answer (Câu trả lời chi tiết)}
+Lưu câu trả lời của học viên cho từng câu hỏi trong đề thi và điểm số thành phần tương ứng.
+\begin{longtable}{|p{0.25\textwidth}|p{0.22\textwidth}|p{0.46\textwidth}|}
+    \caption{Đặc tả cấu trúc bảng student\_answer}
+    \label{table:db_student_answer}\\
+    \hline
+    \textbf{Tên trường} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa/Ràng buộc} \\ \hline
+    \path{id} & \path{bigint} & Khóa chính, tự động tăng. \\ \hline
+    \path{submission_id} & \path{bigint} & Khóa ngoại liên kết bảng \path{student_submission(id)}. \\ \hline
+    \path{question_id} & \path{bigint} & Khóa ngoại liên kết bảng \path{assessment_question(id)}. \\ \hline
+    \path{selected_choice} & \path{varchar} & Lựa chọn được chọn (đối với câu hỏi trắc nghiệm). \\ \hline
+    \path{answer_text} & \path{varchar} & Văn bản trả lời (đối với câu hỏi tự luận, điền khuyết). \\ \hline
+    \path{score} & \path{double} & Điểm số đạt được của câu trả lời này. \\ \hline
+    \path{is_correct} & \path{boolean} & Xác nhận câu trả lời đúng hay sai. \\ \hline
+    \path{teacher_comment} & \path{varchar} & Ghi chú/nhận xét của giảng viên cho câu trả lời này. \\ \hline
+\end{longtable}
 
 \section{Xây dựng ứng dụng}
 \subsection{Thư viện và công cụ sử dụng}
