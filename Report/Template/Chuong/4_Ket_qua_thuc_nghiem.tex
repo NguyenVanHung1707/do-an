@@ -2,53 +2,167 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
-Chương 2 đã xác định các yêu cầu chức năng và phi chức năng của hệ thống, trong đó trọng tâm là tối ưu hóa quy trình điểm danh, tổ chức thi trực tuyến, quản lý lớp học phần và bảo đảm tính xác thực của người học. Trên cơ sở đó, Chương 3 đã trình bày các nền tảng công nghệ được lựa chọn, bao gồm Keycloak SSO \cite{keycloak2026}, Spring Boot \cite{spring_boot_docs2026}, PostgreSQL \cite{postgresql_docs2026}, React \cite{react_docs2026}, React Native \cite{react_native_docs2026}, FastAPI \cite{fastapi_docs2026}, các mô hình RetinaFace \cite{Deng_2020_CVPR}, ArcFace \cite{Deng_2019_CVPR}, MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} và solvePnP/EPnP \cite{Lepetit2009EPnP}. Tiếp nối hai chương trước, Chương 4 trình bày cách các yêu cầu và công nghệ này được chuyển hóa thành thiết kế, triển khai và đánh giá trong mã nguồn thực tế của đồ án.
-
-Nội dung chương bắt đầu từ thiết kế kiến trúc tổng thể của hệ thống, trong đó làm rõ cách phân chia các phân hệ \path{FE_WEB}, \path{frontend_student}, \path{frontend_teacher}, \path{backend-core}, \path{detect-face} và \path{ai-proctor}. Sau đó, chương tiếp tục trình bày thiết kế chi tiết, quá trình xây dựng ứng dụng, các thành phần triển khai bằng Docker Compose \cite{docker_compose_docs2026}, cấu hình phục vụ giao diện Web bằng NGINX \cite{nginx_docs2026}, cũng như định hướng kiểm thử và đánh giá kết quả đạt được của hệ thống.
+Tiếp nối các phân tích yêu cầu tại Chương 2 và nền tảng công nghệ ở Chương 3, Chương 4 trình bày thiết kế chi tiết, quá trình xây dựng, triển khai và đánh giá thực nghiệm hệ thống phần mềm tối ưu hóa quy trình điểm danh và quản lý học sinh. Nội dung chương tập trung vào việc mô tả thiết kế kiến trúc tổng thể của các phân hệ (\path{FE_WEB}, \path{frontend_student}, \path{frontend_teacher}, \path{backend-core}, \path{detect-face}, \path{ai-proctor}), thiết kế cơ sở dữ liệu PostgreSQL \cite{postgresql_docs2026}, xây dựng các kịch bản kiểm thử chức năng, và cấu hình triển khai thực tế bằng Docker Compose \cite{docker_compose_docs2026} kết hợp NGINX reverse proxy \cite{nginx_docs2026}.
 
 \section{Thiết kế kiến trúc}
 \label{section:4.1}
 \subsection{Lựa chọn kiến trúc phần mềm}
 \label{subsection:4.1.1}
-Với đặc thù của đề tài là một hệ thống quản lý học tập có nhiều nhóm người dùng và đồng thời tích hợp các tác vụ AI xử lý ảnh, kiến trúc được lựa chọn không phải là một khối đơn ứng dụng thuần túy. Hệ thống được thiết kế theo hướng kiến trúc lai, kết hợp mô hình phân tầng trong backend nghiệp vụ với cách tách dịch vụ độc lập cho các thành phần có đặc thù xử lý riêng. Cách tiếp cận này phù hợp với nguyên tắc của kiến trúc microservices ở mức triển khai chức năng trọng yếu, trong đó các thành phần có vòng đời, tài nguyên và phụ thuộc thư viện khác nhau được đóng gói, chạy và mở rộng độc lập \cite{newman2021buildingmicroservices}. Tuy nhiên, để tránh làm hệ thống bị phân mảnh quá mức, các nghiệp vụ quản lý đào tạo cốt lõi vẫn được tập trung trong một backend Spring Boot duy nhất \cite{spring_boot_docs2026}.
+Đối với hệ thống quản lý học tập tích hợp điểm danh Face ID và giám sát thi trực tuyến, đồ án lựa chọn kiến trúc phần mềm lai, trong đó phần nghiệp vụ trung tâm được tổ chức theo kiến trúc phân tầng ba lớp, còn các chức năng AI có tải xử lý riêng được tách thành các dịch vụ độc lập theo định hướng SOA/microservice nhẹ \cite{newman2021buildingmicroservices}. Cách lựa chọn này phù hợp với phạm vi đồ án vì hệ thống vừa cần giữ dữ liệu đào tạo nhất quán trong một backend chính, vừa cần tách các tác vụ xử lý ảnh và giám sát webcam ra khỏi luồng nghiệp vụ thông thường.
 
-Ở tầng giao diện, hệ thống có ba điểm truy cập chính. Phân hệ Web quản trị và đào tạo \path{FE_WEB} được xây dựng bằng React \cite{react_docs2026}, phục vụ các thao tác của quản trị viên, giảng viên và học viên trên trình duyệt như quản lý lớp học phần, soạn đề thi, chấm thi, xem lịch sử vi phạm và duyệt kết quả điểm danh. Hai ứng dụng di động \path{frontend_student} và \path{frontend_teacher} được xây dựng bằng React Native \cite{react_native_docs2026}, tập trung vào các thao tác cần tính cơ động như đăng nhập, nhận thông báo, xem lịch học, điểm danh GPS, đăng ký ảnh Face ID và quản lý lớp học trên thiết bị di động. Trong bản đóng gói Web, mã nguồn \path{FE_WEB} được build thành tài nguyên tĩnh và phục vụ qua NGINX \cite{nginx_docs2026}; các ứng dụng phía client gửi yêu cầu đến backend thông qua các API được cấu hình trong mã nguồn.
+Về lý thuyết, kiến trúc phân tầng ba lớp chia hệ thống thành tầng giao diện, tầng xử lý nghiệp vụ và tầng dữ liệu. Khi áp dụng vào đồ án, các tầng này được ánh xạ thành những thành phần cụ thể như sau:
+\begin{itemize}
+    \item \textbf{Tầng giao diện}: gồm \path{FE_WEB} cho người quản trị, giảng viên và học viên trên trình duyệt; \path{frontend_student} cho học viên trên thiết bị di động; và \path{frontend_teacher} cho giảng viên trên thiết bị di động. Các client này không truy cập trực tiếp cơ sở dữ liệu mà gửi yêu cầu thông qua API do backend cung cấp.
+    \item \textbf{Tầng xử lý nghiệp vụ}: là phân hệ \path{backend-core} được xây dựng bằng Spring Boot \cite{spring_boot_docs2026}. Bên trong backend, các gói \path{controller}, \path{service}, \path{repository}, \path{entity}, \path{dto} và \path{config} lần lượt đảm nhiệm vai trò tiếp nhận yêu cầu, xử lý nghiệp vụ, truy xuất dữ liệu, biểu diễn mô hình dữ liệu, trao đổi dữ liệu qua API và cấu hình hệ thống.
+    \item \textbf{Tầng dữ liệu}: sử dụng PostgreSQL để lưu trữ các thực thể như người dùng, lớp học phần, bài thi, kết quả điểm danh, bài nộp và nhật ký vi phạm \cite{postgresql_docs2026}.
+\end{itemize}
 
-Tầng nghiệp vụ trung tâm là phân hệ \path{backend-core}, được triển khai bằng Spring Boot \cite{spring_boot_docs2026}. Bên trong backend, mã nguồn được tổ chức theo cấu trúc phân tầng gồm \path{controller}, \path{service}, \path{repository}, \path{entity}, \path{dto}, \path{config} và \path{util}. Lớp \path{controller} tiếp nhận yêu cầu HTTP từ Web/App; lớp \path{service} xử lý nghiệp vụ như quản lý học kỳ, lớp học phần, tài liệu, bài thi, điểm danh và thông báo; lớp \path{repository} truy xuất dữ liệu thông qua Spring Data JPA; còn lớp \path{entity} biểu diễn các bảng dữ liệu chính như học viên, giảng viên, lớp học phần, bài thi, câu hỏi, bài nộp, biểu mẫu điểm danh và nhật ký chuyên cần. Dữ liệu nghiệp vụ được lưu trữ trong PostgreSQL \cite{postgresql_docs2026}, trong khi xác thực truy cập được kiểm soát bằng Keycloak SSO \cite{keycloak2026}; backend hoạt động như một OAuth2 Resource Server, xác minh JWT dựa trên JWK Set URI được cấu hình trong \path{application.properties}.
+So với kiến trúc ba lớp thuần túy, hệ thống có bổ sung các dịch vụ chuyên biệt để xử lý nghiệp vụ AI:
+\begin{itemize}
+    \item \textbf{\path{detect-face}}: đảm nhiệm nhận diện khuôn mặt phục vụ điểm danh nhóm.
+    \item \textbf{\path{ai-proctor}}: đảm nhiệm giám sát thi trực tuyến thông qua luồng webcam và WebSocket \cite{fastapi_docs2026,fette2011websocket}.
+    \item \textbf{\path{backend-core}}: giữ vai trò điều phối, nhận yêu cầu từ client, kiểm tra điều kiện nghiệp vụ, gọi dịch vụ AI khi cần và lưu kết quả cuối cùng vào cơ sở dữ liệu.
+\end{itemize}
+Hai dịch vụ AI được triển khai độc lập với backend nghiệp vụ, giúp \path{backend-core} không phải mang theo các phụ thuộc nặng của xử lý ảnh, đồng thời cho phép cấu hình, thay thế hoặc mở rộng riêng khi tải xử lý AI tăng lên.
 
-Các tác vụ AI được tách khỏi backend nghiệp vụ thành hai dịch vụ FastAPI độc lập \cite{fastapi_docs2026}. Dịch vụ \path{detect-face} đảm nhiệm điểm danh nhận diện khuôn mặt nhóm. Khi học viên hoặc giảng viên thực hiện quy trình cần xác thực khuôn mặt, backend gửi ảnh đến endpoint \path{/attendance} của dịch vụ này. Dịch vụ đọc thông tin ảnh đăng ký của học viên từ PostgreSQL, phát hiện khuôn mặt bằng RetinaFace \cite{Deng_2020_CVPR}, cắt vùng mặt với vùng đệm 15\%, trích xuất embedding bằng ArcFace \cite{Deng_2019_CVPR}, sau đó so khớp cosine distance để trả về danh sách học viên được nhận diện. Việc tách riêng dịch vụ này giúp backend không phải mang theo các phụ thuộc nặng của xử lý ảnh và học sâu như OpenCV, DeepFace, TensorFlow hoặc PyTorch.
-
-Dịch vụ \path{ai-proctor} đảm nhiệm giám sát thi trực tuyến bằng webcam. Dịch vụ này cung cấp các endpoint REST để bắt đầu, kết thúc, truy xuất log giám sát, đồng thời mở kênh WebSocket theo chuẩn RFC 6455 \cite{fette2011websocket} tại đường dẫn \path|/api/proctor/stream/{exam_id}/{student_id}| để nhận luồng ảnh từ trình duyệt. Trong quá trình xử lý, dịch vụ sử dụng MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} để trích xuất các điểm mốc khuôn mặt, dùng OpenCV solvePnP dựa trên bài toán EPnP \cite{Lepetit2009EPnP} để ước lượng tư thế đầu, kết hợp phân tích vị trí đồng tử nhằm phát hiện hướng nhìn bất thường. Nếu vi phạm kéo dài quá ngưỡng cấu hình, dịch vụ lưu video bằng chứng vào thư mục dữ liệu dùng chung và chuyển mã video sang H.264 để giảng viên xem lại trong giao diện chấm thi.
-
-Về triển khai, tệp \path{docker-compose.yml} mô tả các container chính gồm \path{postgres}, \path{keycloak}, \path{backend}, \path{detect_face}, \path{fe_web} và \path{ai_proctor} \cite{docker_compose_docs2026}. Backend giao tiếp với dịch vụ nhận diện khuôn mặt thông qua biến môi trường \path{APP_FACE_VERIFICATION_URL} và giao tiếp với dịch vụ giám thị AI thông qua \path{APP_AI_PROCTOR_URL}. Các file dữ liệu như ảnh khuôn mặt, tài liệu lớp học và video bằng chứng được đặt trong volume dùng chung \path{/app/data}, giúp các container liên quan có thể phối hợp mà không cần nhúng trực tiếp dữ liệu nhị phân vào cơ sở dữ liệu. Ở môi trường triển khai thực tế, cấu hình NGINX reverse proxy định tuyến các API nghiệp vụ về backend, các kết nối diễn đàn thời gian thực về WebSocket của Spring Boot, và riêng luồng \path{/api/proctor/stream/} về dịch vụ \path{ai-proctor} \cite{nginx_docs2026}. Nhờ vậy, hệ thống vừa giữ được một điểm truy cập thống nhất cho người dùng, vừa tách được các tác vụ AI có tải xử lý cao khỏi luồng nghiệp vụ chính.
-
-Nhìn chung, kiến trúc được lựa chọn cân bằng giữa tính dễ phát triển và khả năng mở rộng. Backend Spring Boot đóng vai trò trung tâm điều phối nghiệp vụ và bảo vệ dữ liệu nhất quán; PostgreSQL đảm nhiệm lưu trữ quan hệ; Keycloak tách riêng bài toán định danh; các dịch vụ FastAPI đảm nhiệm xử lý AI chuyên biệt; còn Web và ứng dụng di động đóng vai trò các client phù hợp với từng ngữ cảnh sử dụng. Cách tổ chức này giúp hệ thống đáp ứng các use case đã đặc tả ở Chương 2, đồng thời tạo cơ sở rõ ràng cho các phần thiết kế tổng quan, thiết kế chi tiết, kiểm thử và triển khai được trình bày ở các mục tiếp theo.
+Như vậy, kiến trúc cụ thể của hệ thống có thể được tóm tắt theo ba nhóm thành phần chính:
+\begin{itemize}
+    \item \textbf{Nhóm client}: Web và ứng dụng di động.
+    \item \textbf{Nhóm backend nghiệp vụ}: controller, service, repository, entity, DTO và cấu hình bảo mật.
+    \item \textbf{Nhóm dịch vụ hạ tầng và AI}: PostgreSQL, Keycloak, \path{detect-face}, \path{ai-proctor}, NGINX và Docker Compose \cite{keycloak2026,nginx_docs2026,docker_compose_docs2026}.
+\end{itemize}
+Cách tổ chức này giữ được ưu điểm dễ phát triển, dễ kiểm soát dữ liệu của kiến trúc phân tầng, đồng thời bổ sung khả năng tách biệt và mở rộng cho các tác vụ AI đặc thù của đề tài.
 
 \subsection{Thiết kế tổng quan}
-Sinh viên vẽ biểu đồ gói UML (UML package diagram), nêu rõ sự phụ thuộc giữa các gói (package). SV cần vẽ các gói sao cho chúng được phân theo các tầng rõ ràng, không được sắp đặt package lộn xộn trong hình vẽ. Sinh viên chú ý các quy tắc thiết kế (Các gói không phụ thuộc lẫn nhau, gói tầng dưới không phụ thuộc gói tầng trên, không phụ thuộc bỏ qua tầng, v.v.) và cần giải thích sơ lược về mục đích/nhiệm vụ của từng package. SV tham khảo ví dụ minh họa trong Hình \ref{fig:Fig1}
-\begin{figure}[H]
+\label{subsection:4.1.2}
+
+Thiết kế tổng quan của hệ thống được tổ chức theo mô hình kiến trúc phân tầng, trong đó các thành phần được chia theo vai trò giao diện, xử lý nghiệp vụ, lưu trữ dữ liệu và dịch vụ AI chuyên biệt. Cách phân chia này giúp hệ thống dễ bảo trì, hạn chế phụ thuộc chéo và phù hợp với kiến trúc lai đã lựa chọn ở Mục \ref{subsection:4.1.1}. Các nguyên tắc thiết kế chính gồm:
+\begin{itemize}
+    \item \textbf{Phụ thuộc một chiều}: Các client chỉ gọi API; controller gọi service; service điều phối repository hoặc dịch vụ ngoài; tầng dữ liệu không phụ thuộc ngược lên tầng trên.
+    \item \textbf{Không phụ thuộc vòng}: Các gói được tách theo trách nhiệm rõ ràng, tránh việc các module gọi qua lại lẫn nhau.
+    \item \textbf{Tách riêng tác vụ AI}: Các chức năng nhận diện khuôn mặt và giám sát thi được triển khai độc lập để giảm tải cho backend nghiệp vụ.
+\end{itemize}
+
+Sơ đồ gói thiết kế tổng quan của hệ thống được trình bày trong Hình \ref{fig:BieuDoGoiThietKeTongQuan}.
+
+\FloatBarrier
+\begin{center}
     \centering
-    \includegraphics{Hinhve/Picture1.png}
-    \caption{Ví dụ biểu đồ phụ thuộc gói}
-    \label{fig:Fig1}
-\end{figure}
+    \includegraphics[width=0.95\textwidth]{Hinhve/BieuDoGoiThietKeTongQuan.png}
+    \captionof{figure}{Biểu đồ gói thiết kế tổng quan}
+    \label{fig:BieuDoGoiThietKeTongQuan}
+\end{center}
+\FloatBarrier
+
+Vai trò các tầng và gói chính được tóm tắt trong Bảng \ref{table:architecture_overview_packages}.
+
+\begin{longtable}{|p{0.22\textwidth}|p{0.28\textwidth}|p{0.40\textwidth}|}
+    \caption{Tóm tắt các tầng và gói chính trong thiết kế tổng quan}
+    \label{table:architecture_overview_packages}\\
+        \hline
+        \textbf{Tầng/nhóm thành phần} & \textbf{Gói hoặc phân hệ chính} & \textbf{Vai trò} \\ \hline
+        Giao diện người dùng & \path{FE_WEB}, \path{frontend_student}, \path{frontend_teacher} & Cung cấp giao diện Web và ứng dụng di động cho quản trị viên, giảng viên và học viên; gửi yêu cầu đến backend thông qua API. \\ \hline
+        Nghiệp vụ và API & \path{controller}, \path{service}, \path{dto} & Tiếp nhận yêu cầu, kiểm tra dữ liệu đầu vào, xử lý nghiệp vụ điểm danh, thi trực tuyến, lớp học phần và trả phản hồi cho client. \\ \hline
+        Truy xuất và mô hình dữ liệu & \path{repository}, \path{entity} & Ánh xạ dữ liệu nghiệp vụ sang các bảng PostgreSQL và thực hiện các thao tác truy xuất dữ liệu qua Spring Data JPA \cite{spring_boot_docs2026,postgresql_docs2026}. \\ \hline
+        Hạ tầng dùng chung & \path{config}, \path{exception}, \path{util} & Cấu hình bảo mật, Keycloak SSO, CORS, WebSocket, xử lý ngoại lệ và các tiện ích dùng chung như JWT, GPS, file. \\ \hline
+        Dịch vụ AI & \path{detect-face}, \path{ai-proctor} & Xử lý nhận diện khuôn mặt nhóm bằng RetinaFace/ArcFace và giám sát thi trực tuyến bằng webcam, WebSocket, MediaPipe FaceMesh và solvePnP \cite{Deng_2020_CVPR,Deng_2019_CVPR,Lugaresi2019MediaPipe,Lepetit2009EPnP}. \\ \hline
+\end{longtable}
+
+Nhìn chung, thiết kế tổng quan giữ backend Spring Boot làm trung tâm điều phối nghiệp vụ, PostgreSQL làm nơi lưu trữ dữ liệu chính, còn các tác vụ AI được tách thành dịch vụ độc lập. Cách tổ chức này giúp hệ thống duy trì ranh giới trách nhiệm rõ ràng giữa các tầng, đồng thời vẫn hỗ trợ mở rộng riêng các thành phần có tải xử lý cao.
 \subsection{Thiết kế chi tiết gói}
-Sinh viên thiết kế và lần lượt vẽ biểu đồ thiết kế cho từng package, hoặc một nhóm các package liên quan để giải quyết một vấn đề gì đó. Khi vẽ thiết kế gói, sinh viên chỉ cần đưa tên lớp, không cần chỉ ra các thành viên phương thức và thuộc tính. SV tham khảo ví dụ minh họa trong Hình \ref{fig:Fig2}.
+\label{subsection:4.1.3}
 
-Sinh viên cần vẽ rõ ràng quan hệ giữa các lớp trong biểu đồ. Các quan hệ bao gồm: phụ thuộc (dependency), kết hợp (association), kết tập (aggregation), hợp thành (composition), kế thừa (inheritance), và thực thi (implementation). Các quan hệ này đều đã được minh họa trong \ref{fig:Fig2}.
+Phần này trình bày thiết kế chi tiết gói cho hai phân hệ trọng tâm: \textbf{Quản lý thi trực tuyến \& Giám sát AI} và \textbf{Điểm danh thông minh FaceID nhóm \& Định vị GPS}. Mỗi phân hệ được mô tả bằng một sơ đồ gói và bảng tóm tắt vai trò các thành phần chính.
 
-Sau khi vẽ hình minh họa, sinh viên cần giải thích ngắn gọn về thiết kế của mình.
+\subsubsection{Phân hệ Quản lý thi trực tuyến \& Giám sát phòng thi bằng trí tuệ nhân tạo (Assessment \& AI Proctoring)}
+\label{subsubsection:4.1.3_assessment}
 
-\begin{figure}[H]
+Phân hệ \textbf{Quản lý thi trực tuyến \& Giám sát AI (Assessment \& AI Proctoring)} đảm nhiệm các nghiệp vụ liên quan đến tổ chức bài kiểm tra, quản lý câu hỏi, ghi nhận bài làm và hỗ trợ chấm điểm. Bên cạnh đó, phân hệ còn tích hợp các thành phần giám sát bằng trí tuệ nhân tạo nhằm phát hiện những dấu hiệu bất thường trong quá trình làm bài, từ đó tăng tính minh bạch và độ tin cậy của hoạt động thi trực tuyến.
+
+Chi tiết về cấu trúc các lớp (classes), giao diện (interfaces) và mối quan hệ giữa chúng trong phân hệ Quản lý thi \& Giám sát AI được thể hiện trong Hình \ref{fig:BieuDoThietKeChiTietGoi}.
+
+\begin{figure}[!htbp]
     \centering
-    \includegraphics{Hinhve/Picture2.png}
-    \caption{Ví dụ thiết kế gói}
-    \label{fig:Fig2}
+    \includegraphics[width=0.95\textwidth]{Hinhve/BieuDoThietKeChiTietGoi_QuanLyThi_GiamSatAI.png}
+    \caption{Biểu đồ thiết kế chi tiết gói - Quản lý thi \& Giám sát AI}
+    \label{fig:BieuDoThietKeChiTietGoi}
 \end{figure}
+\FloatBarrier
+
+Sơ đồ trong Hình \ref{fig:BieuDoThietKeChiTietGoi} được tổ chức theo kiến trúc Spring Boot \cite{spring_boot_docs2026}, trong đó các gói chính được tóm tắt ở Bảng \ref{table:assessment_package_summary}.
+
+\begin{longtable}{|p{0.22\textwidth}|p{0.68\textwidth}|}
+    \caption{Tóm tắt các gói chính của phân hệ Quản lý thi \& Giám sát AI}
+    \label{table:assessment_package_summary}\\
+    \hline
+    \textbf{Gói/thành phần} & \textbf{Vai trò chính} \\ \hline
+    \path{controller} & Gồm \path{AssessmentController} và \path{AIProctorController}, tiếp nhận yêu cầu về đề thi, bài làm, cấu hình giám sát và nhật ký vi phạm. \\ \hline
+    \path{dto} & Gồm \path{AssessmentDto}, \path{StudentSubmissionDto}, dùng để trao đổi dữ liệu giữa client và backend. \\ \hline
+    \path{service}/\path{implement} & Gồm \path{AssessmentService} và \path{AssessmentServiceImplement}, xử lý nghiệp vụ soạn đề, lưu bài, chấm trắc nghiệm, kiểm soát thời gian và kết nối dịch vụ \path{ai-proctor}. \\ \hline
+    \path{repository}/\path{entity} & Quản lý các thực thể \path{Assessment}, \path{AssessmentQuestion}, \path{StudentSubmission}, \path{StudentAnswer}, \path{Student} thông qua Spring Data JPA và PostgreSQL \cite{postgresql_docs2026}. \\ \hline
+    \path{exception} & Chuẩn hóa lỗi nghiệp vụ như nộp bài quá giờ, truy cập không hợp lệ hoặc vi phạm do AI ghi nhận. \\ \hline
+\end{longtable}
+
+\subsubsection{Phân hệ Điểm danh thông minh bằng FaceID nhóm \& Định vị GPS (Smart Attendance)}
+\label{subsubsection:4.1.3_attendance}
+
+Bên cạnh phân hệ Quản lý thi, phân hệ \textbf{Điểm danh thông minh bằng FaceID nhóm \& Định vị GPS (Smart Attendance)} hỗ trợ giảng viên ghi nhận trạng thái tham gia học tập của học viên theo từng buổi học bằng cách kết hợp nhận diện khuôn mặt và kiểm tra vị trí GPS. Dữ liệu điểm danh được quản lý trong backend Spring Boot, lưu trữ bằng PostgreSQL \cite{spring_data_jpa_docs2026,postgresql_docs2026}; quá trình nhận diện khuôn mặt sử dụng RetinaFace và ArcFace \cite{Deng_2020_CVPR,Deng_2019_CVPR}; còn việc kiểm tra vị trí dựa trên công thức Haversine \cite{sinnott1984virtues}. Cách tách riêng các bước tiếp nhận dữ liệu, kiểm tra điều kiện và lưu kết quả giúp hệ thống dễ mở rộng, dễ bảo trì và thuận tiện cho việc đối soát khi có sai lệch.
+
+Chi tiết về cấu trúc các lớp (classes), giao diện (interfaces) và mối quan hệ giữa chúng trong phân hệ Điểm danh thông minh được thể hiện trong Hình \ref{fig:BieuDoThietKeChiTietGoi_DiemDanh}.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{Hinhve/BieuDoThietKeChiTietGoi_DiemDanhFaceID_GPS.png}
+    \caption{Biểu đồ thiết kế chi tiết gói - Điểm danh FaceID nhóm \& Định vị GPS}
+    \label{fig:BieuDoThietKeChiTietGoi_DiemDanh}
+\end{figure}
+\FloatBarrier
+
+Sơ đồ trong Hình \ref{fig:BieuDoThietKeChiTietGoi_DiemDanh} được tóm tắt theo các nhóm thành phần chính ở Bảng \ref{table:attendance_package_summary}.
+
+\begin{longtable}{|p{0.22\textwidth}|p{0.68\textwidth}|}
+    \caption{Tóm tắt các gói chính của phân hệ Điểm danh thông minh}
+    \label{table:attendance_package_summary}\\
+    \hline
+    \textbf{Gói/thành phần} & \textbf{Vai trò chính} \\ \hline
+    \path{controller} & Gồm \path{TeacherController} và \path{StudentController}, tiếp nhận yêu cầu tạo phiên, gửi GPS, điểm danh và xem kết quả. \\ \hline
+    \path{dto} & Gồm \path{FormDto}, \path{StudentAttendancePreviewDto}, \path{ConfirmAttendanceChangesDto}, \path{LocationCheckRequest}, dùng để truyền dữ liệu điểm danh giữa client và backend. \\ \hline
+    \path{service}/\path{implement} & Gồm \path{TeacherService}, \path{StudentService} và các lớp hiện thực, xử lý geofencing, chống giả lập GPS, kết nối \path{detect-face} và tổng hợp kết quả điểm danh. \\ \hline
+    \path{repository}/\path{entity} & Quản lý \path{Teacher}, \path{Student}, \path{Register}, \path{Form}, \path{FormSubmission}, \path{AttendanceLog} bằng Spring Data JPA và PostgreSQL \cite{spring_data_jpa_docs2026,postgresql_docs2026}. \\ \hline
+    \path{exception}/\path{spring-framework} & Chuẩn hóa phản hồi lỗi khi GPS ngoài phạm vi, FaceID không khớp hoặc phát hiện giả lập vị trí. \\ \hline
+\end{longtable}
 
 \section{Thiết kế chi tiết}
 \subsection{Thiết kế giao diện}
-Phần này có độ dài từ hai đến ba trang. Sinh viên đặc tả thông tin về màn hình mà ứng dụng của mình hướng tới, bao gồm độ phân giải màn hình, kích thước màn hình, số lượng màu sắc hỗ trợ, v.v. Tiếp đến, sinh viên đưa ra các thống nhất/chuẩn hóa của mình khi thiết kế giao diện như thiết kế nút, điều khiển, vị trí hiển thị thông điệp phản hồi, phối màu, v.v. Sau cùng sinh viên đưa ra một số hình ảnh minh họa thiết kế giao diện cho các chức năng quan trọng nhất. Lưu ý, sinh viên không nhầm lẫn giao diện thiết kế với giao diện của sản phẩm sau cùng.
+Giao diện hệ thống được thiết kế theo hướng ứng dụng nghiệp vụ, ưu tiên thao tác nhanh, dễ đọc dữ liệu và hạn chế sai sót trong các quy trình như điểm danh, làm bài thi, chấm điểm và quản lý lớp học phần. Phần Web được hiện thực trong phân hệ \path{FE_WEB} bằng React, Vite và TailwindCSS \cite{react_docs2026,vite_docs2026,tailwindcss_docs2026}. Bố cục chính gồm \path{Navbar}, \path{Sidebar} và vùng nội dung trung tâm thay đổi theo vai trò người dùng.
+
+Các chuẩn giao diện chính được tóm tắt trong Bảng \ref{table:ui_design_summary}. Hệ thống hướng tới màn hình máy tính từ $1366 \times 768$ đến $1920 \times 1080$ pixel cho thao tác nghiệp vụ thường xuyên; trên thiết bị nhỏ, \path{Sidebar} chuyển thành menu trượt, nội dung chính giảm khoảng đệm và các bảng/thẻ thông tin chuyển về bố cục một cột.
+
+\begin{longtable}{|p{0.24\textwidth}|p{0.30\textwidth}|p{0.36\textwidth}|}
+    \caption{Tóm tắt chuẩn thiết kế giao diện Web}
+    \label{table:ui_design_summary}\\
+        \hline
+        \textbf{Nhóm thiết kế} & \textbf{Thành phần/giá trị sử dụng} & \textbf{Mục đích} \\ \hline
+        Bố cục tổng thể & \path{Navbar}, \path{Sidebar}, vùng nội dung chính & Giữ khung thao tác thống nhất, giúp người dùng chuyển giữa các màn hình mà không phải học lại cách sử dụng. \\ \hline
+        Hiển thị đáp ứng & Breakpoint và utility class của TailwindCSS & Tối ưu giao diện cho máy tính, máy tính bảng và điện thoại; menu trái có thể thu gọn trên màn hình nhỏ. \\ \hline
+        Màu sắc và trạng thái & \path{primary}, \path{success}, \path{warning}, \path{error}, \path{info} & Phân biệt thao tác chính, trạng thái thành công, cảnh báo, lỗi và thông tin hệ thống. \\ \hline
+        Kiểu chữ và thẻ nội dung & \path{Plus Jakarta Sans}, \path{Inter}, \path{Fira Code}, component \path{Card} & Tách rõ tiêu đề, nội dung, mã định danh và nhóm thông tin theo từng nhiệm vụ. \\ \hline
+        Phản hồi thao tác & Loading, thông báo lỗi/thành công, vô hiệu hóa nút khi đang xử lý & Tránh gửi trùng yêu cầu và giúp người dùng biết trạng thái xử lý của hệ thống. \\ \hline
+\end{longtable}
+
+Giao diện được chia theo vai trò đăng nhập, không dùng một menu chung cho tất cả người dùng. Mỗi vai trò chỉ nhìn thấy các chức năng phù hợp với quyền hạn và trạng thái tài khoản của mình. Ví dụ, tài khoản giảng viên chưa được phê duyệt sẽ chuyển sang màn hình \path{PendingApproval}; học viên chưa hoàn thiện hồ sơ sẽ được yêu cầu bổ sung thông tin trước khi dùng các chức năng còn lại.
+
+\begin{longtable}{|p{0.16\textwidth}|p{0.30\textwidth}|p{0.44\textwidth}|}
+    \caption{Thiết kế giao diện theo vai trò người dùng}
+    \label{table:ui_role_design}\\
+        \hline
+        \textbf{Vai trò} & \textbf{Màn hình/chức năng chính} & \textbf{Định hướng thiết kế} \\ \hline
+        Quản trị viên & \path{AdminDashboard}, \path{TeacherApproval}, \path{SemesterManagement} & Ưu tiên bảng dữ liệu, chỉ số tổng quan, nút phê duyệt/từ chối rõ ràng và trạng thái xử lý minh bạch. \\ \hline
+        Giảng viên & \path{ClassManagement}, \path{ClassDetail}, \path{AssessmentManagement}, \path{GradeAssessment}, \path{PhotoAttendance} & Hỗ trợ quản lý lớp học phần, tài liệu, bài kiểm tra, chấm điểm và điểm danh; riêng điểm danh ảnh có bước xem trước trước khi lưu. \\ \hline
+        Học viên & \path{MyCourses}, \path{TakeAssessment}, \path{GradesAndAttendance}, \path{Timetable}, \path{FaceUpload} & Giảm số bước thao tác, tập trung vào xem lớp học, tài liệu, lịch học, làm bài thi và tra cứu điểm/chuyên cần. \\ \hline
+\end{longtable}
+
+Về tương tác, các thao tác ảnh hưởng đến dữ liệu quan trọng đều có bước kiểm tra trước khi ghi nhận. Với điểm danh bằng ảnh lớp học, hệ thống tạo danh sách xem trước để giảng viên đối soát rồi mới xác nhận lưu. Với bài thi trực tuyến, hệ thống kiểm soát thời gian mở/đóng và chỉ cho phép nộp khi thỏa mãn điều kiện nghiệp vụ. Cách thiết kế này giúp giao diện vừa gọn, vừa phù hợp với đặc thù của hệ thống quản lý học tập tích hợp điểm danh và giám sát AI.
 \subsection{Thiết kế lớp}
 Phần này có độ dài từ ba đến bốn trang. Sinh viên trình bày thiết kế chi tiết các thuộc tính và phương thức cho một số lớp chủ đạo/quan trọng nhất của ứng dụng (từ 2-4 lớp). Thiết kế chi tiết cho các lớp khác, nếu muốn trình bày, sinh viên đưa vào phần phụ lục.
 
@@ -60,16 +174,14 @@ Phần này có độ dài từ hai đến bốn trang. Sinh viên thiết kế,
 \subsection{Thư viện và công cụ sử dụng}
 Sinh viên liệt kê các công cụ, ngôn ngữ lập trình, API, thư viện, IDE, công cụ kiểm thử, v.v. mà mình sử dụng để phát triển ứng dụng. Mỗi công cụ phải được chỉ rõ phiên bản sử dụng. SV nên kẻ bảng mô tả tương tự như Bảng \ref{table:my_label}. Nếu có nhiều nội dung trình bày, sinh viên cần xoay ngang bảng.
 
-\begin{center}
-    \captionof{table}{Danh sách thư viện và công cụ sử dụng}
-    \label{table:my_label}
-    \begin{tabular}{lll}
+\begin{longtable}{lll}
+    \caption{Danh sách thư viện và công cụ sử dụng}
+    \label{table:my_label}\\
         \hline
         \textbf{Mục đích} & \textbf{Công cụ}       & \textbf{Địa chỉ URL}    \\ \hline
         IDE lập trình     & Eclipse Oxygen a64 bit & http://www.eclipse.org/ \\ \hline
         v.v.              & v.v.                   & v.v.                    \\ \hline
-    \end{tabular}
-\end{center}
+\end{longtable}
 
 \subsection{Kết quả đạt được}
 Sinh viên trước tiên mô tả kết quả đạt được của mình là gì, ví dụ như các sản phẩm được đóng gói là gì, bao gồm những thành phần nào, ý nghĩa, vai trò?

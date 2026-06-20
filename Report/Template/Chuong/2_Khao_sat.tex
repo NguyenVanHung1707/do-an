@@ -1,0 +1,899 @@
+% !TeX root = ../DoAn.tex
+
+\documentclass[../DoAn.tex]{subfiles}
+
+\begin{document}
+
+\definecolor{greenbg}{HTML}{C6EFCE}
+
+\definecolor{orangebg}{HTML}{FFEB9C}
+
+Chương 2 tập trung vào việc khảo sát hiện trạng công tác điểm danh, quản lý học sinh và tiến hành phân tích chi tiết các yêu cầu để xây dựng hệ thống phần mềm tối ưu hóa quy trình này. Nội dung chính của chương được phân chia và trình bày cụ thể qua các phần như sau:
+
+Đầu tiên, mục Khảo sát hiện trạng đánh giá thực trạng của các phương pháp điểm danh truyền thống cùng các giải pháp công nghệ hiện tại để xác định cơ sở thực tiễn.
+
+Tiếp theo, mục Tổng quan chức năng phác thảo các vai trò của tác nhân tham gia vào hệ thống và cấu trúc chức năng mức cao thông qua biểu đồ use case tổng quát cùng các quy trình nghiệp vụ chính.
+
+Kế đến, mục Đặc tả chức năng mô tả chi tiết luồng sự kiện, tiền điều kiện và hậu điều kiện của các use case cốt lõi được lựa chọn để hiện thực hóa nghiệp vụ.
+
+Cuối cùng, mục Yêu cầu phi chức năng xác định các tiêu chí kỹ thuật về hiệu năng, độ bảo mật và tính sẵn sàng của hệ thống nhằm đảm bảo khả năng vận hành ổn định trong môi trường thực tiễn.
+
+
+\section{Khảo sát hiện trạng}
+
+\label{section:2.1}
+
+Khảo sát hiện trạng và xác định yêu cầu đối với hệ thống quản lý học sinh và tổ chức thi trực tuyến được thực hiện dựa trên ba nguồn thông tin cốt lõi: phân tích quy trình quản lý thực tế tại các trường học, đánh giá các hệ thống LMS hiện có và nghiên cứu các giải pháp giám sát thi cử chuyên dụng.
+
+\subsection{Hiện trạng công tác điểm danh và quản lý học sinh truyền thống}
+
+\label{subsection:2.1.1}
+
+Trong môi trường giáo dục truyền thống, công tác điểm danh học sinh thường được thực hiện thông qua hình thức giảng viên gọi tên từng người và ghi chép vào sổ tay hoặc học sinh ký tên vào danh sách giấy. Quy trình này tồn tại nhiều hạn chế đáng kể:
+\begin{itemize}
+    \item \textbf{Lãng phí thời gian}: Việc gọi tên một lớp học có sĩ số đông (từ 50 đến 80 học sinh) thường tốn từ 5 đến 10 phút đầu mỗi buổi học, làm giảm quỹ thời gian giảng dạy trực tiếp.
+    \item \textbf{Độ trung thực thấp}: Tình trạng điểm danh hộ, ký tên hộ diễn ra phổ biến và khó kiểm soát triệt để bằng mắt thường.
+    \item \textbf{Bất tiện trong tổng hợp dữ liệu}: Cuối học kỳ hoặc giai đoạn học tập, giảng viên phải tổng hợp thủ công dữ liệu chuyên cần từ sổ giấy sang bảng tính Excel, dễ dẫn đến sai sót và tốn công sức.
+    \item \textbf{Giải pháp mã QR sơ khai}: Một số cơ sở đã áp dụng điểm danh qua mã QR (ví dụ điển hình như hệ thống điểm danh của LMS Moodle \cite{moodle_attendance_plugin}), tuy nhiên học sinh có thể dễ dàng chụp ảnh mã QR gửi cho các bạn ở ngoài lớp học để thực hiện điểm danh hộ từ xa.
+\end{itemize}
+
+\subsection{Hiện trạng công tác giám sát thi cử trực tuyến}
+
+\label{subsection:2.1.2}
+
+Các kỳ thi trực tuyến hiện nay thường được giám sát thủ công thông qua các phần mềm họp trực tuyến như Zoom, Microsoft Teams hoặc Google Meet. Ngoài ra, một số giải pháp còn ứng dụng các kỹ thuật xử lý ảnh để giám sát tự động qua camera \cite{kaundinya2026inbrowser}. Tuy nhiên, phương pháp giám sát thủ công và các công nghệ giám sát từ xa hiện tại vẫn bộc lộ những điểm yếu chí mạng:
+\begin{itemize}
+    \item \textbf{Quá tải đối với giám thị}: Một giám thị không thể quan sát đồng thời và liên tục hành vi của 30--40 thí sinh trên màn hình nhỏ. Các hành vi gian lận diễn ra nhanh chóng thường bị bỏ qua.
+    \item \textbf{Điểm mù giám sát}: Camera góc rộng thông thường khó phát hiện được chuyển động mắt của thí sinh (liếc bài sang hai bên) hoặc việc sử dụng tài liệu đặt sát màn hình máy tính.
+    \item \textbf{Thiếu bằng chứng khách quan}: Khi nghi ngờ thí sinh gian lận, giám thị không có công cụ tự động ghi lại phân đoạn video vi phạm để làm bằng chứng xác thực, dẫn đến tranh cãi khi đưa ra quyết định xử lý kỷ luật.
+\end{itemize}
+
+\subsection{Đánh giá và so sánh các giải pháp hiện có}
+
+\label{subsection:2.1.3}
+
+Để có cái nhìn tổng quan về các công cụ hiện nay, hệ thống đề xuất được đặt lên bàn cân so sánh với các giải pháp truyền thống, các hệ thống quản lý học tập (LMS) phổ biến và các phần mềm Proctoring chuyên dụng thương mại. Chi tiết so sánh được thể hiện trong Bảng \ref{table:comparison_solutions}.
+
+\begin{longtable}{|p{3.2cm}|p{2.2cm}|p{2.8cm}|p{3.2cm}|p{2.8cm}|}
+    \caption{Bảng so sánh các giải pháp quản lý học sinh và giám sát thi cử}
+    \label{table:comparison_solutions}\\
+        \hline
+        \textbf{Tiêu chí so sánh} & \textbf{Điểm danh truyền thống} & \textbf{Hệ thống LMS (Moodle)} & \textbf{Phần mềm Proctoring thương mại} & \textbf{Giải pháp đề xuất} \\ \hline
+        Điểm danh tự động & Không & Bán tự động (QR Code) & Không hỗ trợ & Có (Face ID nhóm) \\ \hline
+        Xác thực vị trí & Không & Không & Không & Có (Geofencing + Chống GPS giả) \\ \hline
+        Giám sát ánh mắt & Không & Không & Có & Có (Gaze Tracking AI) \\ \hline
+        Ước lượng tư thế đầu & Không & Không & Có & Có (3D Head Pose solvePnP) \\ \hline
+        Quản lý học tập & Thủ công & Rất tốt & Không hỗ trợ & Đầy đủ (Tài liệu, Diễn đàn, Thi) \\ \hline
+        Chi phí vận hành & Thấp & Thấp & Rất cao & Thấp (Mã nguồn mở, Tự chủ) \\ \hline
+\end{longtable}
+
+Qua bảng so sánh, có thể thấy các phần mềm Proctoring thương mại dù giải quyết được vấn đề chống gian lận nhưng chi phí quá cao và thiếu các tính năng quản lý lớp học hàng ngày. Ngược lại, các LMS phổ biến lại thiếu các tính năng giám sát sinh trắc học và AI bảo mật cao.
+
+\subsection{Đề xuất các tính năng cốt lõi cần phát triển}
+
+\label{subsection:2.1.4}
+
+Từ những hạn chế và nhu cầu thực tiễn nêu trên, phần mềm cần phát triển các khối tính năng cốt lõi sau để tối ưu hóa quy trình điểm danh và quản lý học sinh:
+\begin{enumerate}
+    \item \textbf{Phân hệ Điểm danh Sinh trắc học nhóm}: Cho phép giảng viên chụp ảnh tập thể lớp và hệ thống tự động phát hiện, đối khớp khuôn mặt học sinh dựa trên mô hình RetinaFace \cite{Deng_2020_CVPR} và ArcFace \cite{Deng_2019_CVPR} để chấm công chuyên cần nhanh chóng.
+    \item \textbf{Phân hệ Điểm danh tự phục vụ di động}: Học sinh tự điểm danh trên điện thoại cá nhân thông qua xác thực vân tay/khuôn mặt kết hợp xác thực tọa độ vị trí thực tế trong bán kính lớp học (Geofencing) và chặn phần mềm giả lập GPS (GPS Anti-Spoofing).
+    \item \textbf{Phân hệ Giám thị AI thời gian thực}: Chạy trực tiếp trên trình duyệt Web của thí sinh khi làm bài thi để tự động phát hiện các hành vi bất thường như liếc mắt rời màn hình quá 3 giây (Gaze Tracking) \cite{kaundinya2026inbrowser}, quay đầu (solvePnP 3D Head Pose) \cite{Lepetit2009EPnP}, không phát hiện khuôn mặt, và tự động ghi hình video bằng chứng định dạng H.264 gửi về máy chủ.
+    \item \textbf{Phân hệ Quản trị và Hợp tác Lớp học}: Quản lý học liệu phân quyền phân cấp, diễn đàn thảo luận lớp học thời gian thực, soạn thảo đề thi trắc nghiệm/tự luận hỗ trợ import từ Excel, chấm thi và quản trị tài nguyên hệ thống thống nhất dưới cơ chế đăng nhập một lần (Keycloak SSO) \cite{keycloak2026}.
+\end{enumerate}
+
+\section{Tổng quan chức năng}
+
+\label{section:2.2}
+
+Phần 2.2 này có nhiệm vụ tóm tắt các chức năng chính của hệ thống. Trong phần này, các chức năng mức cao (tổng quan) được phác thảo để định hình các nghiệp vụ cốt lõi mà phần mềm hỗ trợ, chia theo các tác nhân và phân hệ chức năng tương ứng, trước khi tiến hành đặc tả chi tiết trong phần 2.3.
+
+\subsection{Biểu đồ use case tổng quát}
+
+\label{subsection:2.2.1}
+
+Để mô tả các mối tương tác giữa người dùng và hệ thống, biểu đồ use case tổng quát được xây dựng nhằm phác thảo các ranh giới chức năng của phần mềm. Biểu đồ use case tổng quan được minh họa trong Hình \ref{fig:overview_use_case}.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/Overview_Use_Case_Diagram.png}
+    \caption{Biểu đồ use case tổng quát của hệ thống}
+    \label{fig:overview_use_case}
+\end{figure}
+\FloatBarrier
+
+Hệ thống bao gồm ba tác nhân chính trực tiếp tương tác và vận hành các chức năng phần mềm:
+\begin{itemize}
+    \item \textbf{Admin (Quản trị viên)}: Là tác nhân quản trị cấp cao trên nền tảng Web, có nhiệm vụ phê duyệt tài khoản giảng viên đăng ký mới, quản lý cấu hình chu kỳ học kỳ của trường học và theo dõi biểu đồ thống kê tài nguyên, lưu lượng truy cập hệ thống thời gian thực.
+    \item \textbf{Giảng viên (Teacher)}: Tương tác qua cả giao diện Web và ứng dụng di động để quản lý lớp học phần, soạn thảo và nhập đề thi từ file Excel, thực hiện điểm danh học sinh (qua ảnh tập thể lớp bằng AI hoặc mã OTP định vị GPS), chấm thi trực tuyến (bao gồm việc xem video vi phạm do AI ghi lại), và kiểm duyệt diễn đàn lớp học.
+    \item \textbf{Học viên (Student)}: Tương tác qua ứng dụng di động để cập nhật hồ sơ sinh trắc học (Face ID), thực hiện điểm danh chuyên cần (vân tay kết hợp Geofencing và chống GPS giả lập), làm bài thi trực tuyến (dưới sự giám sát thời gian thực của AI về ánh mắt và góc quay đầu), tra cứu bảng điểm kèm nhận xét chi tiết, và thảo luận bài học trên diễn đàn.
+\end{itemize}
+
+\subsection{Biểu đồ use case phân rã}
+
+\label{subsection:2.2.2}
+
+Trong phần này, các use case mức cao từ biểu đồ tổng quát được phân rã chi tiết để mô tả rõ các luồng chức năng cụ thể và sự tương tác giữa các tác nhân với hệ thống.
+
+\subsubsection*{a, UC01 - Phân rã Phê duyệt tài khoản Giảng viên}
+
+\label{subsubsection:uc01}
+
+Use case này cho phép tác nhân Admin thực hiện quản lý và phê duyệt tài khoản đăng ký mới của giảng viên.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC01_Phe_duyet_Giang_vien.png}
+    \caption{Biểu đồ use case phân rã UC01 - Phê duyệt tài khoản Giảng viên}
+    \label{fig:uc01}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Xem danh sách giảng viên đăng ký}: Hiển thị thông tin các tài khoản giảng viên đăng ký mới đang ở trạng thái chờ duyệt.
+
+    \item \textbf{Xác minh thông tin đăng ký}: Admin thực hiện kiểm tra hồ sơ, địa chỉ email chính thức, và thông tin đơn vị công tác của giảng viên để đảm bảo tính xác thực.
+
+    \item \textbf{Phê duyệt kích hoạt tài khoản}: Kích hoạt tài khoản trên hệ thống, cấp quyền truy cập tương ứng và tự động gửi email thông báo thành công.
+
+    \item \textbf{Từ chối kích hoạt tài khoản}: Từ chối kích hoạt đối với các hồ sơ không hợp lệ và gửi thông báo nêu rõ lý do cho giảng viên đăng ký.
+
+\end{itemize}
+
+UC01 giúp Admin kiểm soát chất lượng tài khoản ngay từ thời điểm người dùng giảng viên bắt đầu tham gia hệ thống. Việc xác minh thông tin trước khi kích hoạt tài khoản giúp hạn chế trường hợp tài khoản giả mạo, sai đơn vị công tác hoặc dùng email không chính thức. Đồng thời, trạng thái phê duyệt và lý do từ chối cần được lưu lại để phục vụ đối soát, hỗ trợ lại cho giảng viên khi cần và bảo đảm chỉ những tài khoản hợp lệ mới được cấp quyền truy cập vào các chức năng giảng dạy.
+
+\subsubsection*{b, UC02 - Phân rã Xem thống kê hệ thống}
+
+\label{subsubsection:uc02}
+
+Use case này giúp tác nhân Admin theo dõi toàn bộ trạng thái vận hành của hệ thống trực quan theo thời gian thực.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC02_Xem_thong_ke_he_thong.png}
+    \caption{Biểu đồ use case phân rã UC02 - Xem thống kê hệ thống}
+    \label{fig:uc02}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Thống kê lượng người truy cập}: Biểu diễn số lượng người dùng trực tuyến thời gian thực (real-time users), số lượt đăng nhập và hoạt động hệ thống.
+
+    \item \textbf{Thống kê phòng thi thời gian thực}: Hiển thị số lượng các phòng thi đang diễn ra đồng thời, số thí sinh đang thực hiện bài thi và trạng thái phòng thi.
+
+    \item \textbf{Thống kê tài nguyên máy chủ}: Giám sát hiệu năng sử dụng CPU, RAM, dung lượng đĩa và băng thông mạng của các microservices để đưa ra cảnh báo kịp thời.
+
+\end{itemize}
+
+UC02 cung cấp cho Admin một góc nhìn tổng hợp về mức độ ổn định của hệ thống trong các thời điểm có nhiều người dùng truy cập. Thay vì chỉ phản ứng sau khi có sự cố, Admin có thể theo dõi sớm các chỉ số như số lượng phiên đăng nhập, tải phòng thi và tài nguyên máy chủ để phát hiện dấu hiệu quá tải. Các thống kê này cũng là cơ sở để mở rộng hạ tầng, điều chỉnh lịch thi hoặc ưu tiên xử lý các dịch vụ đang có nguy cơ ảnh hưởng trực tiếp đến trải nghiệm học tập và thi trực tuyến.
+
+\subsubsection*{c, UC03 - Phân rã Quản lý học kỳ}
+
+\label{subsubsection:uc03}
+
+Use case này hỗ trợ Admin quản lý các chu kỳ đào tạo của nhà trường trong cơ sở dữ liệu hệ thống.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC03_Quan_ly_hoc_ky.png}
+    \caption{Biểu đồ use case phân rã UC03 - Quản lý học kỳ}
+    \label{fig:uc03}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Xem danh sách học kỳ}: Hiển thị toàn bộ các học kỳ đã qua, học kỳ hiện tại cùng trạng thái tương ứng.
+
+    \item \textbf{Khởi tạo học kỳ mới}: Khai báo thông tin bao gồm mã học kỳ và tên học kỳ mới (ví dụ: Học kỳ 1 - Năm học 2026-2027).
+
+    \item \textbf{Cấu hình thời gian học kỳ}: Thiết lập các mốc ngày bắt đầu và kết thúc học kỳ để tự động mở hoặc đóng quyền chỉnh sửa lớp học phần của giảng viên.
+
+    \item \textbf{Khóa học kỳ hiện tại}: Đóng học kỳ khi kết thúc thời gian đào tạo và chuyển toàn bộ lớp học phần liên quan về trạng thái lưu trữ (Read-only).
+
+\end{itemize}
+
+Về mặt nghiệp vụ, UC03 đóng vai trò như điểm kiểm soát vòng đời dữ liệu đào tạo trong hệ thống. Khi một học kỳ được mở, các lớp học phần, lịch học, đề thi và hoạt động điểm danh mới được phép khởi tạo hoặc cập nhật. Ngược lại, khi học kỳ đã bị khóa, hệ thống cần giữ nguyên dữ liệu phát sinh để phục vụ tra cứu, thống kê và đối soát kết quả học tập về sau. Cơ chế này giúp Admin hạn chế sai lệch dữ liệu giữa các phân hệ, đồng thời bảo đảm giảng viên và học viên chỉ thao tác trong phạm vi học kỳ còn hiệu lực.
+
+\subsubsection*{d, UC04 - Phân rã Quản lý lớp học phần}
+
+\label{subsubsection:uc04}
+
+Use case này dành riêng cho tác nhân Giảng viên để tổ chức lớp học và quản lý học viên trong suốt quá trình đào tạo.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC04_Quan_ly_lop_hoc_phan.png}
+    \caption{Biểu đồ use case phân rã UC04 - Quản lý lớp học phần}
+    \label{fig:uc04}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Tạo lớp học phần mới}: Giảng viên thiết lập thông tin lớp học bao gồm tên môn học, mã môn học, giảng viên phụ trách và học kỳ tương ứng.
+
+    \item \textbf{Thêm học viên vào lớp}: Thực hiện thêm học viên bằng email cá nhân hoặc nhập danh sách học viên hàng loạt từ tệp tin Excel.
+
+    \item \textbf{Duyệt yêu cầu vào lớp}: Xét duyệt các yêu cầu tham gia lớp do sinh viên gửi trên Web hoặc ứng dụng di động để sinh viên chính thức tham gia lớp học.
+
+    \item \textbf{Xóa học viên khỏi lớp}: Loại bỏ những học viên đăng ký nhầm hoặc tự ý rời khỏi lớp học phần.\newline • Thiết lập lịch học tuần: Giảng viên cấu hình lịch dạy chi tiết theo các thứ trong tuần (phòng học, ca học) để tự động hóa thời khóa biểu hiển thị trên ứng dụng của học viên.
+
+\end{itemize}
+
+UC04 là nền tảng liên kết giảng viên, học viên và các hoạt động học tập trong một học kỳ. Việc quản lý thống nhất danh sách học viên, lịch học tuần và yêu cầu vào lớp giúp hạn chế nhầm lẫn dữ liệu giữa các lớp học phần.
+
+\subsubsection*{e, UC05 - Phân rã Soạn thảo đề thi}
+
+\label{subsubsection:uc05}
+
+Use case này cho phép Giảng viên thiết kế các đề thi kiểm tra định kỳ hoặc thi cuối kỳ trực tuyến.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC05_Soan_thao_de_thi.png}
+    \caption{Biểu đồ use case phân rã UC05 - Soạn thảo đề thi}
+    \label{fig:uc05}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Cấu hình thông tin đề thi}: Thiết lập các trường thông tin cơ bản bao gồm tiêu đề đề thi, hướng dẫn làm bài, tổng số điểm, thời gian làm bài, và ngày giờ mở/đóng đề thi.
+
+    \item \textbf{Tạo câu hỏi trắc nghiệm}: Biên soạn câu hỏi dạng 4 lựa chọn (A, B, C, D) và xác định đáp án đúng để hệ thống tự động chấm điểm khi học viên nộp bài.
+
+    \item \textbf{Tạo câu hỏi tự luận}: Soạn thảo câu hỏi yêu cầu học sinh nhập văn bản dài trực tiếp hoặc tải lên tệp tin bài làm đính kèm.\newline • Import đề thi từ Excel: Nhập nhanh ngân hàng câu hỏi có sẵn từ tệp Excel mẫu được định dạng chuẩn.
+
+    \item \textbf{Thiết lập chế độ giám sát AI}: Tùy chọn bật/tắt các tính năng cảnh báo của AI (như xác thực Face ID, theo dõi ánh mắt, ước lượng tư thế đầu) cho từng phòng thi cụ thể.
+
+\end{itemize}
+
+UC05 giúp giảng viên chuẩn bị đề thi theo một quy trình thống nhất, từ khai báo thông tin chung đến biên soạn câu hỏi và thiết lập giám sát. Việc quản lý tập trung câu hỏi, thang điểm, thời gian mở đề và chế độ AI giúp giảng viên hạn chế sai sót trước khi đề thi được công bố cho học viên.
+
+\subsubsection*{f, UC06 - Phân rã Điểm danh học viên}
+
+\label{subsubsection:uc06}
+
+Đây là một nghiệp vụ cốt lõi tích hợp các phương thức điểm danh sinh trắc học và vị trí địa lý nhằm tối ưu hóa công tác chuyên cần của lớp học.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC06_Diem_danh_hoc_vien.png}
+    \caption{Biểu đồ use case phân rã UC06 - Điểm danh học viên}
+    \label{fig:uc06}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Điểm danh nhận diện FaceID}: Giảng viên chụp ảnh tập thể lớp trên giao diện Web, hệ thống tự động phát hiện và đối khớp khuôn mặt học viên bằng mô hình RetinaFace \cite{Deng_2020_CVPR} và ArcFace \cite{Deng_2019_CVPR}.
+
+    \item \textbf{Tạo mã điểm danh buổi học}: Giảng viên khởi tạo mã điểm danh OTP ngẫu nhiên cùng cấu hình vị trí và bán kính kiểm soát GPS (Geofencing).
+
+    \item \textbf{Thiết lập quy tắc chuyên cần}: Cấu hình số lượt điểm danh tối thiểu trong một ca học (ví dụ: điểm danh đầu giờ và cuối giờ).\newline • Duyệt kết quả điểm danh sinh trắc: Giảng viên kiểm tra ảnh nhóm lớp học đã qua xử lý nhận dạng của AI, điều chỉnh thủ công thông tin đi học/vắng và phê duyệt kết quả.
+
+    \item \textbf{Nộp câu trả lời điểm danh}: Học viên nhập passcode điểm danh kết hợp đối khớp GPS thực tế của thiết bị di động để nộp kết quả.\newline • Xem báo cáo chuyên cần: Thống kê chi tiết lịch sử đi học của từng học viên trực quan theo tỷ lệ phần trăm.
+
+\end{itemize}
+
+UC06 giúp việc điểm danh có căn cứ hơn nhờ kết hợp nhận diện khuôn mặt, mã OTP và vị trí GPS. Sau khi được giảng viên phê duyệt, dữ liệu chuyên cần được dùng để thống kê tỷ lệ tham gia lớp và phát hiện sớm các trường hợp vắng học kéo dài.
+
+\subsubsection*{g, UC07 - Phân rã Chấm thi trực tuyến}
+
+\label{subsubsection:uc07}
+
+Use case này cho phép Giảng viên đánh giá, nhận xét và công bố kết quả làm bài của học viên.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC07_Cham_thi_truc_tuyen.png}
+    \caption{Biểu đồ use case phân rã UC07 - Chấm thi trực tuyến}
+    \label{fig:uc07}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Xem danh sách bài thi đã nộp}: Hiển thị danh sách tất cả học viên đã nộp bài cùng trạng thái bài làm và thời gian nộp cụ thể.
+
+    \item \textbf{Chấm bài thi tự luận}: Đọc trực tiếp bài tự luận của học viên (văn bản hoặc file đính kèm) trên giao diện chấm thi và nhập điểm số tương ứng.
+
+    \item \textbf{Viết nhận xét chi tiết}: Ghi nhận xét, nhắc nhở hoặc giải thích chi tiết lỗi sai cho bài làm của học viên.
+
+    \item \textbf{Xem video bằng chứng vi phạm AI}: Giảng viên xem các đoạn video bằng chứng 10 giây cùng nhật ký cảnh báo (góc quay đầu, liếc mắt) do AI ghi nhận để đưa ra quyết định trừ điểm chính xác nếu sinh viên gian lận.\newline • Đồng bộ công bố điểm số: Trả điểm thi về bảng điểm học viên, kích hoạt thông báo điểm mới qua hệ thống Notification.
+
+\end{itemize}
+
+UC07 bảo đảm quá trình đánh giá sau khi thi được thực hiện minh bạch và có đầy đủ căn cứ. Đối với bài trắc nghiệm, hệ thống có thể tự động tính điểm để rút ngắn thời gian xử lý; đối với bài tự luận, giảng viên vẫn có không gian để đọc bài, ghi nhận xét và điều chỉnh điểm theo chất lượng câu trả lời. Những bằng chứng vi phạm do AI ghi nhận được đặt trong cùng quy trình chấm thi để giảng viên cân nhắc trước khi công bố kết quả cuối cùng cho học viên.
+
+\subsubsection*{h, UC08 - Phân rã Xem thời khóa biểu}
+
+\label{subsubsection:uc08}
+
+Use case này hỗ trợ Học viên tra cứu thông tin học tập và thi cử cá nhân một cách đồng bộ.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC08_Xem_thoi_khoa_bieu.png}
+    \caption{Biểu đồ use case phân rã UC08 - Xem thời khóa biểu}
+    \label{fig:uc08}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Tra cứu lịch học tuần}: Xem lịch học của tất cả các lớp học phần tham gia trong tuần dưới dạng bảng biểu thời gian trực quan, cập nhật thời gian thực từ phòng đào tạo.
+
+    \item \textbf{Tra cứu lịch thi học kỳ}: Cập nhật liên tục các thông tin chi tiết liên quan đến phòng thi sắp diễn ra, ca thi, số báo danh và thời gian làm bài cụ thể cho từng môn học phần.
+
+\end{itemize}
+
+UC08 giúp học viên theo dõi lịch học và lịch thi trên cùng một giao diện, hạn chế việc phải đối chiếu thủ công từ nhiều nguồn thông báo. Khi dữ liệu lịch được đồng bộ với lớp học phần và học kỳ, hệ thống có thể cập nhật kịp thời các thay đổi về phòng học, ca thi hoặc thời gian học.
+
+\subsubsection*{i, UC09 - Phân rã Thảo luận trên diễn đàn}
+
+\label{subsubsection:uc09}
+
+Use case này giúp xây dựng không gian trao đổi học thuật thời gian thực giữa giảng viên và học viên.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC09_Thao_luan_dien_dan.png}
+    \caption{Biểu đồ use case phân rã UC09 - Thảo luận trên diễn đàn}
+    \label{fig:uc09}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Đăng chủ đề thảo luận mới}: Cho phép học viên và giảng viên tạo các bài thảo luận mới về môn học, bài tập lớn hoặc các thắc mắc chung.
+
+    \item \textbf{Xem nội dung chủ đề}: Truy cập để đọc bài viết gốc và toàn bộ cây bình luận trả lời của các thành viên trong lớp học phần.
+
+    \item \textbf{Viết bình luận thảo luận}: Cho phép các thành viên gửi bình luận trao đổi thời gian thực.
+
+    \item \textbf{Ghim bài thảo luận}: Giảng viên có quyền ghim các bài đăng quan trọng lên đầu trang diễn đàn lớp học phần.\newline • Xóa bài đăng vi phạm: Chức năng kiểm duyệt dành riêng cho giảng viên để xóa bỏ các bài viết spam hoặc vi phạm nội quy lớp học.
+
+\end{itemize}
+
+UC09 tạo ra kênh trao đổi chính thức trong phạm vi từng lớp học phần, giúp câu hỏi và câu trả lời không bị phân tán ở nhiều nền tảng bên ngoài. Các chủ đề được ghim, bình luận theo luồng và cơ chế xóa bài vi phạm giúp giảng viên duy trì trật tự thảo luận nhưng vẫn khuyến khích học viên đặt câu hỏi, chia sẻ tài liệu và hỗ trợ nhau trong quá trình học. Khi nội dung diễn đàn được gắn với lớp học cụ thể, các trao đổi quan trọng cũng có thể được tra cứu lại như một nguồn tri thức bổ sung cho bài giảng.
+
+\subsubsection*{j, UC10 - Phân rã Làm bài thi trực tuyến}
+
+\label{subsubsection:uc10}
+
+Đây là nghiệp vụ trung tâm dành cho học viên để thực hiện các bài đánh giá chất lượng dưới sự giám sát tự động của AI.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC10_Lam_bai_thi_truc_tuyen.png}
+    \caption{Biểu đồ use case phân rã UC10 - Làm bài thi trực tuyến}
+    \label{fig:uc10}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Xác thực sinh trắc học Face ID}: Trước khi làm bài, học viên thực hiện chụp ảnh khuôn mặt qua camera để đối khớp với ảnh hồ sơ đã đăng ký nhằm ngăn chặn tình trạng thi hộ.
+
+    \item \textbf{Làm bài thi trắc nghiệm}: Học viên chọn đáp án trực tiếp trên giao diện màn hình thi của Web hoặc ứng dụng di động.
+
+    \item \textbf{Làm bài thi tự luận}: Nhập văn bản hoặc chụp ảnh bài làm viết tay trên giấy tải lên hệ thống.\newline • Nộp bài làm: Gửi bài thi hoàn chỉnh lên server trước khi hết thời gian làm bài.
+
+    \item \textbf{Tự động giám sát phòng thi}: Hệ thống tự động kích hoạt camera, phân tích tròng mắt và tư thế đầu của học viên để phát hiện và cảnh báo gian lận thời gian thực.
+
+\end{itemize}
+
+UC10 là điểm giao giữa trải nghiệm làm bài của học viên và các yêu cầu kiểm soát nghiêm túc của kỳ thi trực tuyến. Trước khi vào bài, bước xác thực Face ID giúp hệ thống bảo đảm đúng thí sinh dự thi; trong quá trình làm bài, dữ liệu bài làm và tín hiệu giám sát được ghi nhận liên tục để giảm rủi ro gian lận. Khi học viên nộp bài, hệ thống cần lưu trạng thái bài thi, thời điểm nộp và các cảnh báo liên quan để phục vụ chấm điểm, xử lý khiếu nại và tổng hợp kết quả sau kỳ thi.
+
+\subsubsection*{k, UC11 - Phân rã Tra cứu bảng điểm}
+
+\label{subsubsection:uc11}
+
+Use case này hỗ trợ Học viên theo dõi kết quả học tập và nhận phản hồi chi tiết từ giảng viên.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC11_Tra_cuu_bang_diem.png}
+    \caption{Biểu đồ use case phân rã UC11 - Tra cứu bảng điểm}
+    \label{fig:uc11}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Xem điểm bài thi trắc nghiệm}: Tra cứu điểm số trắc nghiệm do hệ thống tự động chấm ngay sau khi nộp bài hoặc khi kỳ thi kết thúc.
+
+    \item \textbf{Xem điểm bài thi tự luận}: Xem kết quả thi tự luận sau khi đã được giảng viên chấm điểm thủ công.
+
+    \item \textbf{Xem nhận xét chi tiết của Giảng viên}: Đọc các phản hồi cụ thể của giảng viên cho từng bài thi hoặc từng câu hỏi tự luận để học viên kịp thời rút kinh nghiệm và cải thiện.
+
+\end{itemize}
+
+UC11 giúp học viên chủ động nắm bắt kết quả học tập sau mỗi bài kiểm tra hoặc kỳ thi. Việc hiển thị điểm số kèm nhận xét chi tiết tạo điều kiện để học viên hiểu rõ phần kiến thức còn yếu, từ đó điều chỉnh kế hoạch ôn tập cho các lần đánh giá tiếp theo. Chức năng này cũng giảm tải cho giảng viên vì các phản hồi đã được công bố tập trung trên hệ thống.
+
+\subsubsection*{l, UC12 - Phân rã Đăng nhập \& Bảo mật}
+
+\label{subsubsection:uc12}
+
+Đây là use case nền tảng cung cấp cơ chế xác thực an toàn cho toàn bộ hệ thống Web và App di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC12_Dang_nhap_Bao_mat.png}
+    \caption{Biểu đồ use case phân rã UC12 - Đăng nhập \& Bảo mật}
+    \label{fig:uc12}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Đăng nhập SSO qua Keycloak}: Xác thực tập trung một lần thông qua máy chủ Keycloak \cite{keycloak2026} bảo mật.
+
+    \item \textbf{Hoàn thiện hồ sơ cá nhân}: Người dùng cập nhật các thông tin cơ bản như mã số sinh viên/giảng viên, họ tên và địa chỉ email chính thức để đồng bộ cơ sở dữ liệu.
+
+    \item \textbf{Đổi mật khẩu tài khoản}: Đổi mật khẩu tài khoản an toàn thông qua trang quản trị của Keycloak.\newline • Đăng nhập sinh trắc học: Học viên và giảng viên trên di động có thể thiết lập mở khóa ứng dụng bằng vân tay hoặc Face ID thiết bị.
+
+    \item \textbf{Nhận thông báo đẩy FCM}: Đăng ký token thiết bị di động với máy chủ để nhận thông báo đẩy thời gian thực từ Firebase Cloud Messaging (FCM) \cite{fcm2026} kết hợp điều hướng sâu (Deep Linking).
+
+\end{itemize}
+
+UC12 là lớp bảo mật nền tảng của hệ thống. Cơ chế đăng nhập SSO qua Keycloak giúp đồng bộ hóa danh tính người dùng trên các nền tảng Web/App, trong khi các chức năng đổi mật khẩu, đăng nhập sinh trắc học và thông báo đẩy FCM giúp tăng cường an toàn và nâng cao trải nghiệm truy cập.
+
+\subsubsection*{m, UC13 - Phân rã Đăng ký hồ sơ FaceID}
+
+\label{subsubsection:uc13}
+
+Use case này hỗ trợ Học viên thiết lập khuôn mẫu sinh trắc học ban đầu cho hệ thống nhận diện.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC13_Dang_ky_ho_so_FaceID.png}
+    \caption{Biểu đồ use case phân rã UC13 - Đăng ký hồ sơ FaceID}
+    \label{fig:uc13}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Thu thập hình ảnh chân dung}: Học viên sử dụng camera trên App di động chụp ảnh chân dung ở các góc độ khác nhau theo hướng dẫn thời gian thực.
+
+    \item \textbf{Đăng ký khuôn mẫu nhận dạng}: Trích xuất các vector đặc trưng khuôn mặt (face embeddings) thông qua mạng nơ-ron sâu và lưu trữ tệp đặc trưng lên máy chủ AI làm cơ sở dữ liệu gốc để đối khớp trong quá trình điểm danh nhóm và giám thị phòng thi sau này.
+
+\end{itemize}
+
+UC13 cung cấp dữ liệu sinh trắc học gốc cho hệ thống. Ảnh chụp chân dung của học viên trên App di động được xử lý trích xuất đặc trưng và bảo mật thông tin để đối khớp chính xác trong quy trình điểm danh và giám sát thi.
+
+\subsubsection*{n, UC14 - Phân rã Quản lý tài liệu lớp học}
+
+\label{subsubsection:uc14}
+
+Use case này giúp Giảng viên và Học viên chia sẻ bài giảng, bài tập trong phạm vi lớp học phần.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC14_Quan_ly_tai_lieu_lop_hoc.png}
+    \caption{Biểu đồ use case phân rã UC14 - Quản lý tài liệu lớp học}
+    \label{fig:uc14}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Tải tài liệu lên}: Giảng viên tải lên các file bài học (PDF, Word, Slide...). Học viên có thể tải lên tài liệu học tập hoặc nộp bài tập nếu được giảng viên phân quyền cho phép.
+
+    \item \textbf{Tải tài liệu về}: Học viên và giảng viên thực hiện tải các file học tập được chia sẻ về thiết bị cá nhân.
+
+    \item \textbf{Tạo thư mục mới}: Giảng viên tạo các thư mục (folders) phân cấp để quản lý tài liệu bài học một cách ngăn nắp theo chủ đề học tập.
+
+    \item \textbf{Cấu hình quyền tài liệu học viên}: Giảng viên phân quyền linh hoạt cho học viên (Upload/Download) theo phạm vi từng cá nhân hoặc áp dụng hàng loạt cho cả lớp học phần.
+
+\end{itemize}
+
+UC14 hỗ trợ lưu trữ bài học tập trung theo cấu trúc thư mục phân cấp, giúp giảng viên quản lý và phân quyền tải lên/xuống tài liệu cho học viên linh hoạt, tránh phân tán tài nguyên lớp học.
+
+\subsubsection*{o, UC15 - Phân rã Giám sát FaceID \& Hành vi (AI)}
+
+\label{subsubsection:uc15}
+
+Đây là phân hệ giám sát ngầm chạy thời gian thực trên trình duyệt của thí sinh khi làm bài thi trực tuyến.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/UC15_Giam_sat_FaceID_Hanh_vi_AI.png}
+    \caption{Biểu đồ use case phân rã UC15 - Giám sát FaceID \& Hành vi (AI)}
+    \label{fig:uc15}
+\end{figure}
+\FloatBarrier
+
+
+Các chức năng phân rã bao gồm:
+
+\begin{itemize}
+
+    \item \textbf{Theo dõi hướng nhìn}: Hệ thống AI phân tích sự dịch chuyển của đồng tử so với khóe mắt để phát hiện hành vi thí sinh liếc nhìn hướng khác rời khỏi màn hình quá 3 giây \cite{kaundinya2026inbrowser}.
+
+    \item \textbf{Ước lượng tư thế đầu 3D}: Sử dụng thư viện MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} để lấy 6 điểm mốc khuôn mặt đặc trưng, giải bài toán 3D Head Pose bằng thuật toán solvePnP (EPnP \cite{Lepetit2009EPnP}) nhằm xác định góc quay đầu (yaw > 30 độ hoặc pitch > 20 độ).
+
+    \item \textbf{Phát hiện bất thường khuôn mặt}: Cảnh báo khi không phát hiện khuôn mặt trước camera hoặc phát hiện nhiều hơn 1 khuôn mặt.\newline • Tự động ghi hình vi phạm: Ghi nhận video vi phạm dài 10 giây (5 giây trước và 5 giây sau thời điểm phát hiện vi phạm liên tục quá 3 giây).
+
+    \item \textbf{Chuyển mã video tương thích}: Sử dụng công cụ \texttt{ffmpeg} chuyển mã video sang chuẩn H.264 Baseline Profile để tương thích và trình chiếu tốt trên mọi giao diện Web của giảng viên.\newline • Lưu nhật ký vi phạm: Lưu trữ nhật ký cảnh báo và video bằng chứng về máy chủ làm dữ liệu xác thực cho giảng viên chấm thi.
+
+\end{itemize}
+
+UC15 giúp giám sát tự động các kỳ thi trực tuyến yêu cầu an ninh cao. Các cảnh báo và clip video bằng chứng do AI ghi lại cung cấp dữ liệu tham chiếu quan trọng giúp giảng viên chấm thi và xử lý vi phạm khách quan, chính xác.
+
+\subsection{Quy trình nghiệp vụ}
+
+\label{subsection:2.2.3}
+
+Hệ thống tập trung vào hai quy trình nghiệp vụ cốt lõi: điểm danh thông minh kết hợp GPS và FaceID nhóm, và tổ chức thi trực tuyến dưới sự giám sát tự động của AI. Hai quy trình này thể hiện cách các tác nhân chính như giảng viên, học viên, backend và dịch vụ AI phối hợp để xử lý nghiệp vụ trong hệ thống.
+
+\subsubsection*{a, Quy trình Điểm danh thông minh tích hợp GPS \& FaceID nhóm}
+
+Quy trình này kết hợp xác thực vị trí GPS và nhận diện khuôn mặt từ ảnh tập thể lớp học nhằm hạn chế tình trạng điểm danh hộ. Sơ đồ hoạt động được minh họa trong Hình \ref{fig:act_attendance}.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/Quy_trinh_Diem_danh_thong_minh.png}
+    \caption{Biểu đồ hoạt động mô tả Quy trình Điểm danh thông minh GPS \& FaceID nhóm}
+    \label{fig:act_attendance}
+\end{figure}
+\FloatBarrier
+
+
+Các bước chính của quy trình gồm:
+
+\begin{enumerate}
+    \item \textbf{Khởi tạo phiên điểm danh}: Giảng viên đăng nhập, chọn lớp học phần, thiết lập tọa độ lớp học, bán kính hợp lệ và mã OTP/passcode cho buổi học.
+    \item \textbf{Học viên gửi thông tin điểm danh}: Học viên nhập mã OTP trên ứng dụng di động; ứng dụng thu thập tọa độ GPS và kiểm tra trạng thái giả lập vị trí trước khi gửi dữ liệu về backend.
+    \item \textbf{Kiểm tra vị trí}: Backend đối chiếu tọa độ học viên với tọa độ lớp học bằng công thức Haversine; các trường hợp ngoài phạm vi hoặc nghi ngờ giả lập GPS sẽ không được xác nhận hợp lệ.
+    \item \textbf{Nhận diện khuôn mặt nhóm}: Giảng viên tải ảnh tập thể lớp học lên hệ thống; dịch vụ AI phát hiện khuôn mặt bằng RetinaFace \cite{Deng_2020_CVPR} và đối khớp đặc trưng bằng ArcFace \cite{Deng_2019_CVPR}.
+    \item \textbf{Tổng hợp kết quả}: Hệ thống kết hợp kết quả GPS và FaceID để đề xuất trạng thái có mặt/vắng mặt cho từng học viên.
+    \item \textbf{Phê duyệt và tra cứu}: Giảng viên kiểm tra, điều chỉnh nếu cần và phê duyệt kết quả điểm danh; học viên có thể xem lại kết quả chuyên cần trên ứng dụng.
+\end{enumerate}
+
+\subsubsection*{b, Quy trình Tổ chức thi trực tuyến dưới sự giám sát của AI}
+
+Quy trình này kết hợp xác thực thí sinh trước giờ thi, làm bài trực tuyến và giám sát hành vi bất thường qua webcam bằng AI. Sơ đồ hoạt động được minh họa trong Hình \ref{fig:act_proctoring}.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Hinhve/Quy_trinh_To_chuc_thi_Giam_sat_AI.png}
+    \caption{Biểu đồ hoạt động mô tả Quy trình Tổ chức thi trực tuyến dưới sự giám sát của AI}
+    \label{fig:act_proctoring}
+\end{figure}
+\FloatBarrier
+
+
+Các bước chính của quy trình gồm:
+
+\begin{enumerate}
+    \item \textbf{Cấu hình phòng thi}: Giảng viên soạn đề, thiết lập thời gian làm bài, thời gian mở/đóng đề và lựa chọn các chế độ giám sát AI cần áp dụng.
+    \item \textbf{Chuẩn bị dữ liệu xác thực}: Học viên đăng ký hồ sơ FaceID trước kỳ thi; dữ liệu này được dùng để đối chiếu khi vào phòng thi.
+    \item \textbf{Xác thực trước khi làm bài}: Học viên đăng nhập, chụp ảnh check-in bằng webcam và được hệ thống đối khớp khuôn mặt, đồng thời kiểm tra điều kiện truy cập phòng thi.
+    \item \textbf{Làm bài và giám sát}: Khi được xác thực, học viên làm bài trên trình duyệt; webcam truyền dữ liệu về máy chủ qua WebSocket để phân hệ AI phân tích hướng nhìn, tư thế đầu và số lượng khuôn mặt trong khung hình.
+    \item \textbf{Ghi nhận vi phạm}: Nếu phát hiện hành vi bất thường vượt ngưỡng, hệ thống lưu nhật ký cảnh báo và cắt video bằng chứng để phục vụ quá trình chấm thi.
+    \item \textbf{Nộp bài và chấm điểm}: Sau khi học viên nộp bài hoặc hết giờ, hệ thống đóng phiên giám sát, lưu bài làm, tự động chấm câu hỏi trắc nghiệm và chuyển phần tự luận cho giảng viên.
+    \item \textbf{Công bố kết quả}: Giảng viên kiểm tra bài làm, xem lại bằng chứng AI nếu cần, phê duyệt điểm và hệ thống gửi thông báo kết quả cho học viên qua FCM \cite{fcm2026}.
+\end{enumerate}
+
+\section{Đặc tả chức năng}
+
+\label{section:2.3}
+
+Phần này đặc tả bảy use case quan trọng của hệ thống, bao quát các nghiệp vụ chính như chuẩn bị đề thi, điểm danh sinh trắc học, giám sát thi trực tuyến bằng AI, chấm thi và quản lý tài nguyên học tập. Mỗi use case được trình bày dưới dạng bảng, gồm mã use case, tên use case, tác nhân, tiền điều kiện, luồng sự kiện chính, luồng thay thế và hậu điều kiện để người đọc dễ theo dõi tương tác giữa người dùng và hệ thống.
+
+\subsection{UC-05: Soạn thảo đề thi và cấu hình phòng thi}
+
+\label{subsection:spec_uc_05}
+
+Use case này cho phép tác nhân Giảng viên thiết lập các thông số cấu hình phòng thi trực tuyến và soạn thảo câu hỏi đề thi (hoặc nhập từ tệp Excel). Đặc tả chi tiết được trình bày trong Bảng \ref{table:spec_uc_05}.
+
+\begin{longtable}{|p{2.8cm}|p{0.8cm}|p{2.2cm}|p{7.5cm}|}
+    \caption{Đặc tả chi tiết Use Case UC-05: Soạn thảo đề thi và cấu hình phòng thi}
+    \label{table:spec_uc_05} \\
+    \hline
+    \textbf{Mã Use Case} & \multicolumn{3}{l|}{UC-05} \\ \hline
+    \textbf{Tên Use Case} & \multicolumn{3}{l|}{Soạn thảo đề thi và cấu hình phòng thi} \\ \hline
+    \textbf{Tác nhân} & \multicolumn{3}{l|}{Giảng viên} \\ \hline
+    \textbf{Tiền điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Giảng viên đã đăng nhập thành công vào hệ thống Web quản trị (\mbox{\texttt{FE\_WEB}}). 
+
+      - Giảng viên đang truy cập vào đúng lớp học phần do mình quản lý.} \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng chính} & 1. & Người dùng & Chọn chức năng ``Tạo đề thi mới'' trong tab Bài kiểm tra của lớp học. \\ \cline{2-4}
+     & 2. & Hệ thống & Hiển thị form cấu hình đề thi gồm: tiêu đề, mô tả, thời gian làm bài, hạn nộp, tỷ lệ điểm (weight) và cấu hình giám sát AI. \\ \cline{2-4}
+     & 3. & Người dùng & Nhập thông tin đề thi và thiết lập cấu hình an ninh phòng thi (bật/tắt camera giám sát AI, bật/tắt yêu cầu vị trí GPS, nhập tọa độ GPS của phòng thi và bán kính cho phép). \\ \cline{2-4}
+     & 4. & Người dùng & Soạn thảo danh sách câu hỏi trực tiếp (Trắc nghiệm, Trả lời ngắn, Tự luận) hoặc nhấn chọn ``Import đề thi từ Excel''. \\ \cline{2-4}
+     & 5. & Hệ thống & (Nếu import Excel) Đọc dữ liệu từ file tải lên bằng thư viện Apache POI, kiểm tra cấu trúc câu hỏi, đáp án mẫu và hiển thị danh sách câu hỏi đã được phân tích thành công lên màn hình. \\ \cline{2-4}
+     & 6. & Người dùng & Kiểm tra lại thông số đề thi và chọn ``Lưu và Xuất bản''. \\ \cline{2-4}
+     & 7. & Hệ thống & Lưu thông tin đề thi và câu hỏi vào PostgreSQL database, đồng thời gửi thông báo đẩy FCM thông báo lịch thi mới đến App di động của tất cả học viên trong lớp. \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng phụ} & 5a. & Hệ thống & Thông báo lỗi nếu cấu trúc file Excel import sai định dạng quy định, chỉ rõ dòng/cột bị lỗi để người dùng sửa đổi. \\ \cline{2-4}
+     & 5b. & Hệ thống & Báo lỗi nếu thông số cấu hình vị trí GPS phòng thi không hợp lệ (vĩ độ/kinh độ ngoài phạm vi) hoặc bán kính Geofencing nằm ngoài khoảng cho phép. \\ \hline
+    \textbf{Hậu điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Đề thi được tạo thành công trên hệ thống và hiển thị trong danh sách bài kiểm tra của lớp học phần.} \\ \hline
+\end{longtable}
+
+\subsection{UC-06: Điểm danh nhận diện FaceID nhóm}
+
+\label{subsection:spec_uc_06}
+
+Use case này cho phép Giảng viên thực hiện điểm danh lớp học bằng cách tải lên ảnh chụp tập thể giảng đường, hệ thống AI sẽ tự động phát hiện và nhận diện khuôn mặt để đối khớp chuyên cần. Đặc tả chi tiết được trình bày trong Bảng \ref{table:spec_uc_06}.
+
+\begin{longtable}{|p{2.8cm}|p{0.8cm}|p{2.2cm}|p{7.5cm}|}
+    \caption{Đặc tả chi tiết Use Case UC-06: Điểm danh nhận diện FaceID nhóm}
+    \label{table:spec_uc_06} \\
+    \hline
+    \textbf{Mã Use Case} & \multicolumn{3}{l|}{UC-06} \\ \hline
+    \textbf{Tên Use Case} & \multicolumn{3}{l|}{Điểm danh nhận diện FaceID nhóm} \\ \hline
+    \textbf{Tác nhân} & \multicolumn{3}{l|}{Giảng viên} \\ \hline
+    \textbf{Tiền điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Giảng viên đã đăng nhập hệ thống Web quản trị (\mbox{\texttt{FE\_WEB}}). 
+
+      - Các học viên trong lớp học phần đã hoàn thành đăng ký ảnh chân dung gốc (FaceID profile).} \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng chính} & 1. & Người dùng & Chọn lớp học phần và chọn chức năng ``Điểm danh FaceID nhóm''. \\ \cline{2-4}
+     & 2. & Người dùng & Tải lên bức ảnh chụp tập thể lớp học phần tại giảng đường. \\ \cline{2-4}
+     & 3. & Hệ thống & Gửi tệp tin ảnh tập thể cùng danh sách ID của các học viên trong lớp học phần sang máy chủ dịch vụ nhận diện khuôn mặt (\mbox{\texttt{detect-face}}). \\ \cline{2-4}
+     & 4. & Hệ thống & Dịch vụ AI thực hiện phát hiện tất cả khuôn mặt trong ảnh bằng RetinaFace, cắt ảnh từng mặt kèm 15\% padding, và sử dụng DeepFace (ArcFace model) đối khớp với ảnh hồ sơ gốc của từng học viên. \\ \cline{2-4}
+     & 5. & Hệ thống & Trả về kết quả điểm danh dạng JSON gồm danh sách sinh viên được đối khớp thành công và tọa độ khung bao khuôn mặt (bounding boxes) để vẽ lên giao diện xem trước (Preview). \\ \cline{2-4}
+     & 6. & Người dùng & Kiểm tra hình ảnh xem trước, thực hiện điều chỉnh thủ công trạng thái (Có mặt/Vắng) nếu AI nhận diện thiếu sót, và nhấn ``Xác nhận kết quả''. \\ \cline{2-4}
+     & 7. & Hệ thống & Lưu nhật ký điểm danh của buổi học vào cơ sở dữ liệu chuyên cần của hệ thống. \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng phụ} & 3a. & Hệ thống & Thông báo lỗi mất kết nối máy chủ dịch vụ AI nếu FastAPI Face ID server không hoạt động. \\ \cline{2-4}
+     & 4a. & Hệ thống & Thông báo lỗi không tìm thấy bất kỳ khuôn mặt nào trong ảnh tải lên (ảnh quá mờ, thiếu sáng) và yêu cầu cung cấp bức ảnh khác. \\ \hline
+    \textbf{Hậu điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Cập nhật thành công trạng thái chuyên cần (Có mặt/Vắng) của buổi học cho từng học viên.} \\ \hline
+\end{longtable}
+
+\subsection{UC-10: Làm bài thi trực tuyến dưới giám sát AI}
+
+\label{subsection:spec_uc_10}
+
+Use case này mô tả quy trình Học viên tham gia làm bài thi trực tuyến thông qua trình duyệt Web hoặc App di động dưới sự giám sát tự động của phân hệ AI thời gian thực về hướng nhìn và tư thế đầu. Đặc tả chi tiết được trình bày trong Bảng \ref{table:spec_uc_10}.
+
+\begin{longtable}{|p{2.8cm}|p{0.8cm}|p{2.2cm}|p{7.5cm}|}
+    \caption{Đặc tả chi tiết Use Case UC-10: Làm bài thi trực tuyến dưới giám sát AI}
+    \label{table:spec_uc_10} \\
+    \hline
+    \textbf{Mã Use Case} & \multicolumn{3}{l|}{UC-10} \\ \hline
+    \textbf{Tên Use Case} & \multicolumn{3}{l|}{Làm bài thi trực tuyến dưới giám sát AI} \\ \hline
+    \textbf{Tác nhân} & \multicolumn{3}{l|}{Học viên} \\ \hline
+    \textbf{Tiền điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Học viên đăng nhập thành công vào Web hoặc App di động. 
+
+      - Đề thi đang trong thời gian mở cửa làm bài. 
+
+      - Thiết bị của học viên đã được cấp quyền truy cập Camera và Vị trí (GPS).} \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng chính} & 1. & Người dùng & Chọn đề thi trong danh sách môn học và nhấn nút ``Bắt đầu làm bài''. \\ \cline{2-4}
+     & 2. & Hệ thống & Kiểm tra quyền vị trí, tọa độ GPS thực tế của học viên so với Geofencing của đề thi, và kiểm tra trạng thái an toàn thiết bị. Nếu hợp lệ, hệ thống kích hoạt webcam và hiển thị giao diện làm bài thi. \\ \cline{2-4}
+     & 3. & Hệ thống & Thiết lập kết nối WebSocket liên tục sang dịch vụ giám thị AI (\mbox{\texttt{ai-proctor}}) để truyền luồng dữ liệu hình ảnh camera trước của học viên theo thời gian thực. \\ \cline{2-4}
+     & 4. & Người dùng & Thực hiện làm các câu hỏi trắc nghiệm, trả lời ngắn hoặc nhập nội dung bài thi tự luận. Hệ thống tự động lưu bản nháp (Save Draft) mỗi khi học viên thao tác đổi câu. \\ \cline{2-4}
+     & 5. & Hệ thống & Máy chủ AI dùng MediaPipe FaceMesh liên tục phân tích ánh mắt (Gaze Tracking) và tư thế đầu 3D (solvePnP). Nếu phát hiện học viên liếc mắt hoặc quay đầu liên tục quá 3 giây, hệ thống tự động ghi lại clip bằng chứng dài 10 giây (định dạng H.264 Baseline Profile). \\ \cline{2-4}
+     & 6. & Người dùng & Chọn ``Nộp bài làm'' sau khi hoàn tất các câu hỏi. \\ \cline{2-4}
+     & 7. & Hệ thống & Đóng kết nối WebSocket camera, lưu bài làm chính thức, tự động chấm điểm các câu trắc nghiệm/ngắn dựa trên đáp án mẫu, và lưu các video bằng chứng vi phạm vào server. \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng phụ} & 2a. & Hệ thống & Phát hiện thiết bị sử định vị giả lập (Mock Location): Chặn quyền làm bài thi, hiển thị thông báo lỗi cảnh báo vi phạm an ninh phòng thi và đóng đề thi. \\ \cline{2-4}
+     & 2b. & Hệ thống & Học viên nằm ngoài bán kính cho phép của phòng thi: Từ chối cho học viên làm bài và hiển thị khoảng cách thực tế yêu cầu di chuyển lại gần giảng đường. \\ \cline{2-4}
+     & 5a. & Hệ thống & Camera học viên bị tắt hoặc bị che khuất (No face detected) quá 3 giây: Kích hoạt ghi hình vi phạm không có mặt và phát cảnh báo âm thanh trên màn hình thi. \\ \hline
+    \textbf{Hậu điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Bài làm được nộp thành công, điểm trắc nghiệm được chấm tự động, các video vi phạm của AI được đính kèm vào hồ sơ bài nộp của học viên.} \\ \hline
+\end{longtable}
+
+\subsection{UC-12: Điểm danh định vị GPS \& Chống giả lập}
+
+\label{subsection:spec_uc_12}
+
+Use case này mô tả quy trình Học viên tự thực hiện điểm danh buổi học trên ứng dụng di động cá nhân thông qua việc nhập mã OTP của giảng viên kết hợp đối khớp tọa độ GPS và chặn phần mềm vị trí giả. Đặc tả chi tiết được trình bày trong Bảng \ref{table:spec_uc_12}.
+
+\begin{longtable}{|p{2.8cm}|p{0.8cm}|p{2.2cm}|p{7.5cm}|}
+    \caption{Đặc tả chi tiết Use Case UC-12: Điểm danh định vị GPS \& Chống giả lập}
+    \label{table:spec_uc_12} \\
+    \hline
+    \textbf{Mã Use Case} & \multicolumn{3}{l|}{UC-12} \\ \hline
+    \textbf{Tên Use Case} & \multicolumn{3}{l|}{Điểm danh định vị GPS \& Chống giả lập} \\ \hline
+    \textbf{Tác nhân} & \multicolumn{3}{l|}{Học viên} \\ \hline
+    \textbf{Tiền điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Học viên đã đăng nhập ứng dụng di động (\mbox{\texttt{frontend\_student}}) và cấp quyền GPS. 
+
+      - Giảng viên đang mở phiên điểm danh GPS cho buổi học hiện tại.} \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng chính} & 1. & Người dùng & Mở ứng dụng di động và chọn chức năng ``Điểm danh GPS''. \\ \cline{2-4}
+     & 2. & Người dùng & Nhập mã OTP/Passcode điểm danh do giảng viên hiển thị trên bảng lớp. \\ \cline{2-4}
+     & 3. & Hệ thống & Ứng dụng di động gọi cảm biến phần cứng lấy tọa độ vị trí (Latitude/Longitude) hiện tại và gọi hàm API hệ điều hành để phát hiện thiết bị có đang bật tính năng ``Vị trí giả'' (Mock Location/GPS Spoofer) hay không. \\ \cline{2-4}
+     & 4. & Người dùng & Nhấn ``Xác nhận điểm danh'' để gửi thông tin lên backend server. \\ \cline{2-4}
+     & 5. & Hệ thống & Backend đối chiếu mã điểm danh, tính khoảng cách địa lý (khoảng cách Harvesine) giữa tọa độ sinh viên và tọa độ giảng viên. \\ \cline{2-4}
+     & 6. & Hệ thống & Ghi nhận sinh viên ``Có mặt'' nếu mã điểm danh chính xác, khoảng cách nhỏ hơn bán kính cho phép (ví dụ: 50m) và cờ phát hiện vị trí giả bằng \texttt{FALSE}. \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng phụ} & 3a. & Hệ thống & Phát hiện Mock Location được bật trên Android/iOS: Hệ thống lập chặn yêu cầu nộp bài, lưu vết cờ \texttt{mockLocationDetected = TRUE} vào hệ thống và hiển thị thông báo yêu cầu tắt phần mềm giả lập. \\ \cline{2-4}
+     & 5a. & Hệ thống & Khoảng cách tính toán vượt quá bán kính lớp học: Báo lỗi ``Bạn nằm ngoài phạm vi phòng học'' và ghi nhận trạng thái điểm danh thất bại. \\ \hline
+    \textbf{Hậu điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Học viên được cập nhật trạng thái chuyên cần ``Có mặt'' thành công cho ca học.} \\ \hline
+\end{longtable}
+
+\subsection{UC-13: Đăng ký hồ sơ sinh trắc học Face ID}
+
+\label{subsection:spec_uc_13}
+
+Use case này cho phép Học viên sử dụng camera điện thoại di động đăng ký thông tin sinh trắc học khuôn mặt ban đầu để làm cơ sở dữ liệu đối khớp cho các hoạt động điểm danh nhóm và thi trực tuyến. Đặc tả chi tiết được trình bày trong Bảng \ref{table:spec_uc_13}.
+
+\begin{longtable}{|p{2.8cm}|p{0.8cm}|p{2.2cm}|p{7.5cm}|}
+    \caption{Đặc tả chi tiết Use Case UC-13: Đăng ký hồ sơ sinh trắc học Face ID}
+    \label{table:spec_uc_13} \\
+    \hline
+    \textbf{Mã Use Case} & \multicolumn{3}{l|}{UC-13} \\ \hline
+    \textbf{Tên Use Case} & \multicolumn{3}{l|}{Đăng ký hồ sơ sinh trắc học Face ID} \\ \hline
+    \textbf{Tác nhân} & \multicolumn{3}{l|}{Học viên} \\ \hline
+    \textbf{Tiền điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Học viên đăng nhập thành công vào ứng dụng di động (\mbox{\texttt{frontend\_student}}). 
+
+      - Thiết bị di động đã cấp quyền truy cập máy ảnh.} \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng chính} & 1. & Người dùng & Vào trang Hồ sơ cá nhân trên ứng dụng di động và chọn chức năng ``Đăng ký FaceID''. \\ \cline{2-4}
+     & 2. & Hệ thống & Mở camera trước và hiển thị vòng tròn hướng dẫn định vị khuôn mặt trên màn hình. \\ \cline{2-4}
+     & 3. & Người dùng & Căn chỉnh khuôn mặt vào giữa khung hình, thực hiện chụp ảnh chân dung trực diện rõ nét. \\ \cline{2-4}
+     & 4. & Hệ thống & Gửi tệp tin hình ảnh vừa chụp sang máy chủ nhận diện khuôn mặt (\mbox{\texttt{detect-face}}). \\ \cline{2-4}
+     & 5. & Hệ thống & Dịch vụ AI dùng RetinaFace phát hiện khuôn mặt, trích xuất đặc trưng khuôn mặt dạng vectơ 512 chiều (Face Embeddings) bằng mô hình ArcFace, kiểm tra chất lượng ảnh và lưu file đặc trưng gốc làm căn cứ đối khớp. \\ \cline{2-4}
+     & 6. & Hệ thống & Lưu đường dẫn hình ảnh đã qua cắt crop khuôn mặt (\mbox{\texttt{\_crop}}) vào bảng dữ liệu student trong PostgreSQL database và thông báo đăng ký FaceID thành công. \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng phụ} & 5a. & Hệ thống & Không phát hiện được khuôn mặt hoặc ảnh chụp bị nghiêng quá góc cho phép: Hệ thống báo lỗi ảnh không hợp lệ và yêu cầu học viên chụp lại theo hướng dẫn. \\ \hline
+    \textbf{Hậu điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Ảnh FaceID của sinh viên được đăng ký thành công trên cơ sở dữ liệu và sẵn sàng hoạt động cho việc điểm danh/thi cử sau này.} \\ \hline
+\end{longtable}
+
+\subsection{UC-07: Chấm thi trực tuyến và xem bằng chứng AI}
+
+\label{subsection:spec_uc_07}
+
+Use case này cho phép Giảng viên xem chi tiết các câu trả lời của học viên, đánh giá bài tự luận, xem các video bằng chứng vi phạm do AI tự động ghi nhận để đưa ra quyết định điểm số chính thức. Đặc tả chi tiết được trình bày trong Bảng \ref{table:spec_uc_07}.
+
+\begin{longtable}{|p{2.8cm}|p{0.8cm}|p{2.2cm}|p{7.5cm}|}
+    \caption{Đặc tả chi tiết Use Case UC-07: Chấm thi trực tuyến và xem bằng chứng AI}
+    \label{table:spec_uc_07} \\
+    \hline
+    \textbf{Mã Use Case} & \multicolumn{3}{l|}{UC-07} \\ \hline
+    \textbf{Tên Use Case} & \multicolumn{3}{l|}{Chấm thi trực tuyến và xem bằng chứng AI} \\ \hline
+    \textbf{Tác nhân} & \multicolumn{3}{l|}{Giảng viên} \\ \hline
+    \textbf{Tiền điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Giảng viên đã đăng nhập vào Web quản trị (\mbox{\texttt{FE\_WEB}}). 
+
+      - Học viên đã hoàn thành và nộp bài thi trực tuyến.} \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng chính} & 1. & Người dùng & Truy cập vào bài kiểm tra của lớp học phần, chọn xem danh sách bài thi đã nộp và nhấp chọn một học viên cụ thể. \\ \cline{2-4}
+     & 2. & Hệ thống & Hiển thị giao diện chấm thi gồm: chi tiết các câu trả lời của học viên, các câu trắc nghiệm đã được chấm tự động, điểm số tạm tính và danh sách nhật ký cảnh báo vi phạm từ giám thị AI. \\ \cline{2-4}
+     & 3. & Người dùng & Nhấp vào các dòng cảnh báo vi phạm của AI (nếu có) trên bảng nhật ký để mở trình xem video bằng chứng dài 10 giây (liếc mắt, quay đầu) để xác minh hành vi. \\ \cline{2-4}
+     & 4. & Người dùng & Nhập điểm số thủ công cho các câu hỏi tự luận, viết phản hồi nhận xét cho từng câu hỏi hoặc nhận xét chung cho toàn bộ bài thi của học viên. \\ \cline{2-4}
+     & 5. & Người dùng & Nhấn chọn ``Lưu và công bố điểm''. \\ \cline{2-4}
+     & 6. & Hệ thống & Lưu thông tin điểm số chính thức, chuyển đổi trạng thái bài nộp thành \texttt{GRADED} và tự động gửi thông báo đẩy FCM đến di động học viên báo điểm thi đã có. \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng phụ} & 3a. & Hệ thống & Tệp video bằng chứng không tồn tại trên server vật lý (lỗi lưu trữ): Hệ thống ẩn nút xem video, hiển thị thông báo lỗi file và hiển thị mô tả log vi phạm dạng văn bản thay thế. \\ \hline
+    \textbf{Hậu điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Bài làm của học viên được cập nhật trạng thái đã chấm điểm, lưu trữ điểm số chính thức và công bố phản hồi nhận xét thành công.} \\ \hline
+\end{longtable}
+
+\subsection{UC-14: Quản lý tài liệu học tập lớp học}
+
+\label{subsection:spec_uc_14}
+
+Use case này cho phép Giảng viên và Học viên thực hiện chia sẻ, sắp xếp tài liệu bài học và bài tập trong phạm vi lớp học phần theo cấu trúc thư mục phân cấp. Đặc tả chi tiết được trình bày trong Bảng \ref{table:spec_uc_14}.
+
+\begin{longtable}{|p{2.8cm}|p{0.8cm}|p{2.2cm}|p{7.5cm}|}
+    \caption{Đặc tả chi tiết Use Case UC-14: Quản lý tài liệu học tập lớp học}
+    \label{table:spec_uc_14} \\
+    \hline
+    \textbf{Mã Use Case} & \multicolumn{3}{l|}{UC-14} \\ \hline
+    \textbf{Tên Use Case} & \multicolumn{3}{l|}{Quản lý tài liệu học tập lớp học} \\ \hline
+    \textbf{Tác nhân} & \multicolumn{3}{l|}{Giảng viên, Học viên} \\ \hline
+    \textbf{Tiền điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Người dùng (Giảng viên/Học viên) đã đăng nhập thành công vào hệ thống Web hoặc App di động. 
+
+      - Người dùng có tên trong danh sách lớp học phần tương ứng.} \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng chính} & 1. & Người dùng & Truy cập lớp học phần và chuyển sang tab ``Tài liệu học tập''. \\ \cline{2-4}
+     & 2. & Hệ thống & Hiển thị sơ đồ cây thư mục và danh sách tệp tin tài liệu hiện tại của lớp học phần đó kèm theo các tùy chọn chức năng. \\ \cline{2-4}
+     & 3. & Người dùng & (Nếu là Giảng viên) Nhấp chọn ``Tạo thư mục mới'', ``Tải tài liệu lên'' (slide, sách bài tập...) hoặc nhấp ``Cấu hình quyền tài liệu học viên'' để phân quyền chi tiết. \\ \cline{2-4}
+     & 4. & Người dùng & (Nếu là Học viên có quyền) Tiến hành chọn ``Tải tài liệu lên'' để chia sẻ tệp tin học tập/bài tập nhóm vào thư mục được chỉ định. \\ \cline{2-4}
+     & 5. & Người dùng & Nhấp chọn một tệp tin bất kỳ trong danh sách và chọn ``Tải về''. \\ \cline{2-4}
+     & 6. & Hệ thống & Gửi tệp tin về thiết bị người dùng (đã tự động lược bỏ tiền tố UUID để khôi phục tên file gốc của người dùng khi tải về) và đồng bộ danh sách tệp mới thời gian thực. \\ \hline
+     & \textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \cline{2-4}
+    \textbf{Luồng phụ} & 4a. & Hệ thống & (Học viên không có quyền upload) Ẩn nút chức năng tải tài liệu lên và chặn mọi request API tải lên từ tài khoản học viên này. \\ \cline{2-4}
+     & 5a. & Hệ thống & Tệp tin yêu cầu tải về không còn tồn tại trên server: Báo lỗi ``Tài liệu không khả dụng hoặc đã bị xóa'' và cập nhật lại danh sách tài liệu hiển thị. \\ \hline
+    \textbf{Hậu điều kiện} & \multicolumn{3}{p{10.9cm}|}{- Các tệp tài liệu được lưu trữ phân cấp khoa học, phân quyền thành công và chia sẻ chính xác đến các thành viên trong lớp học phần.} \\ \hline
+\end{longtable}
+
+\section{Yêu cầu phi chức năng}
+
+\label{section:2.4}
+
+Các yêu cầu phi chức năng của hệ thống được xác định theo bốn nhóm chính: hiệu năng, độ tin cậy và tính sẵn sàng, bảo mật và riêng tư, cùng khả năng tương thích. Nội dung chi tiết được tóm tắt trong Bảng \ref{table:non_functional_requirements}.
+
+\begin{longtable}{|p{3cm}|p{3.5cm}|p{8.2cm}|}
+    \caption{Tóm tắt các chỉ số yêu cầu phi chức năng của hệ thống}
+    \label{table:non_functional_requirements}\\
+        \hline
+        \textbf{Nhóm yêu cầu} & \textbf{Tiêu chí đánh giá} & \textbf{Yêu cầu kỹ thuật chi tiết} \\ \hline
+        \multirow{3}{3cm}{Hiệu năng (Performance)} & Nhận diện khuôn mặt nhóm & Thời gian xử lý ảnh tập thể (RetinaFace \cite{Deng_2020_CVPR} và ArcFace \cite{Deng_2019_CVPR}) quy mô 50--80 học viên phải dưới 5 giây. \\ \cline{2-3}
+         & Giám sát AI trực tuyến & Tần suất xử lý luồng ảnh webcam (Gaze Tracking \cite{kaundinya2026inbrowser} và 3D Head Pose solvePnP \cite{Lepetit2009EPnP}) đạt tối thiểu 5--10 khung hình/giây (FPS) trên trình duyệt Web Client. \\ \cline{2-3}
+         & Phản hồi dịch vụ API & Thời gian phản hồi (Response Time) của các API RESTful trên Spring Boot phải dưới 500 ms đối với các yêu cầu thông thường. \\ \hline
+        \multirow{3}{3.2cm}{Độ tin cậy \& Sẵn sàng (Reliability \& Availability)} & Tỷ lệ hoạt động liên tục & Hệ thống duy trì hoạt động trực tuyến liên tục (Uptime) tối thiểu 99.5\% (ngoại trừ các khoảng thời gian bảo trì định kỳ đã thông báo). \\ \cline{2-3}
+         & Khôi phục kết nối & Tự động kết nối lại (Auto-reconnect) ngầm cho luồng truyền video WebSocket khi mất mạng tạm thời dưới 10 giây mà không ảnh hưởng bài làm. \\ \cline{2-3}
+         & Tính toàn vẹn dữ liệu & Tự động lưu bản nháp bài thi (Auto-save) định kỳ sau mỗi 30 giây hoặc khi chuyển đổi câu hỏi về PostgreSQL. \\ \hline
+        \multirow{3}{3cm}{Bảo mật \& Riêng tư (Security \& Privacy)} & Xác thực người dùng & Kiểm soát phiên truy cập tập trung qua Keycloak SSO \cite{keycloak2026} trên môi trường mã hóa HTTPS/TLS. \\ \cline{2-3}
+         & An toàn dữ liệu khuôn mặt & Lưu trữ mã hóa vector sinh trắc học 512 chiều trong cơ sở dữ liệu PostgreSQL; không lưu trữ ảnh gốc độ phân giải cao ngoại trừ ảnh crop khuôn mặt. \\ \cline{2-3}
+         & Chống giả mạo vị trí & Phát hiện và chặn hoàn toàn các ứng dụng giả lập tọa độ (Mock Location/GPS Spoofer) trên Android/iOS. \\ \hline
+        \multirow{2}{3cm}{Khả năng tương thích (Compatibility)} & Ứng dụng di động & Vận hành mượt mà trên hệ điều hành Android (từ phiên bản 9.0) và iOS (từ phiên bản 13.0). \\ \cline{2-3}
+         & Trình duyệt Web & Tương thích tốt với các trình duyệt phổ biến: Google Chrome, Mozilla Firefox, Microsoft Edge và Safari. \\ \hline
+\end{longtable}
+
+\iffalse
+\subsection{Yêu cầu về Hiệu năng (Performance)}
+Để đảm bảo thao tác điểm danh, làm bài thi và truy vấn dữ liệu diễn ra ổn định, hệ thống cần đáp ứng các chỉ tiêu hiệu năng chính sau:
+\begin{itemize}
+    \item \textbf{Nhận diện khuôn mặt nhóm}: Dịch vụ AI cần xử lý ảnh lớp học khoảng 50--80 học viên trong thời gian dưới 5 giây.
+    \item \textbf{Giám sát thi trực tuyến}: Dịch vụ \path{ai-proctor} cần duy trì tốc độ phân tích tối thiểu 5--10 FPS để phát hiện kịp thời các hành vi bất thường.
+    \item \textbf{Phản hồi API}: Các API RESTful thông thường cần phản hồi trung bình dưới 500 ms; các thao tác ghi dữ liệu hoặc nộp bài thi cần hoàn thành trong khoảng dưới 1 giây.
+\end{itemize}
+
+\subsection{Yêu cầu về Độ tin cậy và Tính sẵn sàng (Reliability \& Availability)}
+Hệ thống quản lý học sinh và tổ chức thi trực tuyến phải duy trì mức độ ổn định cao, đặc biệt là trong các đợt thi cử tập trung hoặc giờ điểm danh cao điểm:
+\begin{itemize}
+    \item \textbf{Độ sẵn sàng vận hành (Uptime)}: Hệ thống cần duy trì trạng thái sẵn sàng phục vụ tối thiểu 99.5\% thời gian hoạt động 24/7. Các hoạt động bảo trì, cập nhật hệ thống phải được lên lịch vào các khung giờ thấp điểm (từ 23h00 đến 04h00 sáng) và thông báo trước ít nhất 24 giờ.
+    \item \textbf{Khả năng tự phục hồi kết nối WebSocket}: Dịch vụ giám sát phòng thi trực tuyến phải tích hợp cơ chế tự động kết nối lại ngầm (reconnect) khi xảy ra sự cố gián đoạn mạng tạm thời. Trong khoảng thời gian mất kết nối dưới 10 giây, tiến trình làm bài thi và luồng ghi webcam của học viên phải được bảo toàn, không tự động đóng phòng thi hoặc đánh dấu nộp bài lỗi.
+    \item \textbf{Bảo đảm tính toàn vẹn dữ liệu}: Để ngăn ngừa rủi ro mất mát dữ liệu do thiết bị thí sinh bị mất nguồn hoặc lỗi mạng, hệ thống Web/App làm bài thi phải tự động đồng bộ bản nháp bài làm (auto-save draft) của học viên về máy chủ PostgreSQL sau mỗi 30 giây hoặc ngay khi học viên thao tác chuyển đổi câu hỏi.
+\end{itemize}
+
+\subsection{Yêu cầu về Bảo mật và Riêng tư (Security \& Privacy)}
+Bảo mật thông tin là yếu tố quan trọng hàng đầu do hệ thống xử lý các dữ liệu sinh trắc học nhạy cảm và tổ chức các kỳ thi đánh giá kết quả học tập:
+\begin{itemize}
+    \item \textbf{Xác thực và ủy quyền tập trung}: Tất cả các tác vụ truy cập tài nguyên hệ thống từ Web quản trị và ứng dụng di động đều phải qua xác thực tập trung một lần (SSO) do Keycloak \cite{keycloak2026} kiểm soát. Mọi kết nối truyền tải thông tin giữa các thành phần Front-end và Back-end phải được mã hóa qua giao thức an toàn HTTPS (TLS 1.2 trở lên).
+    \item \textbf{Bảo vệ dữ liệu sinh trắc học}: Các vector đặc trưng khuôn mặt (face embeddings) 512 chiều được trích xuất từ ảnh chân dung của học viên phải được lưu trữ mã hóa an toàn trong cơ sở dữ liệu PostgreSQL. Hệ thống không lưu trữ trực tiếp tệp ảnh chân dung gốc có dung lượng cao của học viên trên máy chủ công cộng nhằm tuân thủ nghiêm ngặt các quy định về bảo vệ dữ liệu cá nhân học đường, chỉ lưu trữ ảnh đã qua cắt crop khuôn mặt cận cảnh (\mbox{\texttt{\_crop}}) để đối khớp chéo khi check-in phòng thi.
+    \item \textbf{Ngăn chặn gian lận vị trí địa lý}: Phân hệ điểm danh tự phục vụ trên ứng dụng di động phải có khả năng phát hiện cờ giả lập vị trí của hệ điều hành (Mock Location trên Android và iOS). Nếu phát hiện cờ \texttt{mockLocationDetected = TRUE}, hệ thống lập tức từ chối và chặn yêu cầu điểm danh, đồng thời ghi nhận hành vi vi phạm an ninh chuyên cần của học viên.
+    \item \textbf{Bảo mật video bằng chứng}: Các đoạn video bằng chứng vi phạm dài 10 giây ghi hình thí sinh gian lận (liếc mắt, quay đầu) được lưu trữ trên máy chủ dưới chuẩn nén H.264 Baseline Profile. Chỉ những giảng viên phụ trách lớp học phần tương ứng và quản trị viên cấp cao mới có quyền truy cập để xem lại các video này thông qua giao diện chấm thi trực tuyến.
+\end{itemize}
+
+\subsection{Yêu cầu về Khả năng tương thích và Khả năng mở rộng (Compatibility \& Extensibility)}
+Hệ thống phải có thiết kế linh hoạt để chạy tốt trên nhiều môi trường thiết bị của học viên và sẵn sàng nâng cấp phần cứng:
+\begin{itemize}
+    \item \textbf{Khả năng tương thích của ứng dụng di động}: Ứng dụng di động dành cho học viên (\mbox{\texttt{frontend\_student}} xây dựng bằng React Native) phải tương thích tốt với các dòng điện thoại thông minh chạy hệ điều hành Android phiên bản 9.0 trở lên và iOS phiên bản 13.0 trở lên.
+    \item \textbf{Khả năng tương thích của giao diện Web}: Trang Web quản trị dành cho Giảng viên và Admin phải hiển thị chuẩn xác, không bị lỗi bố cục trên các trình duyệt phổ biến bao gồm Google Chrome (phiên bản 100 trở lên), Mozilla Firefox, Microsoft Edge và Apple Safari. Giao diện Web phải sử dụng thiết kế đáp ứng (Responsive Design) để tương thích tốt với cả màn hình máy tính để bàn (Desktop), máy tính xách tay (Laptop) và máy tính bảng (Tablet).
+    \item \textbf{Khả năng mở rộng hệ thống (Extensibility)}: Thiết kế kiến trúc dịch vụ (Microservices/Modules) giữa Backend Spring Boot, dịch vụ AI nhận diện khuôn mặt FastAPI (`detect-face`) và dịch vụ giám thị AI FastAPI (`ai-proctor`) phải độc lập về mặt tài nguyên, cho phép quản trị viên dễ dàng mở rộng cấu hình phần cứng độc lập (Scale-up hoặc Scale-out) khi số lượng học viên truy cập đồng thời tăng cao trong các kỳ thi lớn.
+\end{itemize}
+\fi
+
+Kết chương, Chương 2 đã hệ thống hóa bối cảnh nghiệp vụ, các hạn chế của phương pháp điểm danh và giám sát thi truyền thống, từ đó xác định các nhóm chức năng trọng tâm cần phát triển cho hệ thống: quản lý lớp học phần, soạn thảo và tổ chức bài thi, điểm danh kết hợp định vị, nhận diện khuôn mặt nhóm bằng RetinaFace \cite{Deng_2020_CVPR} và ArcFace \cite{Deng_2019_CVPR}, giám sát hành vi thi trực tuyến bằng MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe}, Gaze Tracking \cite{kaundinya2026inbrowser} và solvePnP/EPnP \cite{Lepetit2009EPnP}, cùng các chức năng bảo mật, thông báo và quản lý tài liệu lớp học dựa trên Keycloak SSO \cite{keycloak2026} và FCM \cite{fcm2026}. Thông qua biểu đồ use case, quy trình nghiệp vụ, đặc tả chức năng và yêu cầu phi chức năng, chương này đã làm rõ phạm vi xử lý của hệ thống cũng như các ràng buộc về hiệu năng, độ tin cậy, bảo mật và khả năng tương thích. Những yêu cầu này là cơ sở để Chương 3 lựa chọn và phân tích các nền tảng lý thuyết, công nghệ triển khai phù hợp với từng phân hệ của đồ án.
+
+\end{document}
