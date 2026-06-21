@@ -7,8 +7,8 @@
   \renewenvironment{theglossary}%
     {\tablehead{\hline\bfseries \entryname &
        \bfseries \descriptionname\tabularnewline\hline}%
-     \tabletail{\hline}
-     \begin{supertabular}{|p{3.0cm}|>{\raggedright}p{\dimexpr\textwidth-3.0cm-26pt\relax}|}}%
+     \tabletail{\hline}%
+     \noindent\begin{supertabular}{|p{3.0cm}|>{\raggedright}p{\dimexpr\textwidth-3.0cm-4\tabcolsep-3\arrayrulewidth\relax}|}}%
     {\end{supertabular}}%
 }
 
