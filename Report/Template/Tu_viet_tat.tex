@@ -1,6 +1,17 @@
 %\makeglossaries
 \makenoidxglossaries
 
+% Định nghĩa lại kiểu hiển thị danh mục viết tắt để kéo giãn tối đa bảng khớp với lề văn bản
+\renewglossarystyle{superraggedheaderborder}{
+  \setglossarystyle{superragged}%
+  \renewenvironment{theglossary}%
+    {\tablehead{\hline\bfseries \entryname &
+       \bfseries \descriptionname\tabularnewline\hline}%
+     \tabletail{\hline}
+     \begin{supertabular}{|p{0.22\textwidth}|>{\raggedright}p{0.72\textwidth}|}}%
+    {\end{supertabular}}%
+}
+
 % Danh mục thuật ngữ và từ viết tắt
 
 \newglossaryentry{acid}{
@@ -335,7 +346,7 @@
 \newglossaryentry{json}{
     type=\acronymtype,
     name={JSON},
-    description={Định dạng văn bản trao đổi dữ liệu gọn nhẹ (JavaScript Object Notation)},
+    description={Định dạng văn bản trao đổi dữ liệu dạng văn bản nhẹ (JavaScript Object Notation)},
     first={JSON}
 }
 
@@ -349,7 +360,7 @@
 \newglossaryentry{jsx}{
     type=\acronymtype,
     name={JSX},
-    description={Cú pháp mở rộng kết hợp JavaScript và XML dùng trong ReactJS để khai báo giao diện (JavaScript XML)},
+    description={Cú pháp mở rộng viết mã giao diện của thư viện ReactJS (JavaScript XML)},
     first={JSX}
 }
 
@@ -615,7 +626,7 @@
 \newglossaryentry{ssl}{
     type=\acronymtype,
     name={SSL},
-    description={Giao thức mã hóa an toàn lớp truyền tải dữ liệu cũ (Secure Sockets Layer)},
+    description={Giao thức bảo mật lớp truyền tải dữ liệu cũ (Secure Sockets Layer)},
     first={SSL}
 }
 
