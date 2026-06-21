@@ -22,7 +22,7 @@ Hệ thống quyết định sử dụng \textbf{Keycloak} \cite{keycloak2026} l
 \begin{itemize}
     \item \textbf{Độ tin cậy và bảo mật cao}: Keycloak hỗ trợ đầy đủ các giao thức bảo mật tiêu chuẩn công nghiệp bao gồm OAuth 2.0, OpenID Connect (OIDC) và SAML 2.0. So với phương án tự xây dựng (dễ gặp các lỗi cấu hình bảo mật hoặc lỗ hổng lưu trữ token), Keycloak cung cấp một giải pháp đã được kiểm định nghiêm ngặt với các tính năng nâng cao có sẵn như brute-force protection, quản lý phiên làm việc (session management), và đổi mật khẩu an toàn.
     \item \textbf{Tối ưu chi phí và kiểm soát dữ liệu}: So với Auth0 hay Firebase Authentication vốn tính phí theo số lượng người dùng hoạt động hàng tháng (MAU) và giới hạn quyền kiểm soát cơ sở hạ tầng, Keycloak là mã nguồn mở hoàn toàn, có thể tự cài đặt trên Docker container riêng, giúp trường học tự chủ $100\%$ về mặt dữ liệu học viên và không phát sinh chi phí vận hành tăng thêm khi quy mô người dùng mở rộng.
-    \item \textbf{Khả năng tích hợp linh hoạt}: Keycloak cung cấp sẵn thư viện admin client hỗ trợ Java/Spring Boot (thư viện \mbox{\texttt{keycloak-admin-client}} và \mbox{\texttt{keycloak-core}}), giúp backend dễ dàng thực hiện các tác vụ quản lý tài khoản như phê duyệt giảng viên mới, kích hoạt/khóa tài khoản, và đồng bộ dữ liệu người dùng.
+    \item \textbf{Khả năng tích hợp linh hoạt}: Keycloak cung cấp bộ Admin Client cho Java/Spring Boot, giúp backend dễ dàng thực hiện các tác vụ quản lý tài khoản như phê duyệt giảng viên mới, kích hoạt/khóa tài khoản và đồng bộ dữ liệu người dùng.
 \end{itemize}
 
 \section{Kiến trúc Backend và Hệ quản trị cơ sở dữ liệu (Spring Boot \& PostgreSQL)}
@@ -59,7 +59,7 @@ Sinh viên và giảng viên cần các công cụ di động tiện lợi để
 Hệ thống sử dụng \textbf{React Native} (phiên bản 0.74.2) làm nền tảng phát triển ứng dụng di động vì:
 \begin{itemize}
     \item \textbf{Tối ưu hóa tài nguyên phát triển}: React Native cho phép chia sẻ đến hơn $85\%$ mã nguồn giữa hai nền tảng Android và iOS. Điều này giúp giảm một nửa thời gian thiết kế giao diện và phát triển logic nghiệp vụ so với phương pháp viết Native App riêng biệt cho từng hệ điều hành.
-    \item \textbf{Khả năng tương tác phần cứng tốt}: React Native cung cấp các cầu nối native (Native Bridges) rất mạnh mẽ và ổn định để truy cập trực tiếp vào phần cứng thiết bị bao gồm: cảm biến định vị GPS (\mbox{\texttt{react-native-geolocation-service}}), camera để thu thập ảnh Face ID (\mbox{\texttt{react-native-image-picker}}), và truy cập phân hệ bảo mật phần cứng của hệ điều hành để lưu khóa mã hóa vân tay/Face ID thiết bị (\mbox{\texttt{react-native-keychain}}).
+    \item \textbf{Khả năng tương tác phần cứng tốt}: React Native cung cấp các cầu nối native (Native Bridges) ổn định để truy cập trực tiếp vào phần cứng thiết bị như cảm biến định vị GPS, camera thu thập ảnh Face ID và phân hệ bảo mật của hệ điều hành để lưu khóa mã hóa vân tay/Face ID.
     \item \textbf{Đồng bộ tư thế phát triển với Web Frontend}: Do ứng dụng Web quản trị sử dụng React, việc chọn React Native cho thiết bị di động giúp nhóm phát triển tận dụng tối đa tư duy xây dựng component và quản lý luồng dữ liệu (Sử dụng Redux Toolkit).
 \end{itemize}
 
