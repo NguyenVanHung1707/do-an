@@ -669,12 +669,361 @@ Danh sách chi tiết các ngôn ngữ lập trình, hệ quản trị cơ sở 
 \end{longtable}
 
 \subsection{Kết quả đạt được}
-Sinh viên trước tiên mô tả kết quả đạt được của mình là gì, ví dụ như các sản phẩm được đóng gói là gì, bao gồm những thành phần nào, ý nghĩa, vai trò?
+Sau quá trình nghiên cứu, thiết kế và phát triển, tác giả đã hoàn thành việc xây dựng toàn bộ hệ thống phần mềm tối ưu hóa quy trình điểm danh và quản lý học sinh. Các sản phẩm phần mềm thu được sau khi hoàn thành đề tài đã được đóng gói và cấu hình đồng bộ, bao gồm các thành phần cốt lõi sau:
+\begin{itemize}
+    \item \textbf{Phân hệ Nghiệp vụ trung tâm (\path{backend-core})}: Được xây dựng bằng Spring Boot \cite{spring_boot_docs2026} và Spring Data JPA \cite{spring_data_jpa_docs2026}, đóng vai trò hạt nhân tiếp nhận và điều phối mọi yêu cầu nghiệp vụ của hệ thống. Phân hệ được đóng gói thành tệp tin lưu trữ tự thực thi (\path{.jar}) với dung lượng khoảng 55 MB, sẵn sàng chạy trong môi trường container của Docker \cite{docker_compose_docs2026}.
+    \item \textbf{Dịch vụ Nhận diện Khuôn mặt (\path{detect-face})}: Được xây dựng dưới dạng dịch vụ web nhẹ chạy trên FastAPI \cite{fastapi_docs2026}, tích hợp các mô hình RetinaFace \cite{Deng_2020_CVPR} và ArcFace \cite{Deng_2019_CVPR} để thực hiện nhận diện điểm danh nhóm. Do tích hợp các thư viện học máy nặng như PyTorch \cite{pytorch_docs} và các tệp trọng số mô hình đã được tải sẵn, dịch vụ được đóng gói dưới dạng Docker Image với dung lượng khoảng 1.8 GB.
+    \item \textbf{Dịch vụ Giám sát phòng thi AI (\path{ai-proctor})}: Phục vụ việc theo dõi và phát hiện các hành vi bất thường của thí sinh thông qua luồng WebSocket \cite{fette2011websocket}. Phân hệ sử dụng MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} để ước lượng tư thế đầu 3D bằng giải thuật giải bài toán PnP \cite{Lepetit2009EPnP}. Dịch vụ được đóng gói thành Docker Image có dung lượng khoảng 428 MB, sẵn sàng tích hợp các mô hình ước lượng hình học 3D.
+    \item \textbf{Giao diện Web (\path{FE_WEB})}: Xây dựng trên nền tảng React \cite{react_docs2026} và Vite \cite{vite_docs2026}, cung cấp hệ thống giao diện Web đầy đủ tính năng cho quản trị viên và giảng viên. Mã nguồn biên dịch tĩnh tối ưu và được đóng gói cùng máy chủ proxy NGINX \cite{nginx_docs2026} trong một Docker Image với dung lượng khoảng 733.47 KB.
+    \item \textbf{App di động Học viên (\path{frontend_student})}: Phát triển bằng framework React Native \cite{react_native_docs2026}, phục vụ học viên theo dõi thời khóa biểu, điểm danh Geofencing bằng Haversine \cite{sinnott1984virtues} và tham gia thi trực tuyến. Ứng dụng di động được đóng gói thành tệp APK/IPA cài đặt tiện lợi, mã nguồn có dung lượng khoảng 613,16 KB.
+    \item \textbf{App di động Giảng viên (\path{frontend_teacher})}: Phát triển bằng framework React Native \cite{react_native_docs2026}, hỗ trợ giảng viên điểm danh nhanh, theo dõi chuyên cần lớp học trực quan ngay trên điện thoại di động. Ứng dụng được đóng gói thành công, dung lượng mã nguồn khoảng 1.00 MB.
+\end{itemize}
 
-Sinh viên cần thống kê các thông tin về ứng dụng của mình như: số dòng code, số lớp, số gói, dung lượng toàn bộ mã nguồn, dung lượng của từng sản phẩm đóng gói, v.v. Tương tự như phần liệt kê về công cụ sử dụng, sinh viên cũng nên dùng bảng để mô tả phần thông tin thống kê này.
+Để có cái nhìn tổng quan về quy mô và các sản phẩm mã nguồn của toàn bộ dự án, tác giả đã tiến hành thống kê số lượng dòng lệnh (Lines of Code - LOC), số lượng lớp/tệp tin và số lượng gói (package) được tổ chức trong từng phân hệ thành phần. Số liệu thống kê chi tiết được trình bày cụ thể trong Bảng \ref{table:codebase_statistics}.
+
+\begin{longtable}{|p{0.32\textwidth}|p{0.25\textwidth}|p{0.08\textwidth}|p{0.08\textwidth}|p{0.12\textwidth}|p{0.12\textwidth}|}
+    \caption{Thống kê quy mô mã nguồn các phân hệ trong hệ thống}
+    \label{table:codebase_statistics}\\
+    \hline
+    \textbf{Phân hệ / Thành phần} & \textbf{Công nghệ sử dụng} & \textbf{Số gói} & \textbf{Số lớp / tệp} & \textbf{Số dòng code} & \textbf{Dung lượng} \\ \hline
+    \endfirsthead
+    \multicolumn{6}{r}{\textit{Tiếp theo trang trước}} \\
+    \hline
+    \textbf{Phân hệ / Thành phần} & \textbf{Công nghệ sử dụng} & \textbf{Số gói} & \textbf{Số lớp / tệp} & \textbf{Số dòng code} & \textbf{Dung lượng} \\ \hline
+    \endhead
+    \hline
+    \multicolumn{6}{r}{\textit{Xem tiếp trang sau}} \\
+    \endfoot
+    \hline
+    \endlastfoot
+    
+    Phân hệ Nghiệp vụ (\path{backend-core}) & Java, Spring Boot & 10 & 80 & 14.500 & 55,00 MB \\ \hline
+    Nhận diện khuôn mặt (\path{detect-face}) & Python, FastAPI & 1 & 5 & 1.250 & 1,80 GB \\ \hline
+    Giám sát phòng thi (\path{ai-proctor}) & Python, FastAPI & 1 & 3 & 428 & 16,20 KB \\ \hline
+    Giao diện Web (\path{FE_WEB}) & TypeScript, React & 16 & 46 & 17.683 & 733,47 KB \\ \hline
+    App di động Học viên (\path{frontend_student}) & JavaScript, React Native & 31 & 40 & 21.583 & 613,16 KB \\ \hline
+    App di động Giảng viên (\path{frontend_teacher}) & JavaScript, React Native & 32 & 55 & 30.255 & 1,00 MB \\ \hline
+    \textbf{Tổng cộng hệ thống} & \textbf{-} & \textbf{110} & \textbf{289} & \textbf{80.698} & \textbf{2,74 MB} \\ \hline
+\end{longtable}
+
+Qua số liệu thống kê trong Bảng \ref{table:codebase_statistics}, có thể thấy hệ thống phần mềm có quy mô trung bình lớn với hơn 80.000 dòng mã nguồn được phân bố trải rộng trên 6 phân hệ lớn. Phân hệ di động dành cho giảng viên (\path{frontend_teacher}) và học viên (\path{frontend_student}) chiếm phần lớn số dòng lệnh do đặc thù phức tạp của việc xây dựng giao diện tương tác động đa dạng trên thiết bị di động cũng như các xử lý logic về Geofencing, chống giả lập GPS và tích hợp camera. Trong khi đó, phân hệ \path{backend-core} tập trung phần lớn vào cấu trúc dữ liệu và nghiệp vụ chặt chẽ, bảo đảm tính toàn vẹn dữ liệu cho toàn bộ hệ thống điểm danh và quản lý học sinh.
 
 \subsection{Minh họa các chức năng chính}
-Sinh viên lựa chọn và đưa ra màn hình cho các chức năng chính, quan trọng, và thú vị nhất. Mỗi giao diện cần phải có lời giải thích ngắn gọn. Khi giải thích, sinh viên có thể kết hợp với các chú thích ở trong hình ảnh giao diện.
+\label{subsection:4.3.3}
+
+Dưới đây trình bày toàn bộ các giao diện thực tế của hệ thống phần mềm tối ưu hóa quy trình điểm danh và quản lý học sinh. Các giao diện được tổ chức theo cấu trúc phân cấp chức năng và luồng tương tác của người dùng, thể hiện đầy đủ cả phiên bản trên trình duyệt Web dành cho người quản trị, giảng viên (\path{FE_WEB}) và phiên bản ứng dụng di động dành cho học viên, giảng viên (\path{frontend_student}, \path{frontend_teacher}).
+
+\subsubsection{Giao diện đăng nhập}
+
+Quy trình xác thực người dùng được quản lý tập trung thông qua máy chủ Keycloak SSO \cite{keycloak2026}. Người dùng khi truy cập vào hệ thống trên Web hoặc ứng dụng di động sẽ được điều hướng tới màn hình đăng nhập bảo mật. Sau khi đăng nhập thành công, học viên thực hiện đăng ký hồ sơ sinh trắc học bằng camera để hệ thống trích xuất đặc trưng khuôn mặt phục vụ điểm danh FaceID.
+
+Hình \ref{fig:ui_login_web} minh họa giao diện đăng nhập hệ thống trên nền tảng Web thông qua Keycloak SSO với hai chế độ giao diện sáng (light mode) và tối (dark mode).
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=3.4cm]{Hinhve/ui_login_web_light.png}
+    \hfill
+    \includegraphics[height=3.4cm]{Hinhve/ui_login_web_dark.png}
+    \caption{Giao diện đăng nhập hệ thống trên Web ở chế độ sáng và chế độ tối}
+    \label{fig:ui_login_web}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_login_app} minh họa giao diện đăng nhập hệ thống trên ứng dụng di động dành cho học viên và giảng viên.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_login_app_student.jpg}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_login_app_teacher.jpg}
+    \caption{Giao diện đăng nhập trên ứng dụng di động của học viên và giảng viên}
+    \label{fig:ui_login_app}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_student_face_register} minh họa giao diện đăng ký hồ sơ sinh trắc học FaceID của học viên trên nền tảng Web và ứng dụng di động. Sau khi chụp ảnh thành công, ảnh được gửi tới phân hệ AI \path{detect-face} để phát hiện khuôn mặt bằng RetinaFace \cite{Deng_2020_CVPR} và trích xuất vector đặc trưng $128$-chiều bằng mô hình ArcFace \cite{Deng_2019_CVPR}.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_face_register.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_face_register.png}
+    \caption{Giao diện học viên đăng ký khuôn mẫu FaceID trên Web và App di động}
+    \label{fig:ui_student_face_register}
+\end{figure}
+\FloatBarrier
+
+\subsubsection{Giao diện Admin}
+
+Người quản trị (Admin) chịu trách nhiệm giám sát toàn bộ hoạt động hệ thống, quản lý học kỳ, quản lý danh sách giảng viên và thực hiện phê duyệt các tài khoản giảng viên đăng ký mới để đảm bảo tính xác thực của người dùng.
+
+Hình \ref{fig:ui_admin_dashboard_semester} minh họa trang tổng quan (Dashboard) của hệ thống và màn hình quản lý học kỳ dành cho Admin.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=3.4cm]{Hinhve/ui_admin_dashboard.png}
+    \hfill
+    \includegraphics[height=3.4cm]{Hinhve/ui_admin_semester.png}
+    \caption{Giao diện trang tổng quan hệ thống và quản lý học kỳ dành cho Admin}
+    \label{fig:ui_admin_dashboard_semester}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_admin_approve_profile} minh họa màn hình phê duyệt tài khoản giảng viên đăng ký mới và giao diện quản lý thông tin cá nhân của Admin.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=3.4cm]{Hinhve/ui_admin_teacher_approve.png}
+    \hfill
+    \includegraphics[height=3.4cm]{Hinhve/ui_admin_profile.png}
+    \caption{Giao diện Admin phê duyệt tài khoản giảng viên và quản lý thông tin cá nhân}
+    \label{fig:ui_admin_approve_profile}
+\end{figure}
+\FloatBarrier
+
+\subsubsection{Giao diện Sinh viên}
+
+Giao diện sinh viên bao gồm các chức năng hỗ trợ theo dõi lịch học, thực hiện check-in điểm danh cá nhân và tham gia lớp học phần (xem tài liệu, thảo luận, theo dõi chuyên cần và làm bài thi trực tuyến).
+
+Hình \ref{fig:ui_student_schedule_grades} minh họa màn hình thời khóa biểu học tập và kết quả học tập tổng hợp của học viên trên nền tảng Web và ứng dụng di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_schedule.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_schedule.png}
+    \\[0.3cm]
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_grades.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_grades.png}
+    \caption{Giao diện thời khóa biểu và kết quả học tập của học viên trên Web và App di động}
+    \label{fig:ui_student_schedule_grades}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_student_attendance_mgmt} minh họa màn hình lịch sử điểm danh và giao diện thực hiện trả lời điểm danh của học viên trên cả hai nền tảng Web và di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_attendance.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_attendance.png}
+    \caption{Giao diện xem lịch sử điểm danh của học viên trên Web và App di động}
+    \label{fig:ui_student_attendance_mgmt}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_student_checkin} minh họa giao diện nhập mã OTP và gửi vị trí GPS của học viên để thực hiện check-in điểm danh trên Web và ứng dụng di động. Hệ thống thực hiện kiểm tra Geofencing bằng công thức Haversine \cite{sinnott1984virtues} và phát hiện giả lập GPS.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_checkin.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_checkin.png}
+    \caption{Giao diện học viên thực hiện check-in GPS và OTP trên Web và App di động}
+    \label{fig:ui_student_checkin}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_student_class_main} minh họa màn hình giao diện chính của lớp học phần mà học viên tham gia trên nền tảng Web và di động. Đây là giao diện cha chứa các liên kết đến tài liệu, thảo luận, chuyên cần và bài thi.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_class.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_class.png}
+    \caption{Giao diện chính của lớp học phần dành cho học viên trên Web và App di động}
+    \label{fig:ui_student_class_main}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_student_class_docs_chat} minh họa màn hình thư mục tài liệu lớp học phần và giao diện phòng thảo luận diễn đàn lớp học phần của học viên trên Web và ứng dụng di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_class_docs.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_class_docs.png}
+    \\[0.3cm]
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_class_chat.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_class_chat.png}
+    \caption{Giao diện tài liệu học tập và thảo luận lớp học của học viên trên Web và App di động}
+    \label{fig:ui_student_class_docs_chat}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_student_class_attendance_exams} minh họa màn hình nhật ký chuyên cần chi tiết và danh sách các bài thi, bài tập của lớp học phần dành cho học viên trên Web và ứng dụng di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_class_attendance_log.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_class_attendance_log.png}
+    \\[0.3cm]
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_class_exams.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_class_exams.png}
+    \caption{Giao diện nhật ký chuyên cần và danh sách bài thi của học viên trên Web và App di động}
+    \label{fig:ui_student_class_attendance_exams}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_student_take_exam} minh họa giao diện học viên làm bài thi trực tuyến có sự giám sát của camera AI trên Web và ứng dụng di động. Hệ thống truyền luồng webcam qua WebSocket \cite{fette2011websocket} tới dịch vụ \path{ai-proctor} để MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} và EPnP \cite{Lepetit2009EPnP} theo dõi hướng nhìn và góc quay đầu.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_take_exam.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_take_exam.png}
+    \caption{Giao diện học viên thực hiện làm bài thi trực tuyến có camera giám sát AI}
+    \label{fig:ui_student_take_exam}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_student_profile} minh họa màn hình thông tin cá nhân của học viên trên cả hai nền tảng Web và ứng dụng di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_web_profile.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_student_app_profile.png}
+    \caption{Giao diện thông tin cá nhân học viên trên Web và App di động}
+    \label{fig:ui_student_profile}
+\end{figure}
+\FloatBarrier
+
+\subsubsection{Giao diện Giáo viên}
+
+Giao diện giảng viên bao gồm các chức năng quản trị lớp học phần do mình giảng dạy, quản lý chuyên cần học viên, chấm điểm và xem các báo cáo thống kê, học lực, cùng nhật ký Giám thị AI.
+
+Hình \ref{fig:ui_teacher_stats_pending} minh họa trang bảng thống kê tổng quan (Dashboard) của giảng viên và màn hình hiển thị trạng thái chờ phê duyệt tài khoản giảng viên đăng ký mới.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_stats.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_stats.png}
+    \\[0.3cm]
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_pending.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_pending.png}
+    \caption{Giao diện bảng thống kê và màn hình chờ xác nhận tài khoản của giảng viên}
+    \label{fig:ui_teacher_stats_pending}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_teacher_create_attendance_group} minh họa màn hình tạo form phiên điểm danh mới và giao diện điểm danh bằng nhận diện khuôn mặt nhóm lớp học trên Web và ứng dụng di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_create_attendance.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_create_attendance.png}
+    \\[0.3cm]
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_group_face_attendance.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_group_face_attendance.png}
+    \caption{Giao diện tạo phiên điểm danh và điểm danh khuôn mặt nhóm của giảng viên}
+    \label{fig:ui_teacher_create_attendance_group}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_teacher_class_mgmt_main} minh họa màn hình danh sách và giao diện quản lý lớp học phần chính của giảng viên trên Web và ứng dụng di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_class_mgmt.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_class_mgmt.png}
+    \caption{Giao diện danh sách và quản lý chính lớp học phần của giảng viên}
+    \label{fig:ui_teacher_class_mgmt_main}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_teacher_class_docs_chat_att} minh họa màn hình quản lý tài liệu học tập, phòng thảo luận diễn đàn lớp học phần, và màn hình quản lý thành viên kèm theo thống kê chuyên cần trên Web và ứng dụng di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_class_docs.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_class_docs.png}
+    \\[0.3cm]
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_class_chat.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_class_chat.png}
+    \\[0.3cm]
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_class_attendance.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_class_attendance.png}
+    \caption{Giao diện tài liệu, thảo luận và quản lý thành viên lớp học của giảng viên}
+    \label{fig:ui_teacher_class_docs_chat_att}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_teacher_class_config_performance} minh họa màn hình cấu hình lịch học định kỳ và màn hình phân tích học lực lớp học phần của giảng viên trên Web và ứng dụng di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_class_schedule_config.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_class_schedule_config.png}
+    \\[0.3cm]
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_class_performance.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_class_performance.png}
+    \caption{Giao diện cấu hình lịch học và phân tích học lực lớp học phần của giảng viên}
+    \label{fig:ui_teacher_class_config_performance}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_teacher_class_exams_grading} minh họa màn hình danh sách bài thi, bài tập và giao diện chấm điểm bài làm tự luận của học viên dành cho giảng viên trên Web và ứng dụng di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_class_exams.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_class_exams.png}
+    \\[0.3cm]
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_grade_exam.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_grade_exam.png}
+    \caption{Giao diện danh sách bài thi và chấm điểm tự luận của giảng viên}
+    \label{fig:ui_teacher_class_exams_grading}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_teacher_ai_proctor_log_summary} minh họa màn hình nhật ký Giám thị AI và bảng điểm tổng hợp của lớp học phần dành cho giảng viên trên Web và ứng dụng di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_ai_proctor_log.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_ai_proctor_log.png}
+    \\[0.3cm]
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_class_grade_summary.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_class_grade_summary.png}
+    \caption{Giao diện nhật ký Giám thị AI và bảng điểm tổng hợp của giảng viên}
+    \label{fig:ui_teacher_ai_proctor_log_summary}
+\end{figure}
+\FloatBarrier
+
+Hình \ref{fig:ui_teacher_profile_schedule} minh họa màn hình thông tin cá nhân của giảng viên và màn hình thời khóa biểu giảng dạy trên cả hai nền tảng Web và ứng dụng di động.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_profile.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_profile.png}
+    \\[0.3cm]
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_web_schedule.png}
+    \hfill
+    \includegraphics[height=5.0cm]{Hinhve/ui_teacher_app_schedule.png}
+    \caption{Giao diện thông tin cá nhân và thời khóa biểu của giảng viên trên Web và App di động}
+    \label{fig:ui_teacher_profile_schedule}
+\end{figure}
+\FloatBarrier
 
 \section{Kiểm thử hệ thống}
 \label{section:4.4}
