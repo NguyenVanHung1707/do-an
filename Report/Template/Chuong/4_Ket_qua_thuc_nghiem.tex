@@ -669,44 +669,42 @@ Danh sách chi tiết các ngôn ngữ lập trình, hệ quản trị cơ sở 
 \end{longtable}
 
 \subsection{Kết quả đạt được}
-Sau quá trình nghiên cứu, thiết kế và phát triển, tác giả đã hoàn thành việc xây dựng toàn bộ hệ thống phần mềm tối ưu hóa quy trình điểm danh và quản lý học sinh. Các sản phẩm phần mềm thu được sau khi hoàn thành đề tài đã được đóng gói và cấu hình đồng bộ, bao gồm các thành phần cốt lõi sau:
+Sau quá trình phát triển, hệ thống đã hoàn thiện các nhóm chức năng cốt lõi phục vụ điểm danh, quản lý lớp học và thi trực tuyến:
 \begin{itemize}
-    \item \textbf{Phân hệ Nghiệp vụ trung tâm (\path{backend-core})}: Được xây dựng bằng Spring Boot \cite{spring_boot_docs2026} và Spring Data JPA \cite{spring_data_jpa_docs2026}, đóng vai trò hạt nhân tiếp nhận và điều phối mọi yêu cầu nghiệp vụ của hệ thống. Phân hệ được đóng gói thành tệp tin lưu trữ tự thực thi (\path{.jar}) với dung lượng khoảng 55 MB, sẵn sàng chạy trong môi trường container của Docker \cite{docker_compose_docs2026}.
-    \item \textbf{Dịch vụ Nhận diện Khuôn mặt (\path{detect-face})}: Được xây dựng dưới dạng dịch vụ web nhẹ chạy trên FastAPI \cite{fastapi_docs2026}, tích hợp các mô hình RetinaFace \cite{Deng_2020_CVPR} và ArcFace \cite{Deng_2019_CVPR} để thực hiện nhận diện điểm danh nhóm. Do tích hợp các thư viện học máy nặng như PyTorch \cite{pytorch_docs} và các tệp trọng số mô hình đã được tải sẵn, dịch vụ được đóng gói dưới dạng Docker Image với dung lượng khoảng 1.8 GB.
-    \item \textbf{Dịch vụ Giám sát phòng thi AI (\path{ai-proctor})}: Phục vụ việc theo dõi và phát hiện các hành vi bất thường của thí sinh thông qua luồng WebSocket \cite{fette2011websocket}. Phân hệ sử dụng MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} để ước lượng tư thế đầu 3D bằng giải thuật giải bài toán PnP \cite{Lepetit2009EPnP}. Dịch vụ được đóng gói thành Docker Image có dung lượng khoảng 428 MB, sẵn sàng tích hợp các mô hình ước lượng hình học 3D.
-    \item \textbf{Giao diện Web (\path{FE_WEB})}: Xây dựng trên nền tảng React \cite{react_docs2026} và Vite \cite{vite_docs2026}, cung cấp hệ thống giao diện Web đầy đủ tính năng cho quản trị viên và giảng viên. Mã nguồn biên dịch tĩnh tối ưu và được đóng gói cùng máy chủ proxy NGINX \cite{nginx_docs2026} trong một Docker Image với dung lượng khoảng 733.47 KB.
-    \item \textbf{App di động Học viên (\path{frontend_student})}: Phát triển bằng framework React Native \cite{react_native_docs2026}, phục vụ học viên theo dõi thời khóa biểu, điểm danh Geofencing bằng Haversine \cite{sinnott1984virtues} và tham gia thi trực tuyến. Ứng dụng di động được đóng gói thành tệp APK/IPA cài đặt tiện lợi, mã nguồn có dung lượng khoảng 613,16 KB.
-    \item \textbf{App di động Giảng viên (\path{frontend_teacher})}: Phát triển bằng framework React Native \cite{react_native_docs2026}, hỗ trợ giảng viên điểm danh nhanh, theo dõi chuyên cần lớp học trực quan ngay trên điện thoại di động. Ứng dụng được đóng gói thành công, dung lượng mã nguồn khoảng 1.00 MB.
+    \item \textbf{Quản lý người dùng và lớp học}: Hỗ trợ đăng nhập, phân quyền, phê duyệt giảng viên, quản lý học kỳ, lớp học phần, danh sách học viên và thời khóa biểu.
+    \item \textbf{Điểm danh thông minh}: Hỗ trợ điểm danh nhóm bằng ảnh lớp học, điểm danh cá nhân theo GPS/OTP và đối soát kết quả trước khi xác nhận.
+    \item \textbf{Thi trực tuyến và giám sát}: Cho phép tạo đề, làm bài, chấm điểm, ghi nhận dấu hiệu bất thường và xem lại nhật ký giám sát.
+    \item \textbf{Tài liệu và trao đổi lớp học}: Cho phép đăng tải tài liệu, truy cập tài nguyên học tập và trao đổi trong phạm vi lớp học phần.
 \end{itemize}
 
-Để có cái nhìn tổng quan về quy mô và các sản phẩm mã nguồn của toàn bộ dự án, tác giả đã tiến hành thống kê số lượng dòng lệnh (Lines of Code - LOC), số lượng lớp/tệp tin và số lượng gói (package) được tổ chức trong từng phân hệ thành phần. Số liệu thống kê chi tiết được trình bày cụ thể trong Bảng \ref{table:codebase_statistics}.
+Quy mô mã nguồn của từng phân hệ được thống kê theo số gói, số lớp/tệp và số dòng lệnh trong Bảng \ref{table:codebase_statistics}.
 
-\begin{longtable}{|p{0.32\textwidth}|p{0.25\textwidth}|p{0.08\textwidth}|p{0.08\textwidth}|p{0.12\textwidth}|p{0.12\textwidth}|}
+\begin{longtable}{|p{0.34\textwidth}|p{0.28\textwidth}|p{0.09\textwidth}|p{0.10\textwidth}|p{0.13\textwidth}|}
     \caption{Thống kê quy mô mã nguồn các phân hệ trong hệ thống}
     \label{table:codebase_statistics}\\
     \hline
-    \textbf{Phân hệ / Thành phần} & \textbf{Công nghệ sử dụng} & \textbf{Số gói} & \textbf{Số lớp / tệp} & \textbf{Số dòng code} & \textbf{Dung lượng} \\ \hline
+    \textbf{Phân hệ / Thành phần} & \textbf{Công nghệ sử dụng} & \textbf{Số gói} & \textbf{Số lớp / tệp} & \textbf{Số dòng code} \\ \hline
     \endfirsthead
-    \multicolumn{6}{r}{\textit{Tiếp theo trang trước}} \\
+    \multicolumn{5}{r}{\textit{Tiếp theo trang trước}} \\
     \hline
-    \textbf{Phân hệ / Thành phần} & \textbf{Công nghệ sử dụng} & \textbf{Số gói} & \textbf{Số lớp / tệp} & \textbf{Số dòng code} & \textbf{Dung lượng} \\ \hline
+    \textbf{Phân hệ / Thành phần} & \textbf{Công nghệ sử dụng} & \textbf{Số gói} & \textbf{Số lớp / tệp} & \textbf{Số dòng code} \\ \hline
     \endhead
     \hline
-    \multicolumn{6}{r}{\textit{Xem tiếp trang sau}} \\
+    \multicolumn{5}{r}{\textit{Xem tiếp trang sau}} \\
     \endfoot
     \hline
     \endlastfoot
     
-    Phân hệ Nghiệp vụ (\path{backend-core}) & Java, Spring Boot & 10 & 80 & 14.500 & 55,00 MB \\ \hline
-    Nhận diện khuôn mặt (\path{detect-face}) & Python, FastAPI & 1 & 5 & 1.250 & 1,80 GB \\ \hline
-    Giám sát phòng thi (\path{ai-proctor}) & Python, FastAPI & 1 & 3 & 428 & 16,20 KB \\ \hline
-    Giao diện Web (\path{FE_WEB}) & TypeScript, React & 16 & 46 & 17.683 & 733,47 KB \\ \hline
-    App di động Học viên (\path{frontend_student}) & JavaScript, React Native & 31 & 40 & 21.583 & 613,16 KB \\ \hline
-    App di động Giảng viên (\path{frontend_teacher}) & JavaScript, React Native & 32 & 55 & 30.255 & 1,00 MB \\ \hline
-    \textbf{Tổng cộng hệ thống} & \textbf{-} & \textbf{110} & \textbf{289} & \textbf{80.698} & \textbf{2,74 MB} \\ \hline
+    Phân hệ Nghiệp vụ (\path{backend-core}) & Java, Spring Boot & 10 & 80 & 14.500 \\ \hline
+    Nhận diện khuôn mặt (\path{detect-face}) & Python, FastAPI & 1 & 5 & 1.250 \\ \hline
+    Giám sát phòng thi (\path{ai-proctor}) & Python, FastAPI & 1 & 3 & 428 \\ \hline
+    Giao diện Web (\path{FE_WEB}) & TypeScript, React & 16 & 46 & 17.683 \\ \hline
+    App di động Học viên (\path{frontend_student}) & JavaScript, React Native & 31 & 40 & 21.583 \\ \hline
+    App di động Giảng viên (\path{frontend_teacher}) & JavaScript, React Native & 32 & 55 & 30.255 \\ \hline
+    \textbf{Tổng cộng hệ thống} & \textbf{-} & \textbf{110} & \textbf{289} & \textbf{80.698} \\ \hline
 \end{longtable}
 
-Qua số liệu thống kê trong Bảng \ref{table:codebase_statistics}, có thể thấy hệ thống phần mềm có quy mô trung bình lớn với hơn 80.000 dòng mã nguồn được phân bố trải rộng trên 6 phân hệ lớn. Phân hệ di động dành cho giảng viên (\path{frontend_teacher}) và học viên (\path{frontend_student}) chiếm phần lớn số dòng lệnh do đặc thù phức tạp của việc xây dựng giao diện tương tác động đa dạng trên thiết bị di động cũng như các xử lý logic về Geofencing, chống giả lập GPS và tích hợp camera. Trong khi đó, phân hệ \path{backend-core} tập trung phần lớn vào cấu trúc dữ liệu và nghiệp vụ chặt chẽ, bảo đảm tính toàn vẹn dữ liệu cho toàn bộ hệ thống điểm danh và quản lý học sinh.
+Theo Bảng \ref{table:codebase_statistics}, hệ thống có hơn 80.000 dòng mã nguồn trên 6 phân hệ. Hai ứng dụng di động chiếm tỷ trọng lớn do nhiều màn hình tương tác và xử lý Geofencing, GPS, camera; \path{backend-core} tập trung vào nghiệp vụ và toàn vẹn dữ liệu.
 
 \subsection{Minh họa các chức năng chính}
 \label{subsection:4.3.3}
