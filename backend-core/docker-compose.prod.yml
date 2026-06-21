@@ -82,6 +82,7 @@ services:
       TZ: Asia/Ho_Chi_Minh
     volumes:
       - ${DATA_PATH:-./data}:/app/data
+      - ${DATA_PATH:-./data}/.deepface:/root/.deepface
     depends_on:
       - postgres
     restart: unless-stopped
