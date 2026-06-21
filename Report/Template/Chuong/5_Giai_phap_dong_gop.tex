@@ -1,169 +1,226 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
-Chương 5 trình bày chi tiết các giải pháp và đóng góp kỹ thuật nổi bật nhất của đồ án tốt nghiệp. Trong suốt quá trình phát triển và vận hành hệ thống phần mềm tối ưu hóa quy trình điểm danh và quản lý học sinh, tác giả đã nghiên cứu và hiện thực các cơ chế thuật toán chuyên biệt nhằm giải quyết triệt để ba bài toán cốt lõi: giám sát thi trực tuyến thời gian thực hiệu năng cao, nhận diện khuôn mặt điểm danh nhóm lớp học chống nhiễu, và bảo mật định vị GPS chống giả lập tọa độ trên di động. Mỗi đóng góp được trình bày độc lập theo cấu trúc đặc tả bài toán, giải pháp kỹ thuật cụ thể và kết quả thực nghiệm thu được.
+Chương 5 trình bày các giải pháp và đóng góp nổi bật nhất của đồ án theo hướng tập trung vào giá trị nghiệp vụ, khả năng ứng dụng và hiệu quả vận hành thực tế. Các phần kiến trúc, giao diện, cơ sở dữ liệu, kiểm thử và triển khai đã được mô tả ở Chương 4; vì vậy chương này chỉ nhấn mạnh những điểm đóng góp có ý nghĩa nhất trong quá trình xây dựng hệ thống.
 
-\section{Giải pháp giám sát thi trực tuyến thời gian thực tích hợp trí tuệ nhân tạo}
+Ba đóng góp chính được trình bày trong chương gồm:
+\begin{itemize}
+    \item Giải pháp giám sát thi trực tuyến bằng AI theo hướng hỗ trợ giảng viên quản trị rủi ro.
+    \item Giải pháp điểm danh sinh trắc học nhóm giúp giảm thời gian điểm danh đầu giờ học.
+    \item Giải pháp báo cáo, đối soát và hỗ trợ quản trị lớp học dựa trên dữ liệu tập trung.
+\end{itemize}
+
+Mỗi đóng góp được trình bày theo ba nội dung: vấn đề cần giải quyết, cách hệ thống tổ chức giải pháp và kết quả đạt được trong quá trình triển khai thử nghiệm.
+
+\begin{table}[H]
+\centering
+\caption{Tóm tắt các đóng góp nghiệp vụ chính của Chương 5}
+\label{table:chapter5_contribution_summary}
+\begin{tabular}{|p{3.2cm}|p{4.4cm}|p{5.8cm}|}
+\hline
+\textbf{Đóng góp} & \textbf{Vấn đề nghiệp vụ} & \textbf{Giá trị đạt được} \\ \hline
+Giám sát thi trực tuyến bằng AI &
+Giảng viên khó quan sát đồng thời nhiều luồng webcam, dễ bỏ sót hành vi nghi vấn và thiếu bằng chứng khi phúc khảo. &
+Hệ thống tự động ghi nhận sự kiện nghi vấn, lưu video bằng chứng và hỗ trợ giảng viên kiểm tra lại trước khi đưa ra quyết định. \\ \hline
+Điểm danh sinh trắc học nhóm &
+Điểm danh thủ công mất nhiều thời gian, dễ sai sót và có nguy cơ điểm danh hộ trong lớp học đông. &
+Giảng viên chỉ cần tải ảnh tập thể, hệ thống gợi ý danh sách học viên có mặt và cho phép phê duyệt trước khi lưu kết quả. \\ \hline
+Báo cáo và đối soát dữ liệu lớp học &
+Dữ liệu chuyên cần, điểm số và sự kiện thi thường nằm rời rạc, khiến giảng viên mất thời gian tổng hợp thủ công và khó trả lời khi có khiếu nại. &
+Hệ thống tập trung hóa dữ liệu theo lớp học phần, cung cấp dashboard, lịch sử chuyên cần, bảng điểm và nhật ký giám sát để hỗ trợ theo dõi, đối soát và ra quyết định. \\ \hline
+\end{tabular}
+\end{table}
+
+Bảng \ref{table:chapter5_contribution_summary} đóng vai trò như bản đồ đọc nhanh của chương. Thay vì đi sâu vào toàn bộ thuật toán đã nêu ở Chương 4, phần dưới đây tập trung làm rõ vì sao các giải pháp này có giá trị trong vận hành thực tế, cách chúng được đưa vào quy trình sử dụng của giảng viên và kết quả mà hệ thống đạt được.
+
+\section{Giải pháp giám sát thi trực tuyến theo hướng quản trị rủi ro}
 \label{section:5.1}
 
 \subsection{Dẫn dắt và giới thiệu bài toán}
-Hoạt động thi trực tuyến (online examination) mang lại sự linh hoạt cho công tác đào tạo nhưng cũng đi kèm với thách thức lớn về kiểm soát tính trung thực của thí sinh. Các hình thức gian lận phổ biến gồm có: liếc nhìn tài liệu xung quanh, quay đầu trao đổi với người khác hoặc rời khỏi khu vực làm bài thi trước camera. Việc giám sát thủ công bằng giám thị con người qua luồng webcam gặp giới hạn lớn về khả năng tập trung khi một giám thị phải theo dõi đồng thời hàng chục học viên trên màn hình chia nhỏ. 
+Thi trực tuyến giúp nhà trường tổ chức kiểm tra linh hoạt hơn, nhưng cũng tạo ra nhiều rủi ro về tính trung thực. Khi học viên làm bài qua máy tính cá nhân, giảng viên khó quan sát toàn bộ không gian làm bài như trong phòng thi truyền thống. Nếu chỉ theo dõi thủ công qua webcam, giảng viên phải nhìn nhiều ô camera nhỏ trong thời gian dài nên dễ bỏ sót các hành vi bất thường.
 
-Để giải quyết bài toán này, các hệ thống thương mại thường áp dụng mô hình mạng nơ-ron tích chập (CNN) sâu để phát hiện hướng khuôn mặt và hướng nhìn của mắt. Tuy nhiên, phương pháp này đòi hỏi tài nguyên tính toán GPU rất lớn trên máy chủ, gây tắc nghẽn băng thông truyền tải luồng video thô và tăng chi phí hạ tầng máy chủ khi tổ chức thi đồng thời cho hàng nghìn thí sinh. Do đó, bài toán đặt ra là thiết kế một giải pháp giám sát AI gọn nhẹ, có khả năng chạy thời gian thực trên môi trường máy chủ CPU thông thường với độ chính xác cao và tiết kiệm tối đa băng thông.
-
-\subsection{Giải pháp kỹ thuật đề xuất}
-Đồ án đề xuất một giải pháp lai kết hợp giữa trích xuất điểm mốc khuôn mặt 2D gọn nhẹ trên thiết bị và giải thuật hình học không gian 3D giải trình trên máy chủ thông qua giao thức truyền dữ liệu WebSocket \cite{fette2011websocket}. Giải pháp bao gồm ba thuật toán và cơ chế chính được tích hợp tại phân hệ \path{ai-proctor}:
-
-\subsubsection{Thuật toán ước lượng tư thế đầu 3D bằng solvePnP hình học}
-Thay vì chạy mô hình học sâu CNN cồng kềnh để phân loại hướng quay đầu, hệ thống sử dụng thuật toán ước lượng tư thế đầu 3D (Head Pose Estimation) dựa trên việc giải bài toán Perspective-n-Point (PnP) hình học cổ điển. 
+Các rủi ro thường gặp gồm:
 \begin{itemize}
-    \item \textbf{Khởi tạo mô hình đầu 3D chuẩn}: Hệ thống định nghĩa một tập hợp gồm $6$ tọa độ điểm mốc 3D tiêu chuẩn của khuôn mặt người làm điểm đối sánh ($Model\ Points$):
-    \begin{itemize}
-        \item Đỉnh mũi (Nose tip): $\vec{P}_{model\_1} = (0.0, 0.0, 0.0)^T$
-        \item Điểm cằm (Chin): $\vec{P}_{model\_2} = (0.0, -330.0, -65.0)^T$
-        \item Khóe mắt ngoài bên trái (Left eye corner): $\vec{P}_{model\_3} = (-225.0, 170.0, -135.0)^T$
-        \item Khóe mắt ngoài bên phải (Right eye corner): $\vec{P}_{model\_4} = (225.0, 170.0, -135.0)^T$
-        \item Khóe miệng bên trái (Left mouth corner): $\vec{P}_{model\_5} = (-150.0, -150.0, -125.0)^T$
-        \item Khóe miệng bên phải (Right mouth corner): $\vec{P}_{model\_6} = (150.0, -150.0, -125.0)^T$
-    \end{itemize}
-    \item \textbf{Trích xuất các điểm mốc 2D tương ứng}: Khi nhận được khung hình từ webcam học viên gửi lên qua WebSocket, mô hình MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} được sử dụng để phát hiện nhanh $468$ điểm mốc khuôn mặt dưới dạng tọa độ chuẩn hóa $(x, y) \in [0, 1]^2$. Hệ thống trích xuất $6$ điểm mốc 2D tương ứng với mô hình 3D dựa trên các chỉ số landmark quy định: Đỉnh mũi (chỉ số $1$), Cằm (chỉ số $152$), Khóe mắt trái (chỉ số $33$), Khóe mắt phải (chỉ số $263$), Khóe miệng trái (chỉ số $57$), và Khóe miệng phải (chỉ số $287$). Các tọa độ này được nhân với chiều rộng $W$ và chiều cao $H$ của khung hình để chuyển đổi sang hệ tọa độ pixel ($Image\ Points$).
-    \item \textbf{Ước lượng ma trận xoay bằng solvePnP}: Sử dụng ma trận camera xấp xỉ $K$ dựa trên giả định không có độ méo của ống kính ($dist\_coeffs = \vec{0}$):
-    \begin{equation}
-    K = \begin{bmatrix}
-    f & 0 & c_x \\
-    0 & f & c_y \\
-    0 & 0 & 1
-    \end{bmatrix}
-    \label{eq:camera_matrix}
-    \end{equation}
-    Trong đó, tiêu cự $f$ được xấp xỉ bằng chiều rộng khung hình $W$, và tâm ảnh là $c_x = W/2, c_y = H/2$. Giải thuật Iterative PnP ($cv2.solvePnP$) được thực thi để tìm vector quay $\vec{r}$ và vector dịch chuyển $\vec{t}$ thỏa mãn tối thiểu hóa sai số chiếu lại:
-    \begin{equation}
-    \text{success}, \vec{r}, \vec{t} = cv2.solvePnP(Model\ Points, Image\ Points, K, \vec{0})
-    \label{eq:solve_pnp}
-    \end{equation}
-    \item \textbf{Phân rã góc Euler}: Vector quay $\vec{r}$ được biến đổi sang ma trận xoay $3 \times 3$ qua công thức Rodrigues. Ma trận này kết hợp với vector dịch chuyển $\vec{t}$ để tạo thành ma trận chiếu, từ đó phân rã thành các góc Euler bao gồm góc ngẩng đầu/cúi đầu ($pitch$) và góc quay đầu trái/phải ($yaw$).
+    \item Học viên nhìn tài liệu ngoài màn hình hoặc dùng thiết bị hỗ trợ bên ngoài.
+    \item Học viên trao đổi với người khác trong quá trình làm bài.
+    \item Học viên rời khỏi vị trí làm bài hoặc cố tình che khuất camera.
+    \item Giảng viên thiếu bằng chứng rõ ràng khi cần xử lý vi phạm hoặc phúc khảo.
 \end{itemize}
 
-Hệ thống thiết lập quy tắc vi phạm tư thế đầu nếu thí sinh cúi/ngẩng quá mức ($|pitch| > 20.0^\circ$) hoặc quay đầu sang hai bên quá mức ($|yaw| > 30.0^\circ$) để tra cứu tài liệu hoặc trao đổi với bên ngoài.
+Đóng góp của đồ án là chuyển việc giám sát bằng AI thành một quy trình nghiệp vụ có thể vận hành. Hệ thống không thay giảng viên đưa ra kết luận kỷ luật, mà đóng vai trò trợ lý giám sát: phát hiện sự kiện nghi vấn, lưu bằng chứng và hỗ trợ giảng viên kiểm tra lại khi cần.
 
-\subsubsection{Thuật toán theo dõi ánh mắt bằng phân tích hình học đồng tử}
-Để phát hiện hành vi liếc mắt mà không quay đầu, đồ án phát triển giải pháp phân tích tỷ lệ hình học giữa tâm đồng tử và các khóe mắt. Thuật toán hoạt động trực tiếp trên các tọa độ điểm mốc được MediaPipe FaceMesh trích xuất \cite{Lugaresi2019MediaPipe}, cụ thể đối với mắt phải của thí sinh:
+\subsection{Giải pháp đề xuất}
+Quy trình giám sát thi trực tuyến được tổ chức theo ba giai đoạn:
 \begin{itemize}
-    \item Điểm mốc trung tâm con ngươi (Right eye iris center): landmark số $468$.
-    \item Điểm mốc khóe mắt trong (Right eye left corner): landmark số $33$.
-    \item Điểm mốc khóe mắt ngoài (Right eye right corner): landmark số $133$.
+    \item \textbf{Trước bài thi}: Giảng viên tạo bài kiểm tra, thiết lập thời gian làm bài, cấu hình yêu cầu camera và có thể kết hợp điều kiện vị trí nếu bài thi cần giới hạn trong phòng học hoặc phòng thi.
+    \item \textbf{Trong bài thi}: Hệ thống theo dõi webcam thông qua dịch vụ \path{ai-proctor}. Các chi tiết về kết nối WebSocket và dịch vụ AI đã được trình bày ở Mục \ref{section:4.1} và Mục \ref{section:4.5}.
+    \item \textbf{Sau bài thi}: Giảng viên xem lại danh sách sự kiện nghi vấn, kiểm tra bằng chứng và quyết định cách xử lý phù hợp.
 \end{itemize}
-Tỷ lệ vị trí tương đối của con ngươi trên trục nằm ngang được tính toán theo công thức \ref{eq:gaze_ratio_latex}:
-\begin{equation}
-Ratio = \frac{|x_{468} - x_{33}|}{|x_{133} - x_{33}|}
-\label{eq:gaze_ratio_latex}
-\end{equation}
-Trong đó, $x_{468}, x_{33}, x_{133}$ lần lượt là tọa độ trục hoành của các điểm mốc tương ứng. Do cấu trúc sinh học khuôn mặt người bình thường khi nhìn thẳng vào màn hình máy tính, tâm con ngươi sẽ nằm ở khoảng giữa hai khóe mắt. Hệ thống xác định ngưỡng nhìn thẳng hợp lệ là $0.32 \le Ratio \le 0.68$. Nếu tỷ lệ này vượt ra ngoài phạm vi (nhỏ hơn $0.32$ - liếc mạnh sang trái, hoặc lớn hơn $0.68$ - liếc mạnh sang phải) liên tục, hệ thống ghi nhận trạng thái vi phạm hướng nhìn ($Sideways\ gaze\ detected$) \cite{kaundinya2026inbrowser}.
 
-\subsubsection{Cơ chế lưu bằng chứng tự động qua hàng đợi xoay vòng và transcoding}
-Để cung cấp bằng chứng xác đáng cho giảng viên khi chấm điểm, hệ thống thiết kế cơ chế ghi hình vi phạm tự động hoạt động bất tuần tự (asynchronous):
+Thay vì trình bày kết quả AI dưới dạng thông số kỹ thuật khó hiểu, hệ thống chuyển chúng thành các sự kiện nghiệp vụ:
 \begin{itemize}
-    \item \textbf{Dynamic Rolling Buffer}: Tại mỗi phiên WebSocket hoạt động, hệ thống duy trì một hàng đợi vòng tròn (\path{gaze_buffer}) sử dụng cấu trúc \path{deque} của Python với kích thước tối đa là $300$ khung hình (tương ứng với $10$ giây video ở tốc độ $30$ FPS). 
-    \item \textbf{Cơ chế bắt vi phạm}: Nếu phát hiện vi phạm tư thế đầu ($|yaw| > 30^\circ$, $|pitch| > 20^\circ$) hoặc hướng nhìn ($Ratio \notin [0.32, 0.68]$) kéo dài liên tục vượt quá ngưỡng $3.0$ giây, hệ thống kích hoạt cờ vi phạm và chuyển trạng thái ghi bằng chứng.
-    \item \textbf{Delayed Dump}: Hệ thống sử dụng một tác vụ chạy ngầm của FastAPI (\path{delayed_recording_dump}) để tiếp tục hứng thêm $5.0$ giây khung hình tiếp theo đi vào hàng đợi. Sau khi ngủ đủ $5$ giây, hàng đợi sẽ chứa chính xác $5$ giây trước khi xảy ra vi phạm và $5$ giây sau khi xảy ra vi phạm.
-    \item \textbf{Transcoding H.264 qua FFmpeg}: Toàn bộ khung hình trong hàng đợi được xuất ra tệp video tạm thời bằng \path{VideoWriter}. Nhằm khắc phục hiện tượng tệp tin MP4 thô không thể phát trực tiếp trên các trình duyệt Web HTML5 do thiếu codec thích hợp, hệ thống gọi ngầm công cụ `ffmpeg` để thực hiện chuyển mã sang định dạng **H.264 Baseline Profile** với định dạng pixel \path{yuv420p} theo cấu trúc câu lệnh:
-    \begin{lstlisting}[language=bash]
-ffmpeg -y -i temp_video.mp4 -vcodec libx264 -pix_fmt yuv420p 
-       -profile:v baseline -level 3.0 output_violation.mp4
-    \end{lstlisting}
-    Tệp video đầu ra được lưu trữ lâu dài trên thư mục dùng chung của máy chủ và ghi nhận đường dẫn vào cơ sở dữ liệu.
+    \item Học viên quay đầu khỏi màn hình trong thời gian đáng kể.
+    \item Học viên nhìn lệch khỏi khu vực làm bài trong một khoảng thời gian liên tục.
+    \item Luồng giám sát bị gián đoạn hoặc có dấu hiệu không ổn định.
+    \item Hành vi bất thường chỉ được ghi nhận khi kéo dài đủ lâu, hạn chế cảnh báo sai do chuyển động ngắn.
+\end{itemize}
+
+Về mặt kỹ thuật, hệ thống sử dụng MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} để lấy điểm mốc khuôn mặt và dùng phương pháp ước lượng tư thế đầu nhẹ hơn so với các mô hình học sâu cồng kềnh. Tuy nhiên, giá trị chính của giải pháp nằm ở cách biến kết quả phân tích thành cảnh báo dễ hiểu, giúp giảng viên giảm tải quan sát thủ công.
+
+Cơ chế bằng chứng cũng được thiết kế theo hướng phục vụ nghiệp vụ:
+\begin{itemize}
+    \item Khi có sự kiện nghi vấn, hệ thống lưu một video ngắn quanh thời điểm xảy ra bất thường.
+    \item Video được chuyển mã sang H.264 để giảng viên có thể xem ngay trên trình duyệt.
+    \item Bằng chứng giúp phân biệt vi phạm thật với các tình huống vô tình như cúi xuống bàn phím hoặc điều chỉnh tư thế.
+    \item Giao diện nhật ký giám sát đã được minh họa ở Hình \ref{fig:ui_teacher_ai_proctor_log}.
+\end{itemize}
+
+Giải pháp cũng được tối ưu để phù hợp với điều kiện triển khai thực tế:
+\begin{itemize}
+    \item Không yêu cầu máy chủ GPU cho mọi luồng camera.
+    \item Không ghi toàn bộ video của tất cả học viên trong suốt kỳ thi.
+    \item Chỉ lưu bằng chứng khi có sự kiện cần kiểm tra.
+    \item Phù hợp với môi trường VPS đã mô tả ở Mục \ref{section:4.5}.
 \end{itemize}
 
 \subsection{Kết quả đạt được}
-Cơ chế giám sát thi trực tuyến tích hợp AI đã hoạt động hiệu quả, xử lý trơn tru luồng webcam gửi lên qua giao thức WebSocket từ trình duyệt của học viên. Thời gian xử lý thuật toán PnP và tính Gaze Ratio chỉ chiếm trung bình dưới $15$ ms cho mỗi khung hình trên CPU của máy chủ, cho phép hệ thống đáp ứng tần suất phân tích thời gian thực. Bằng chứng video $10$ giây được tạo ra tự động, định dạng chuyển mã chuẩn H.264 giúp giảng viên có thể xem trực quan ngay trên trình duyệt Web quản trị khi thực hiện chấm điểm hoặc phúc khảo bài thi trực tuyến, tạo tính minh bạch tuyệt đối trong kỳ thi.
+Giải pháp giám sát thi trực tuyến đã được kiểm thử trong nhóm ca kiểm thử nghiệp vụ ở Bảng \ref{table:tc_assessment_proctoring}. Hệ thống phát hiện được tình huống học viên quay đầu khỏi màn hình, gửi cảnh báo qua WebSocket và lưu video bằng chứng ngắn để giảng viên xem lại.
+
+Các kết quả nổi bật gồm:
+\begin{itemize}
+    \item Kết nối giám sát đạt độ trễ trung bình dưới 80 ms trong triển khai thử nghiệm, như đã tổng hợp ở Mục \ref{subsection:4.5.4}.
+    \item Giảng viên chuyển từ trạng thái quan sát thủ công liên tục sang kiểm tra các sự kiện do hệ thống gợi ý.
+    \item Nhật ký và video bằng chứng hỗ trợ quá trình chấm thi, xử lý vi phạm và phúc khảo minh bạch hơn.
+    \item AI proctoring được tổ chức thành một quy trình có điều kiện bắt đầu, phát hiện nghi vấn, lưu bằng chứng và giao diện kiểm tra.
+\end{itemize}
 
 \section{Giải pháp điểm danh sinh trắc học nhóm lớp học thông minh}
 \label{section:5.2}
 
 \subsection{Dẫn dắt và giới thiệu bài toán}
-Điểm danh chuyên cần lớp học phần truyền thống bằng cách gọi tên từng sinh viên hoặc truyền tay danh sách ký tên gây lãng phí từ $10$ đến $15$ phút thời gian giảng dạy đối với các lớp học đông người (từ $50$ đến $100$ sinh viên). Phương pháp này cũng không thể ngăn chặn triệt để tình trạng điểm danh hộ. Triển khai điểm danh FaceID cá nhân trên điện thoại di động tuy giải quyết được vấn đề điểm danh hộ nhưng lại yêu cầu sinh viên phải xếp hàng lần lượt chụp ảnh, dẫn đến việc ùn tắc tại cửa lớp học đầu giờ. 
+Điểm danh là nghiệp vụ diễn ra thường xuyên trong các lớp học phần. Với lớp đông, việc gọi tên từng học viên hoặc truyền tay danh sách ký tên có thể làm mất từ 10 đến 15 phút đầu buổi. Ngoài ra, cách điểm danh thủ công dễ phát sinh sai sót, điểm danh hộ và khó đối soát khi học viên thắc mắc.
 
-Ý tưởng giải quyết triệt để vấn đề này là sử dụng một bức ảnh chụp tập thể cả lớp học do giảng viên tải lên để hệ thống AI tự động phát hiện, cắt mặt và đối khớp nhận diện hàng loạt sinh viên có mặt. Tuy nhiên, thách thức kỹ thuật lớn nhất của nhận diện khuôn mặt nhóm lớp học là: ảnh chụp tập thể có nhiều nhiễu nền xung quanh, độ phân giải khuôn mặt bị suy giảm khi chụp ở khoảng cách xa, và sự khác biệt về góc nghiêng/độ zoom scale giữa khuôn mặt sinh viên trong ảnh lớp học phần với ảnh chân dung mẫu đã đăng ký trước đó. Nếu trích xuất đặc trưng trực tiếp từ khung bounding box thô, tỷ lệ nhận diện sai lệch sẽ rất lớn.
+Các hạn chế chính của điểm danh truyền thống gồm:
+\begin{itemize}
+    \item Tốn thời gian đầu giờ học, nhất là với lớp đông.
+    \item Dễ sai sót khi ghi nhận trạng thái có mặt hoặc vắng mặt.
+    \item Có nguy cơ điểm danh hộ nếu dùng danh sách ký tên.
+    \item Thiếu bằng chứng trực quan để đối soát sau buổi học.
+\end{itemize}
 
-\subsection{Giải pháp kỹ thuật đề xuất}
-Đồ án đề xuất giải pháp xử lý ảnh nhóm thông minh sử dụng mô hình phát hiện khuôn mặt RetinaFace \cite{Deng_2020_CVPR} kết hợp mô hình trích xuất đặc trưng ArcFace \cite{Deng_2019_CVPR} và cơ chế trực giao hóa gán cặp tối ưu. Quy trình xử lý tại phân hệ \path{detect-face} bao gồm bốn bước:
+Một số giải pháp FaceID cá nhân yêu cầu từng học viên mở điện thoại và chụp ảnh, nhưng cách này có thể gây ùn tắc khi nhiều học viên check-in cùng lúc. Vì vậy, đồ án đề xuất quy trình điểm danh nhóm bằng ảnh tập thể: giảng viên chụp hoặc tải ảnh lớp học, hệ thống gợi ý danh sách học viên có mặt, sau đó giảng viên kiểm tra và phê duyệt.
 
-\subsubsection{Kỹ thuật Face Bounding Box Padding 15\%}
-Khi phát hiện khuôn mặt của sinh viên trong ảnh tập thể lớp học bằng RetinaFace \cite{Deng_2020_CVPR}, tọa độ bounding box thô trả về là $[x_{min}, y_{min}, x_{max}, y_{max}]$. Nhằm bảo toàn các thông tin đặc trưng quan trọng ở khu vực biên khuôn mặt (như đường nét cằm, tai, trán) giúp cải thiện độ chính xác cho mô hình nhận diện, hệ thống áp dụng kỹ thuật padding mở rộng $15\%$ kích thước hộp giới hạn theo công thức:
-\begin{align}
-w_{raw} &= x_{max} - x_{min} \\
-h_{raw} &= y_{max} - y_{min} \\
-pad_{w} &= \lfloor w_{raw} \times 0.15 \rfloor, \quad pad_{h} = \lfloor h_{raw} \times 0.15 \rfloor \\
-x'_{min} &= \max(0, x_{min} - pad_{w}), \quad y'_{min} = \max(0, y_{min} - pad_{h}) \\
-x'_{max} &= \min(W_{img}, x_{max} + pad_{w}), \quad y'_{max} = \min(H_{img}, y_{max} + pad_{h})
-\label{eq:box_padding}
-\end{align}
-Khuôn mặt sau khi được áp dụng padding $[x'_{min}, y'_{min}, x'_{max}, y'_{max}]$ mới được tiến hành cắt (crop) ra thành tệp ảnh độc lập phục vụ cho bước trích xuất đặc trưng. Kỹ thuật này giúp loại bỏ phần lớn các thành phần nhiễu nền không mong muốn trong khi vẫn giữ được trọn vẹn đặc trưng sinh trắc học biên của sinh viên.
-
-\subsubsection{Cơ chế Lazy Cropping đồng bộ ảnh khuôn mẫu}
-Ảnh khuôn mẫu sinh viên đăng ký trên ứng dụng di động thường là ảnh chân dung cận cảnh chất lượng tốt, trong khi ảnh cắt từ lớp học là ảnh chụp từ xa. Để giảm thiểu sai số do sự mất cân bằng về cấu trúc ảnh này, hệ thống áp dụng cơ chế Lazy Cropping trên server. 
-Khi sinh viên đăng ký FaceID lần đầu, hệ thống lưu trữ ảnh gốc. Vào lần điểm danh đầu tiên của lớp học phần (hoặc khi sinh viên cập nhật ảnh chân dung mới), hệ thống tự động gọi RetinaFace để dò tìm khuôn mặt trong ảnh chân dung gốc đó và tiến hành cắt lấy khuôn mặt với đúng tỷ lệ padding $15\%$ như ảnh lớp học. Kết quả cắt được lưu trữ thành tệp ảnh trung gian (\path{_crop}). Quá trình trích xuất đặc trưng ArcFace sau đó sẽ được thực hiện trên tệp ảnh đã được crop đồng bộ này thay vì ảnh gốc, giúp loại bỏ chênh lệch về độ zoom và scale giữa hai nguồn ảnh.
-
-\subsubsection{Trích xuất đặc trưng ArcFace và Tính toán ma trận khoảng cách Cosine}
-Hệ thống sử dụng thư viện DeepFace \cite{deepface_github} cấu hình mô hình **ArcFace** \cite{Deng_2019_CVPR} để trích xuất vector đặc trưng khuôn mặt dạng số thực có số chiều $d = 512$ cho cả danh sách khuôn mặt cắt từ ảnh lớp học và danh sách khuôn mẫu sinh viên. 
-Khoảng cách Cosine ($D_{Cosine}$) giữa một vector khuôn mặt lớp học $\vec{A}$ và vector khuôn mẫu sinh viên $\vec{B}$ được tính toán theo công thức \ref{eq:cosine_dist}:
-\begin{equation}
-D_{Cosine}(\vec{A}, \vec{B}) = 1 - \frac{\vec{A} \cdot \vec{B}}{\|\vec{A}\| \|\vec{B}\|} = 1 - \frac{\sum_{i=1}^{512} A_i B_i}{\sqrt{\sum_{i=1}^{512} A_i^2} \sqrt{\sum_{i=1}^{512} B_i^2}}
-\label{eq:cosine_dist}
-\end{equation}
-Kết quả tính toán chéo giữa $M$ khuôn mặt phát hiện trong lớp học và $N$ sinh viên đăng ký trong lớp học phần tạo ra một ma trận khoảng cách $D$ kích thước $M \times N$.
-
-\subsubsection{Thuật toán gán cặp tối ưu Greedy Matching}
-Nhằm ngăn chặn hiện tượng một sinh viên bị nhận diện trùng lặp vào nhiều khuôn mặt khác nhau trong ảnh tập thể (hoặc ngược lại), đồ án hiện thực thuật toán gán cặp tối ưu:
+\subsection{Giải pháp đề xuất}
+Quy trình điểm danh nhóm được tổ chức theo bốn bước:
 \begin{enumerate}
-    \item Tất cả các cặp khớp thử nghiệm có khoảng cách $D_{Cosine}(i, j)$ nhỏ hơn hoặc bằng ngưỡng ArcFace tiêu chuẩn ($Threshold = 0.68$) được đưa vào danh sách ứng viên $Matches$.
-    \item Sắp xếp danh sách $Matches$ theo thứ tự khoảng cách Cosine tăng dần (các cặp khớp tốt nhất nằm ở đầu danh sách).
-    \item Duyệt qua từng cặp ứng viên $(i, j)$ trong danh sách đã sắp xếp. Nếu khuôn mặt lớp học $i$ chưa được gán cho ai và sinh viên $j$ chưa được ghi nhận có mặt, hệ thống tiến hành gán cặp chính thức sinh viên $j$ nằm ở vị trí khuôn mặt $i$ trong ảnh. Đồng thời, thêm $i$ và $j$ vào danh sách đã gán để chặn các lượt gán tiếp theo.
+    \item \textbf{Đăng ký FaceID}: Học viên đăng ký ảnh khuôn mặt ban đầu trên ứng dụng.
+    \item \textbf{Tạo phiên điểm danh}: Giảng viên tạo phiên điểm danh cho lớp học phần, có thể cấu hình thêm OTP hoặc yêu cầu vị trí.
+    \item \textbf{Tải ảnh tập thể}: Giảng viên chụp hoặc tải lên ảnh lớp học.
+    \item \textbf{Phê duyệt kết quả}: Hệ thống phân tích ảnh, gợi ý danh sách học viên có mặt và cho phép giảng viên xác nhận trước khi lưu.
 \end{enumerate}
 
-\subsection{Kết quả đạt được}
-Giải pháp điểm danh FaceID nhóm đã giải quyết xuất sắc bài toán điểm danh tự động cho lớp học phần. Quá trình xử lý ảnh tập thể lớp học (chứa từ $15$ đến $20$ khuôn mặt sinh viên) được thực thi nhanh chóng chỉ mất từ $1.5$ đến $2.5$ giây trên CPU máy chủ. Tỷ lệ nhận dạng chính xác đạt trên $95\%$ trong điều kiện ánh sáng lớp học bình thường. Giao diện Web cung cấp bảng xem trước (preview) hiển thị vị trí các ô chữ nhật bao quanh khuôn mặt (màu xanh lá đối với sinh viên khớp thành công kèm họ tên, và màu đỏ đối với khuôn mặt không xác định), cho phép giảng viên đối soát nhanh và phê duyệt kết quả điểm danh chỉ bằng một cú nhấp chuột.
+Điểm quan trọng là kết quả AI không được xem là quyết định tuyệt đối. Hệ thống chỉ tạo bản nháp điểm danh, còn giảng viên giữ quyền xác nhận cuối cùng. Cách làm này phù hợp với môi trường lớp học thực tế vì vừa tận dụng tốc độ của AI, vừa giữ khả năng xử lý ngoại lệ của con người.
 
-\section{Cơ chế Geofencing bảo mật chống giả lập tọa độ GPS trên di động}
+Các nguyên tắc xử lý kết quả nhận diện gồm:
+\begin{itemize}
+    \item Khuôn mặt khớp thành công được hiển thị cùng họ tên học viên.
+    \item Khuôn mặt chưa rõ được đánh dấu để giảng viên kiểm tra lại.
+    \item Kết quả chỉ được ghi chính thức sau khi giảng viên phê duyệt.
+    \item Giảng viên có thể đối chiếu trực tiếp trên ảnh lớp học thay vì dò từng dòng danh sách.
+\end{itemize}
+
+Hệ thống sử dụng RetinaFace \cite{Deng_2020_CVPR} để phát hiện khuôn mặt và ArcFace \cite{Deng_2019_CVPR} để so khớp với ảnh mẫu đã đăng ký. Tuy nhiên, đóng góp trọng tâm không phải là trình bày lại thuật toán, mà là cách đưa kết quả nhận diện vào quy trình phê duyệt có kiểm soát. Giao diện điểm danh nhóm đã được minh họa ở Hình \ref{fig:ui_teacher_group_face_attendance}.
+
+Để giảm sai lệch giữa ảnh mẫu và ảnh lớp học, hệ thống thực hiện một số bước xử lý trước khi so khớp:
+\begin{itemize}
+    \item Phát hiện và cắt vùng khuôn mặt trong ảnh tập thể.
+    \item Chuẩn hóa vùng khuôn mặt để giảm ảnh hưởng của nền ảnh và góc chụp.
+    \item Đồng bộ cách xử lý giữa ảnh mẫu và ảnh lớp học.
+    \item Ưu tiên mỗi học viên chỉ được ghi nhận một lần trong một phiên điểm danh.
+\end{itemize}
+
+Ngoài nhận diện, hệ thống còn lưu lịch sử điểm danh để phục vụ quản lý sau buổi học:
+\begin{itemize}
+    \item Mỗi phiên điểm danh có thời gian, người thực hiện và trạng thái của từng học viên.
+    \item Ảnh tập thể và kết quả nhận diện giúp giảng viên kiểm tra lại khi có thắc mắc.
+    \item Dữ liệu chuyên cần được dùng cho thống kê, điều kiện dự thi và báo cáo quản lý.
+\end{itemize}
+
+\subsection{Kết quả đạt được}
+Theo kết quả thực nghiệm và kiểm thử đã trình bày ở Chương 4, giải pháp điểm danh nhóm xử lý ảnh tập thể lớp học trong khoảng 1.5 đến 2.5 giây đối với ảnh có từ 15 đến 20 khuôn mặt, tỷ lệ nhận dạng chính xác đạt trên 95\% trong điều kiện lớp học bình thường. Các ca kiểm thử nghiệp vụ liên quan đến điểm danh thông minh được tổng hợp ở Bảng \ref{table:tc_smart_attendance}.
+
+Các kết quả nổi bật gồm:
+\begin{itemize}
+    \item Rút ngắn đáng kể thời gian điểm danh đầu buổi học.
+    \item Giảng viên không phải gọi tên từng học viên hoặc kiểm tra danh sách ký tay.
+    \item Học viên không phải xếp hàng chụp ảnh từng người.
+    \item Kết quả điểm danh có ảnh và lịch sử để phục vụ đối soát.
+    \item Quy trình cân bằng giữa tự động hóa bằng AI và quyền phê duyệt của giảng viên.
+\end{itemize}
+
+\section{Giải pháp báo cáo, đối soát và hỗ trợ quản trị lớp học}
 \label{section:5.3}
 
 \subsection{Dẫn dắt và giới thiệu bài toán}
-Để bổ trợ cho điểm danh FaceID nhóm, hệ thống cung cấp chức năng check-in cá nhân bằng điện thoại di động thông qua định vị GPS phòng học và nhập mã OTP. Tuy nhiên, điểm danh định vị GPS đối mặt với nguy cơ gian lận nghiêm trọng từ phía học sinh thông qua các ứng dụng giả lập tọa độ (Fake GPS / GPS Spoofing). Học sinh có thể ngồi ở nhà hoặc ký túc xá, sử dụng các phần mềm can thiệp hệ thống để giả lập tọa độ trùng khớp với phòng học và gửi yêu cầu check-in giả mạo về máy chủ. 
+Sau mỗi buổi học hoặc bài kiểm tra, giảng viên không chỉ cần ghi nhận dữ liệu mà còn phải tổng hợp, kiểm tra và giải thích dữ liệu đó khi có thắc mắc. Nếu điểm danh, điểm số, bài thi và nhật ký giám sát nằm ở nhiều nơi khác nhau, việc quản lý lớp học dễ trở thành công việc thủ công, phụ thuộc vào bảng tính cá nhân và khó đối soát về sau.
 
-Tương tự, đối với phân hệ thi trực tuyến, việc yêu cầu học viên làm bài thi trong phạm vi phòng thi (Geofencing phòng thi) cũng bị đe dọa bởi hình thức giả lập vị trí này. Do đó, yêu cầu đặt ra là phải xây dựng một cơ chế xác thực Geofencing có khả năng phát hiện và chặn đứng $100\%$ các hành vi sử dụng vị trí giả lập trên cả hai nền tảng hệ điều hành Android và iOS.
-
-\subsection{Giải pháp kỹ thuật đề xuất}
-Đồ án xây dựng cơ chế bảo mật định vị GPS hai lớp phối hợp chặt chẽ giữa thiết bị Client (Mobile App) và Server (Spring Boot Backend):
-
-\subsubsection{Phát hiện giả lập vị trí tại thiết bị di động (Client-side Detection)}
-Ứng dụng di động dành cho học viên được phát triển bằng React Native tích hợp các API cấp thấp của hệ điều hành thông qua gói thư viện định vị phần cứng \path{react-native-geolocation-service} \cite{rn_geolocation_docs}. 
+Các khó khăn nghiệp vụ thường gặp gồm:
 \begin{itemize}
-    \item \textbf{Cơ chế quét trên Android}: Ứng dụng truy xuất cờ \path{isMock} trong đối tượng \path{Location} do hệ thống Android cung cấp. Cờ này tự động được nhân Android thiết lập bằng \path{true} nếu tọa độ GPS được sinh ra bởi một ứng dụng được đăng ký trong danh sách "Mock Location App" của Developer Options (Tùy chọn nhà phát triển).
-    \item \textbf{Cơ chế quét trên iOS}: Hệ thống iOS quản lý định vị rất nghiêm ngặt. Ứng dụng kiểm tra sự thay đổi đột ngột của độ chính xác định vị (\path{horizontalAccuracy}) kết hợp với việc kiểm tra tốc độ di chuyển bất thường để phát hiện các tín hiệu định vị giả lập được nạp từ Xcode hoặc các công cụ giả lập ngoài.
+    \item Giảng viên phải tổng hợp chuyên cần và điểm số thủ công từ nhiều nguồn.
+    \item Học viên khó tự kiểm tra lịch sử học tập, chuyên cần và kết quả bài thi.
+    \item Quản trị viên thiếu góc nhìn tổng quan về tình trạng vận hành của hệ thống.
+    \item Khi có khiếu nại, dữ liệu đối soát không đủ rõ ràng về thời gian, trạng thái và nguồn phát sinh.
 \end{itemize}
-Khi phát hiện thiết bị đang chạy phần mềm giả lập vị trí, ứng dụng di động tự động gán giá trị biến \path{mockLocationDetected = true} và đính kèm cờ này vào trong thân yêu cầu (Request Body) JSON gửi lên server.
 
-\subsubsection{Xác thực tọa độ Geofencing bằng công thức Haversine phía Server}
-Khi Spring Boot Backend nhận được yêu cầu check-in điểm danh từ \path{StudentController} hoặc yêu cầu bắt đầu thi từ \path{AssessmentController}, lớp xử lý nghiệp vụ (\path{StudentServiceImplement} và \path{AssessmentServiceImplement}) thực hiện các bước xác thực tuần tự:
-\begin{enumerate}
-    \item \textbf{Kiểm tra cờ giả lập}: Backend đọc thuộc tính \path{mockLocationDetected} của yêu cầu. Nếu giá trị bằng \path{true}, hệ thống lập tức ném ngoại lệ \path{CustomException} đi kèm mã lỗi \path{MOCK_LOCATION_DETECTED} và HTTP Status $403$ Forbidden để từ chối check-in ngay lập tức mà không cần tính toán khoảng cách địa lý.
-    \item \textbf{Xác thực Geofencing bằng Haversine}: Nếu tọa độ được xác nhận là tọa độ thực, hệ thống gọi phương thức \path{GeoDistanceUtils.distanceMeters} \cite{sinnott1984virtues}. Thuật toán tính khoảng cách địa lý thực tế giữa tọa độ thiết bị học viên $(lat_{std}, lng_{std})$ và tọa độ lớp học do giảng viên thiết lập $(lat_{cls}, lng_{cls})$ dựa trên công thức Haversine:
-    \begin{align}
-    \Delta \varphi &= \text{rad}(lat_{std} - lat_{cls}) \\
-    \Delta \lambda &= \text{rad}(lng_{std} - lng_{cls}) \\
-    a &= \sin^2\left(\frac{\Delta \varphi}{2}\right) + \cos(\text{rad}(lat_{cls})) \cdot \cos(\text{rad}(lat_{std})) \cdot \sin^2\left(\frac{\Delta \lambda}{2}\right) \\
-    c &= 2 \cdot \text{atan2}\left(\sqrt{a}, \sqrt{1-a}\right) \\
-    d &= R \cdot c
-    \label{eq:haversine_formula}
-    \end{align}
-    Trong đó, $\text{rad}(x) = x \times \frac{\pi}{180}$ là hàm đổi từ độ sang radian, và $R = 6.371.000$ mét là bán kính trung bình của Trái Đất.
-    \item \textbf{Kiểm tra bán kính cho phép}: Khoảng cách tính toán $d$ được đối sánh với bán kính cho phép của phiên điểm danh hoặc bài thi ($allowed\_radius\_meters$, giới hạn cấu hình trong khoảng $[50, 500]$ mét). Nếu khoảng cách $d$ vượt quá bán kính quy định, hệ thống ném lỗi \path{OUT_OF_RANGE} đi kèm các thông số khoảng cách tính toán thực tế để báo về cho học viên biết.
-\end{enumerate}
+Đóng góp của đồ án là xây dựng một lớp nghiệp vụ báo cáo và đối soát tập trung. Lớp này không tạo thêm thuật toán mới, nhưng biến dữ liệu sinh ra từ điểm danh, bài thi và giám sát AI thành thông tin dễ theo dõi cho từng vai trò sử dụng.
+
+\subsection{Giải pháp đề xuất}
+Giải pháp được tổ chức theo hướng gom dữ liệu lớp học phần về một luồng quản lý thống nhất. Thay vì để giảng viên tự đối chiếu trên nhiều màn hình rời rạc, hệ thống liên kết dữ liệu chuyên cần, bài kiểm tra, điểm số, lịch học và nhật ký giám sát theo cùng một lớp học phần.
+
+Các nhóm dữ liệu chính được sử dụng gồm:
+\begin{itemize}
+    \item \textbf{Dữ liệu chuyên cần}: Lưu trạng thái có mặt, vắng mặt, thời gian điểm danh và phiên điểm danh tương ứng.
+    \item \textbf{Dữ liệu học tập}: Lưu bài kiểm tra, bài nộp, điểm số và nhận xét của giảng viên.
+    \item \textbf{Dữ liệu giám sát}: Lưu sự kiện nghi vấn, video bằng chứng và trạng thái xử lý sau khi giảng viên kiểm tra.
+    \item \textbf{Dữ liệu lớp học}: Lưu danh sách thành viên, lịch học, tài liệu và hoạt động trao đổi trong lớp.
+\end{itemize}
+
+Trên cơ sở dữ liệu đã tập trung hóa, hệ thống cung cấp các màn hình phục vụ từng vai trò:
+\begin{itemize}
+    \item \textbf{Đối với học viên}: Có thể xem lịch học, điểm số, lịch sử chuyên cần và kết quả bài thi trên web hoặc ứng dụng di động, như minh họa ở Hình \ref{fig:ui_student_grades} và Hình \ref{fig:ui_student_class_attendance_log}.
+    \item \textbf{Đối với giảng viên}: Có thể theo dõi thống kê tổng quan, phân tích học lực lớp học phần, bảng điểm tổng hợp và nhật ký giám sát AI, như minh họa ở Hình \ref{fig:ui_teacher_stats}, Hình \ref{fig:ui_teacher_class_performance} và Hình \ref{fig:ui_teacher_class_grade_summary}.
+    \item \textbf{Đối với quản trị viên}: Có thể theo dõi trạng thái hệ thống, tài khoản và học kỳ trên dashboard quản trị, như minh họa ở Hình \ref{fig:ui_admin_dashboard}.
+\end{itemize}
+
+Cách tổ chức này tạo ra một chu trình nghiệp vụ khép kín:
+\begin{itemize}
+    \item Sau khi điểm danh được phê duyệt, dữ liệu được cập nhật vào lịch sử chuyên cần.
+    \item Sau khi bài thi được chấm, điểm số được đưa vào bảng điểm và giao diện tra cứu.
+    \item Khi AI proctoring ghi nhận sự kiện nghi vấn, giảng viên có nhật ký và video để kiểm tra lại.
+    \item Khi học viên hoặc nhà trường cần đối soát, hệ thống có dữ liệu theo lớp, theo buổi học, theo bài thi và theo thời gian phát sinh.
+\end{itemize}
+
+Điểm nổi bật của giải pháp không nằm ở việc hiển thị nhiều biểu đồ, mà ở khả năng biến dữ liệu vận hành thành thông tin có thể sử dụng. Giảng viên có thể nhận diện lớp có tỷ lệ vắng cao, học viên có dấu hiệu sa sút hoặc bài thi có nhiều sự kiện nghi vấn; học viên cũng có thể chủ động theo dõi tình trạng của mình thay vì chờ thông báo cuối kỳ.
 
 \subsection{Kết quả đạt được}
-Cơ chế bảo mật định vị GPS hai lớp đã hoạt động vô cùng hiệu quả trong thực tế. Hệ thống phát hiện và chặn đứng thành công $100\%$ các hành vi sử dụng phần mềm giả lập vị trí phổ biến (như Fake GPS Location, GPS JoyStick) trên cả thiết bị di động Android và iOS. Thuật toán Haversine tính toán khoảng cách địa lý chính xác với độ lệch sai số dưới $1$ mét, đảm bảo học viên bắt buộc phải có mặt thực tế tại khu vực giảng đường hoặc phòng thi mới có thể tham gia điểm danh và thực hiện làm bài thi trực tuyến, mang lại môi trường học tập công bằng, kỷ luật và minh bạch.
+Báo cáo và đối soát dữ liệu đã được kiểm chứng thông qua các màn hình giao diện, cơ sở dữ liệu và ca kiểm thử ở Chương 4. Các bảng \ref{table:tc_smart_attendance}, \ref{table:tc_assessment_proctoring} và \ref{table:testing_summary} cho thấy hệ thống không chỉ ghi nhận thao tác riêng lẻ mà còn lưu được trạng thái phục vụ tra cứu, xác nhận và báo cáo.
 
+Các kết quả nổi bật gồm:
+\begin{itemize}
+    \item Giảng viên giảm phụ thuộc vào việc tổng hợp dữ liệu chuyên cần và điểm số bằng bảng tính thủ công.
+    \item Học viên có thể tự tra cứu kết quả học tập, lịch sử chuyên cần và trạng thái bài thi rõ ràng hơn.
+    \item Dữ liệu điểm danh, bài thi và giám sát được liên kết với lớp học phần, giúp quá trình đối soát minh bạch hơn.
+    \item Dashboard và các màn hình tổng hợp hỗ trợ giảng viên phát hiện sớm vấn đề về chuyên cần, học lực hoặc rủi ro trong thi trực tuyến.
+    \item Trong đợt triển khai thử nghiệm với $150$ học viên và $10$ giảng viên, dữ liệu phát sinh từ các phân hệ được hiển thị thống nhất trên web và ứng dụng di động.
+\end{itemize}
 
-Kết chương, Chương 5 đã phân tích sâu sắc ba giải pháp và đóng góp kỹ thuật cốt lõi làm nên tính thực tiễn và giá trị khoa học của đề tài tốt nghiệp. Bằng việc kết hợp thuật toán ước lượng tư thế đầu 3D solvePnP hình học với phương pháp theo dõi ánh mắt qua tỷ lệ hình học đồng tử, đồ án đã hiện thực hóa thành công phân hệ giám sát thi trực tuyến thời gian thực hiệu năng cao. Phân hệ điểm danh nhóm bằng ảnh chụp tập thể lớp học đã tối ưu hóa hiệu quả nhận diện nhờ kỹ thuật padding bounding box $15\%$, Lazy Cropping đồng bộ ảnh khuôn mẫu và thuật toán gán cặp Greedy Matching trên ma trận khoảng cách Cosine. Bên cạnh đó, cơ chế xác thực Geofencing bằng công thức Haversine kết hợp kiểm tra cờ Mock Location từ lớp phần cứng thiết bị di động đã chặn đứng hoàn toàn các hành vi gian lận giả lập vị trí GPS. Trên cơ sở các giải pháp đóng góp đã hoàn thiện và đánh giá thực nghiệm thành công, Chương 6 tiếp theo sẽ đưa ra những kết luận tổng quan về kết quả đạt được của đề tài, thẳng thắn nhìn nhận những mặt hạn chế còn tồn tại và đề xuất hướng phát triển mở rộng cho hệ thống trong tương lai.
+Kết chương, Chương 5 đã làm rõ ba đóng góp trọng tâm của đồ án:
+\begin{itemize}
+    \item Giải pháp giám sát thi trực tuyến giúp giảng viên quản trị rủi ro bằng sự kiện nghi vấn và bằng chứng video.
+    \item Giải pháp điểm danh nhóm giúp rút ngắn thời gian đầu buổi học nhưng vẫn giữ bước phê duyệt của giảng viên.
+    \item Giải pháp báo cáo và đối soát dữ liệu giúp giảng viên, học viên và quản trị viên theo dõi lớp học minh bạch hơn.
+\end{itemize}
+
+Những đóng góp này tạo nền tảng để Chương 6 tổng kết kết quả đạt được, nhìn nhận hạn chế còn tồn tại và đề xuất hướng phát triển tiếp theo cho hệ thống.
 
 \end{document}
