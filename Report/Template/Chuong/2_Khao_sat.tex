@@ -296,17 +296,17 @@ Các chức năng phân rã bao gồm:
 
 \begin{itemize}
 
-    \item \textbf{Điểm danh nhận diện FaceID}: Giảng viên chụp ảnh tập thể lớp trên giao diện Web, hệ thống tự động phát hiện và đối khớp khuôn mặt học viên bằng mô hình RetinaFace \cite{Deng_2020_CVPR} và ArcFace \cite{Deng_2019_CVPR}.
+    \item \textbf{Điểm danh nhận diện FaceID}: Tự động nhận diện khuôn mặt học viên từ ảnh tập thể bằng mô hình RetinaFace \cite{Deng_2020_CVPR} và ArcFace \cite{Deng_2019_CVPR}.
 
-    \item \textbf{Tạo mã điểm danh buổi học}: Giảng viên khởi tạo mã điểm danh OTP ngẫu nhiên cùng cấu hình vị trí và bán kính kiểm soát GPS (Geofencing).
+    \item \textbf{Tạo mã điểm danh}: Khởi tạo mã OTP ngẫu nhiên kèm cấu hình vị trí và bán kính kiểm soát GPS (Geofencing).
 
-    \item \textbf{Thiết lập quy tắc chuyên cần}: Cấu hình số lượt điểm danh tối thiểu trong một ca học (ví dụ: điểm danh đầu giờ và cuối giờ).\newline • Duyệt kết quả điểm danh sinh trắc: Giảng viên kiểm tra ảnh nhóm lớp học đã qua xử lý nhận dạng của AI, điều chỉnh thủ công thông tin đi học/vắng và phê duyệt kết quả.
+    \item \textbf{Thiết lập quy tắc và duyệt kết quả}: Cấu hình số lượt điểm danh tối thiểu và duyệt ảnh lớp đã qua xử lý nhận dạng của AI.
 
-    \item \textbf{Nộp câu trả lời điểm danh}: Học viên nhập passcode điểm danh kết hợp đối khớp GPS thực tế của thiết bị di động để nộp kết quả.\newline • Xem báo cáo chuyên cần: Thống kê chi tiết lịch sử đi học của từng học viên trực quan theo tỷ lệ phần trăm.
+    \item \textbf{Nộp kết quả và xem báo cáo}: Học viên nhập passcode kết hợp đối khớp GPS để điểm danh và theo dõi lịch sử chuyên cần.
 
 \end{itemize}
 
-UC06 giúp việc điểm danh có căn cứ hơn nhờ kết hợp nhận diện khuôn mặt, mã OTP và vị trí GPS. Sau khi được giảng viên phê duyệt, dữ liệu chuyên cần được dùng để thống kê tỷ lệ tham gia lớp và phát hiện sớm các trường hợp vắng học kéo dài.
+UC06 kết hợp nhận diện khuôn mặt, mã OTP và vị trí GPS để tối ưu hóa tính chính xác. Dữ liệu sau phê duyệt được dùng để thống kê tỷ lệ tham gia lớp và phát hiện sớm các trường hợp vắng học kéo dài.
 
 \subsubsection*{g, UC07 - Phân rã Chấm thi trực tuyến}
 
