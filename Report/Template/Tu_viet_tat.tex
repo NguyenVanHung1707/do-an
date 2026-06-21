@@ -17,6 +17,13 @@
     first={AI}
 }
 
+\newglossaryentry{android}{
+    type=\acronymtype,
+    name={Android},
+    description={Hệ điều hành di động mã nguồn mở dựa trên nền tảng Linux do Google phát triển},
+    first={Android}
+}
+
 \newglossaryentry{api}{
     type=\acronymtype,
     name={API},
@@ -27,21 +34,35 @@
 \newglossaryentry{apns}{
     type=\acronymtype,
     name={APNs},
-    description={Dịch vụ thông báo đẩy của Apple (Apple Push Notification service)},
+    description={Dịch vụ thông báo đẩy của hãng Apple (Apple Push Notification service)},
     first={APNs}
+}
+
+\newglossaryentry{arcface}{
+    type=\acronymtype,
+    name={ArcFace},
+    description={Mạng nơ-ron sâu nhận diện và trích xuất đặc trưng khuôn mặt (Additive Angular Margin Loss for Deep Face Recognition)},
+    first={ArcFace}
+}
+
+\newglossaryentry{asyncstorage}{
+    type=\acronymtype,
+    name={AsyncStorage},
+    description={Hệ thống lưu trữ dữ liệu cục bộ dạng key-value bất đồng bộ trên ứng dụng React Native},
+    first={AsyncStorage}
 }
 
 \newglossaryentry{ble}{
     type=\acronymtype,
     name={BLE},
-    description={Công nghệ Bluetooth năng lượng thấp (Bluetooth Low Energy)},
+    description={Công nghệ kết nối Bluetooth tiết kiệm năng lượng (Bluetooth Low Energy)},
     first={BLE}
 }
 
 \newglossaryentry{bssid}{
     type=\acronymtype,
     name={BSSID},
-    description={Mã định danh nhóm dịch vụ cơ bản - địa chỉ MAC của bộ phát Wi-Fi (Basic Service Set Identifier)},
+    description={Địa chỉ MAC vật lý của bộ phát Wi-Fi (Basic Service Set Identifier)},
     first={BSSID}
 }
 
@@ -62,14 +83,14 @@
 \newglossaryentry{cors}{
     type=\acronymtype,
     name={CORS},
-    description={Chia sẻ tài nguyên giữa các nguồn khác nhau (Cross-Origin Resource Sharing)},
+    description={Cơ chế chia sẻ tài nguyên giữa các nguồn khác nhau trong trình duyệt (Cross-Origin Resource Sharing)},
     first={CORS}
 }
 
 \newglossaryentry{cpu}{
     type=\acronymtype,
     name={CPU},
-    description={Bộ xử lý trung tâm (Central Processing Unit)},
+    description={Bộ xử lý trung tâm của máy tính (Central Processing Unit)},
     first={CPU}
 }
 
@@ -83,36 +104,71 @@
 \newglossaryentry{css}{
     type=\acronymtype,
     name={CSS},
-    description={Bảng thuộc tính định dạng trang trí trang web (Cascading Style Sheets)},
+    description={Ngôn ngữ định dạng thuộc tính trang trí giao diện trang web (Cascading Style Sheets)},
     first={CSS}
+}
+
+\newglossaryentry{deepface}{
+    type=\acronymtype,
+    name={DeepFace},
+    description={Thư viện mã nguồn mở Python hỗ trợ nhận diện và phân tích khuôn mặt học sâu},
+    first={DeepFace}
+}
+
+\newglossaryentry{docker}{
+    type=\acronymtype,
+    name={Docker},
+    description={Nền tảng container hóa hỗ trợ đóng gói và ảo hóa tài nguyên phần mềm nhẹ},
+    first={Docker}
 }
 
 \newglossaryentry{dom}{
     type=\acronymtype,
     name={DOM},
-    description={Mô hình đối tượng tài liệu (Document Object Model)},
+    description={Mô hình đối tượng tài liệu giao diện web (Document Object Model)},
     first={DOM}
 }
 
 \newglossaryentry{dto}{
     type=\acronymtype,
     name={DTO},
-    description={Đối tượng chuyển đổi dữ liệu giữa các tầng dịch vụ (Data Transfer Object)},
+    description={Đối tượng chuyển đổi và trao đổi dữ liệu giữa các tầng dịch vụ (Data Transfer Object)},
     first={DTO}
 }
 
 \newglossaryentry{epnp}{
     type=\acronymtype,
     name={EPnP},
-    description={Giải thuật ước lượng tư thế từ điểm tương ứng hiệu năng cao (Efficient Perspective-n-Point)},
+    description={Giải thuật ước lượng tư thế 3D từ các điểm tương ứng hiệu năng cao (Efficient Perspective-n-Point)},
     first={EPnP}
 }
 
 \newglossaryentry{erd}{
     type=\acronymtype,
     name={ERD},
-    description={Sơ đồ quan hệ thực thể (Entity Relationship Diagram)},
+    description={Sơ đồ thiết kế quan hệ thực thể của cơ sở dữ liệu (Entity Relationship Diagram)},
     first={ERD}
+}
+
+\newglossaryentry{facemesh}{
+    type=\acronymtype,
+    name={FaceMesh},
+    description={Giải pháp trích xuất tọa độ 3D của 468 điểm mốc khuôn mặt thời gian thực từ MediaPipe},
+    first={FaceMesh}
+}
+
+\newglossaryentry{facenet}{
+    type=\acronymtype,
+    name={FaceNet},
+    description={Hệ thống mạng nơ-ron nhận diện khuôn mặt trích xuất vector đặc trưng 128 chiều},
+    first={FaceNet}
+}
+
+\newglossaryentry{fastapi}{
+    type=\acronymtype,
+    name={FastAPI},
+    description={FastAPI Web framework hiệu năng cao viết bằng ngôn ngữ Python dùng để xây dựng các API dữ liệu},
+    first={FastAPI}
 }
 
 \newglossaryentry{fcm}{
@@ -125,50 +181,85 @@
 \newglossaryentry{ffmpeg}{
     type=\acronymtype,
     name={FFmpeg},
-    description={Bộ công cụ/Thư viện xử lý dữ liệu âm thanh và video đa phương tiện hiệu năng cao (Fast Forward MPEG)},
+    description={Bộ công cụ mã nguồn mở xử lý, chuyển đổi mã và luồng đa phương tiện (âm thanh, video)},
     first={FFmpeg}
+}
+
+\newglossaryentry{firebase}{
+    type=\acronymtype,
+    name={Firebase},
+    description={Nền tảng phát triển ứng dụng di động và web được Google cung cấp},
+    first={Firebase}
 }
 
 \newglossaryentry{fps}{
     type=\acronymtype,
     name={FPS},
-    description={Tần suất khung hình trên giây (Frames Per Second)},
+    description={Số khung hình hiển thị trên mỗi giây (Frames Per Second)},
     first={FPS}
 }
 
 \newglossaryentry{gcm}{
     type=\acronymtype,
     name={GCM},
-    description={Dịch vụ thông báo đẩy đám mây cũ của Google (Google Cloud Messaging)},
+    description={Dịch vụ gửi thông báo đẩy cũ của Google (Google Cloud Messaging)},
     first={GCM}
+}
+
+\newglossaryentry{geofencing}{
+    type=\acronymtype,
+    name={Geofencing},
+    description={Công nghệ thiết lập hàng rào địa lý ảo dựa trên tọa độ GPS thực tế},
+    first={Geofencing}
 }
 
 \newglossaryentry{ghcr}{
     type=\acronymtype,
     name={GHCR},
-    description={Kho lưu trữ container trên đám mây của GitHub (GitHub Container Registry)},
+    description={Kho lưu trữ ảnh Docker Container trên đám mây của GitHub (GitHub Container Registry)},
     first={GHCR}
 }
 
 \newglossaryentry{gps}{
     type=\acronymtype,
     name={GPS},
-    description={Hệ thống định vị toàn cầu (Global Positioning System)},
+    description={Hệ thống định vị toàn cầu dựa trên vệ tinh (Global Positioning System)},
     first={GPS}
 }
 
 \newglossaryentry{gpu}{
     type=\acronymtype,
     name={GPU},
-    description={Bộ xử lý đồ họa (Graphics Processing Unit)},
+    description={Bộ xử lý đồ họa chuyên dụng (Graphics Processing Unit)},
     first={GPU}
+}
+
+\newglossaryentry{haversine}{
+    type=\acronymtype,
+    name={Haversine},
+    description={Công thức toán học tính khoảng cách địa lý giữa hai cặp tọa độ vĩ độ/kinh độ trên hình cầu},
+    first={Haversine}
+}
+
+\newglossaryentry{hikaricp}{
+    type=\acronymtype,
+    name={HikariCP},
+    description={Thư viện quản lý bể kết nối cơ sở dữ liệu (JDBC Connection Pool) hiệu năng rất cao trong Java},
+    first={HikariCP}
 }
 
 \newglossaryentry{hog}{
     type=\acronymtype,
     name={HOG},
-    description={Biểu đồ tần suất định hướng của gradient đặc trưng hình ảnh (Histogram of Oriented Gradients)},
+    description={Thuật toán trích xuất đặc trưng biên ảnh phục vụ phát hiện vật thể (Histogram of Oriented Gradients)},
     first={HOG}
+}
+
+\newglossaryentry{hopenet}{
+    type=\acronymtype,
+    name={HopeNet},
+    description={Mạng nơ-ron tích chập sâu dùng để ước lượng trực tiếp góc xoay đầu (yaw, pitch, roll)},
+    first={HopeNet}
 }
 
 \newglossaryentry{html}{
@@ -176,6 +267,13 @@
     name={HTML},
     description={Ngôn ngữ đánh dấu siêu văn bản (HyperText Markup Language)},
     first={HTML}
+}
+
+\newglossaryentry{html5}{
+    type=\acronymtype,
+    name={HTML5},
+    description={Phiên bản nâng cấp thứ năm của ngôn ngữ HTML hỗ trợ các API và thuộc tính đa phương tiện hiện đại},
+    first={HTML5}
 }
 
 \newglossaryentry{http}{
@@ -188,126 +286,175 @@
 \newglossaryentry{https}{
     type=\acronymtype,
     name={HTTPS},
-    description={Giao thức truyền tải siêu văn bản bảo mật (Hypertext Transfer Protocol Secure)},
+    description={Giao thức truyền tải siêu văn bản bảo mật mã hóa SSL/TLS (Hypertext Transfer Protocol Secure)},
     first={HTTPS}
 }
 
 \newglossaryentry{id}{
     type=\acronymtype,
     name={ID},
-    description={Mã định danh (Identifier)},
+    description={Mã định danh duy nhất (Identifier)},
     first={ID}
 }
 
 \newglossaryentry{ios}{
     type=\acronymtype,
     name={iOS},
-    description={Hệ điều hành di động dành cho các thiết bị của Apple (iPhone Operating System)},
+    description={Hệ điều hành di động của hãng Apple dành cho thiết bị iPhone (iPhone Operating System)},
     first={iOS}
 }
 
 \newglossaryentry{ip}{
     type=\acronymtype,
     name={IP},
-    description={Giao thức mạng Internet (Internet Protocol)},
+    description={Giao thức Internet định danh máy tính trong mạng (Internet Protocol)},
     first={IP}
 }
 
-\newglossaryentry{jdk}{
+\newglossaryentry{ipv4}{
     type=\acronymtype,
-    name={JDK},
-    description={Bộ công cụ phát triển phần mềm Java (Java Development Kit)},
-    first={JDK}
+    name={IPv4},
+    description={Giao thức cấu hình địa chỉ IP phiên bản 4 gồm 32 bit},
+    first={IPv4}
 }
 
 \newglossaryentry{jpa}{
     type=\acronymtype,
     name={JPA},
-    description={Giao diện lập trình ứng dụng duy trì dữ liệu của nền tảng Java (Java Persistence API)},
+    description={Đặc tả giao diện lập trình duy trì dữ liệu đối tượng trong Java (Java Persistence API)},
     first={JPA}
 }
 
 \newglossaryentry{jpeg}{
     type=\acronymtype,
     name={JPEG},
-    description={Định dạng nén ảnh tĩnh chuẩn (Joint Photographic Experts Group)},
+    description={Định dạng nén hình ảnh tĩnh thông dụng (Joint Photographic Experts Group)},
     first={JPEG}
 }
 
 \newglossaryentry{json}{
     type=\acronymtype,
     name={JSON},
-    description={Định dạng trao đổi dữ liệu dạng văn bản nhẹ (JavaScript Object Notation)},
+    description={Định dạng văn bản trao đổi dữ liệu gọn nhẹ (JavaScript Object Notation)},
     first={JSON}
 }
 
 \newglossaryentry{jsonb}{
     type=\acronymtype,
     name={JSONB},
-    description={Định dạng dữ liệu JSON dạng nhị phân tối ưu hóa trong PostgreSQL (JSON Binary)},
+    description={Kiểu dữ liệu JSON nhị phân được lưu trữ và tối ưu lập chỉ mục trong PostgreSQL},
     first={JSONB}
 }
 
 \newglossaryentry{jsx}{
     type=\acronymtype,
     name={JSX},
-    description={Cú pháp mở rộng viết mã giao diện của thư viện ReactJS (JavaScript XML)},
+    description={Cú pháp mở rộng kết hợp JavaScript và XML dùng trong ReactJS để khai báo giao diện (JavaScript XML)},
     first={JSX}
+}
+
+\newglossaryentry{junit}{
+    type=\acronymtype,
+    name={JUnit},
+    description={Thư viện viết và chạy kiểm thử đơn vị tự động trong ngôn ngữ Java},
+    first={JUnit}
 }
 
 \newglossaryentry{jwt}{
     type=\acronymtype,
     name={JWT},
-    description={Token xác thực mã hóa an toàn dạng JSON (JSON Web Token)},
+    description={Mã thông báo dạng chuỗi JSON đã mã hóa/ký số dùng xác thực truy cập (JSON Web Token)},
     first={JWT}
+}
+
+\newglossaryentry{keycloak}{
+    type=\acronymtype,
+    name={Keycloak},
+    description={Hệ thống mã nguồn mở quản lý định danh và kiểm soát truy cập (IAM) tập trung},
+    first={Keycloak}
 }
 
 \newglossaryentry{lms}{
     type=\acronymtype,
     name={LMS},
-    description={Hệ thống quản lý học tập (Learning Management System)},
+    description={Hệ thống quản lý và cung cấp tài nguyên học tập trực tuyến (Learning Management System)},
     first={LMS}
 }
 
 \newglossaryentry{lts}{
     type=\acronymtype,
     name={LTS},
-    description={Hỗ trợ dài hạn cho các phiên bản phát hành phần mềm (Long Term Support)},
+    description={Phiên bản phát hành phần mềm được hỗ trợ cập nhật bảo mật dài hạn (Long Term Support)},
     first={LTS}
 }
 
 \newglossaryentry{mac}{
     type=\acronymtype,
     name={MAC},
-    description={Địa chỉ phần cứng mạng (Media Access Control)},
+    description={Địa chỉ vật lý duy nhất của phần cứng card mạng (Media Access Control)},
     first={MAC}
+}
+
+\newglossaryentry{mediapipe}{
+    type=\acronymtype,
+    name={MediaPipe},
+    description={Khung thư viện mã nguồn mở phát triển các đường ống xử lý thị giác máy tính học máy của Google},
+    first={MediaPipe}
+}
+
+\newglossaryentry{mongodb}{
+    type=\acronymtype,
+    name={MongoDB},
+    description={Hệ quản trị cơ sở dữ liệu phi quan hệ hướng tài liệu tài liệu (NoSQL Document Store)},
+    first={MongoDB}
+}
+
+\newglossaryentry{moodle}{
+    type=\acronymtype,
+    name={Moodle},
+    description={Hệ thống quản lý học tập (LMS) mã nguồn mở rất phổ biến tại các cơ sở đào tạo},
+    first={Moodle}
+}
+
+\newglossaryentry{mp4}{
+    type=\acronymtype,
+    name={MP4},
+    description={Định dạng chứa dữ liệu đa phương tiện âm thanh và video phổ biến},
+    first={MP4}
 }
 
 \newglossaryentry{mtcnn}{
     type=\acronymtype,
     name={MTCNN},
-    description={Mạng nơ-ron tích chập đa nhiệm phát hiện khuôn mặt (Multi-task Cascaded Convolutional Networks)},
+    description={Mạng nơ-ron tích chập đa nhiệm phục vụ phát hiện và căn chỉnh khuôn mặt (Multi-task Cascaded Convolutional Networks)},
     first={MTCNN}
+}
+
+\newglossaryentry{mysql}{
+    type=\acronymtype,
+    name={MySQL},
+    description={Hệ quản trị cơ sở dữ liệu quan hệ mã nguồn mở sử dụng ngôn ngữ truy vấn SQL},
+    first={MySQL}
 }
 
 \newglossaryentry{nginx}{
     type=\acronymtype,
     name={NGINX},
-    description={Máy chủ Reverse Proxy và Web Server hiệu năng cao (Nginx Engine)},
+    description={Máy chủ reverse proxy, cân bằng tải và web server mã nguồn mở hiệu năng cao},
     first={NGINX}
 }
 
 \newglossaryentry{nosql}{
     type=\acronymtype,
     name={NoSQL},
-    description={Hệ cơ sở dữ liệu phi quan hệ lưu trữ dữ liệu phi cấu trúc (Not Only SQL)},
+    description={Hệ cơ sở dữ liệu phi quan hệ, lưu trữ phi cấu trúc linh hoạt (Not Only SQL)},
     first={NoSQL}
 }
 
 \newglossaryentry{oauth}{
     type=\acronymtype,
     name={OAuth},
-    description={Giao thức ủy quyền mở dùng trong xác thực bảo mật ứng dụng (Open Authorization)},
+    description={Giao thức ủy quyền mở phục vụ cấp quyền truy cập bảo mật giữa các ứng dụng (Open Authorization)},
     first={OAuth}
 }
 
@@ -318,171 +465,255 @@
     first={OIDC}
 }
 
+\newglossaryentry{opencv}{
+    type=\acronymtype,
+    name={OpenCV},
+    description={Thư viện mã nguồn mở xử lý ảnh và thị giác máy tính hiệu năng cao (Open Source Computer Vision)},
+    first={OpenCV}
+}
+
 \newglossaryentry{otp}{
     type=\acronymtype,
     name={OTP},
-    description={Mật khẩu sử dụng một lần (One-Time Password)},
+    description={Mật khẩu sử dụng một lần có thời hạn ngắn (One-Time Password)},
     first={OTP}
+}
+
+\newglossaryentry{p2p}{
+    type=\acronymtype,
+    name={P2P},
+    description={Kiến trúc truyền thông mạng ngang hàng kết nối trực tiếp (Peer-to-Peer)},
+    first={P2P}
 }
 
 \newglossaryentry{pdf}{
     type=\acronymtype,
     name={PDF},
-    description={Định dạng tài liệu di động (Portable Document Format)},
+    description={Định dạng tài liệu di động hiển thị đồng nhất trên mọi thiết bị (Portable Document Format)},
     first={PDF}
 }
 
 \newglossaryentry{poi}{
     type=\acronymtype,
     name={POI},
-    description={Thư viện xử lý dữ liệu Microsoft Office cho Java (Apache POI)},
+    description={Thư viện mã nguồn mở Java của Apache hỗ trợ đọc/ghi tài liệu Microsoft Office như Excel (Apache POI)},
     first={POI}
 }
 
 \newglossaryentry{post}{
     type=\acronymtype,
     name={POST},
-    description={Phương thức gửi dữ liệu lên máy chủ trong giao thức HTTP (HTTP POST method)},
+    description={Phương thức gửi dữ liệu chứa thông tin lên máy chủ web trong giao thức HTTP},
     first={POST}
+}
+
+\newglossaryentry{postgresql}{
+    type=\acronymtype,
+    name={PostgreSQL},
+    description={Hệ quản trị cơ sở dữ liệu quan hệ đối tượng mạnh mẽ và an toàn mã nguồn mở},
+    first={PostgreSQL}
+}
+
+\newglossaryentry{proctoring}{
+    type=\acronymtype,
+    name={Proctoring},
+    description={Các kỹ thuật và phần mềm giám sát phòng thi tự động nhằm chống gian lận thi cử},
+    first={Proctoring}
 }
 
 \newglossaryentry{qr}{
     type=\acronymtype,
     name={QR},
-    description={Mã phản hồi nhanh (Quick Response Code)},
+    description={Mã phản hồi nhanh dạng đồ họa ma trận 2D chứa dữ liệu (Quick Response Code)},
     first={QR}
 }
 
 \newglossaryentry{ram}{
     type=\acronymtype,
     name={RAM},
-    description={Bộ nhớ truy cập ngẫu nhiên (Random Access Memory)},
+    description={Bộ nhớ truy cập ngẫu nhiên của thiết bị (Random Access Memory)},
     first={RAM}
+}
+
+\newglossaryentry{react}{
+    type=\acronymtype,
+    name={React},
+    description={Thư viện JavaScript mã nguồn mở do Meta phát triển dùng xây dựng giao diện người dùng web thời gian thực},
+    first={React}
+}
+
+\newglossaryentry{reactnative}{
+    type=\acronymtype,
+    name={React Native},
+    description={Khung phát triển ứng dụng di động đa nền tảng (iOS, Android) bằng ngôn ngữ JavaScript do Meta phát triển},
+    first={React Native}
 }
 
 \newglossaryentry{rest}{
     type=\acronymtype,
     name={REST},
-    description={Kiểu kiến trúc thiết kế dịch vụ web API (Representational State Transfer)},
+    description={Kiểu kiến trúc thiết kế dịch vụ web API sử dụng các phương thức HTTP tiêu chuẩn (Representational State Transfer)},
     first={REST}
+}
+
+\newglossaryentry{retinaface}{
+    type=\acronymtype,
+    name={RetinaFace},
+    description={Mạng nơ-ron học sâu phát hiện và căn chỉnh khuôn mặt chính xác cao dạng đơn tầng (One-stage Face Detector)},
+    first={RetinaFace}
+}
+
+\newglossaryentry{saas}{
+    type=\acronymtype,
+    name={SaaS},
+    description={Mô hình cung cấp dịch vụ phần mềm lưu trữ trên đám mây chạy qua web (Software as a Service)},
+    first={SaaS}
 }
 
 \newglossaryentry{saml}{
     type=\acronymtype,
     name={SAML},
-    description={Ngôn ngữ đánh dấu khẳng định bảo mật (Security Assertion Markup Language)},
+    description={Ngôn ngữ đánh dấu trao đổi thông tin xác thực an toàn giữa các bên bảo mật (Security Assertion Markup Language)},
     first={SAML}
 }
 
 \newglossaryentry{sdk}{
     type=\acronymtype,
     name={SDK},
-    description={Bộ công cụ phát triển phần mềm (Software Development Kit)},
+    description={Bộ công cụ phát triển phần mềm đóng gói (Software Development Kit)},
     first={SDK}
 }
 
-\newglossaryentry{soa}{
+\newglossaryentry{solvepnp}{
     type=\acronymtype,
-    name={SOA},
-    description={Kiến trúc phần mềm hướng dịch vụ (Service-Oriented Architecture)},
-    first={SOA}
+    name={solvePnP},
+    description={Hàm giải bài toán hình học xác định vị trí và hướng của camera 3D từ các cặp điểm đối ứng (Perspective-n-Point Solver)},
+    first={solvePnP}
+}
+
+\newglossaryentry{spring}{
+    type=\acronymtype,
+    name={Spring Boot},
+    description={Spring Boot Framework phát triển dịch vụ và ứng dụng microservices phía server bằng Java},
+    first={Spring Boot}
 }
 
 \newglossaryentry{ssd}{
     type=\acronymtype,
     name={SSD},
-    description={Ổ đĩa lưu trữ trạng thái rắn (Solid State Drive)},
+    description={Ổ đĩa lưu trữ trạng thái rắn hiệu năng cao (Solid State Drive)},
     first={SSD}
 }
 
 \newglossaryentry{ssh}{
     type=\acronymtype,
     name={SSH},
-    description={Giao thức truy cập và điều khiển máy chủ từ xa bảo mật (Secure Shell)},
+    description={Giao thức mạng truy cập từ xa bảo mật vào các hệ điều hành máy chủ (Secure Shell)},
     first={SSH}
 }
 
 \newglossaryentry{ssl}{
     type=\acronymtype,
     name={SSL},
-    description={Giao thức bảo mật lớp truyền tải dữ liệu cũ (Secure Sockets Layer)},
+    description={Giao thức mã hóa an toàn lớp truyền tải dữ liệu cũ (Secure Sockets Layer)},
     first={SSL}
 }
 
 \newglossaryentry{sso}{
     type=\acronymtype,
     name={SSO},
-    description={Đăng nhập một lần tập trung (Single Sign-On)},
+    description={Cơ chế đăng nhập một lần tập trung cho phép sử dụng nhiều dịch vụ đồng bộ (Single Sign-On)},
     first={SSO}
 }
 
 \newglossaryentry{svg}{
     type=\acronymtype,
     name={SVG},
-    description={Định dạng đồ họa vector có khả năng thu phóng (Scalable Vector Graphics)},
+    description={Định dạng đồ họa vector có khả năng co giãn kích thước không mất chi tiết (Scalable Vector Graphics)},
     first={SVG}
 }
 
 \newglossaryentry{svm}{
     type=\acronymtype,
     name={SVM},
-    description={Thuật toán học máy phân loại vector hỗ trợ (Support Vector Machine)},
+    description={Thuật toán học máy học có giám sát phân loại vector hỗ trợ (Support Vector Machine)},
     first={SVM}
+}
+
+\newglossaryentry{tailwindcss}{
+    type=\acronymtype,
+    name={TailwindCSS},
+    description={Thư viện CSS hướng tiện ích (Utility-first CSS framework) dùng phát triển nhanh giao diện web},
+    first={TailwindCSS}
 }
 
 \newglossaryentry{tcp}{
     type=\acronymtype,
     name={TCP},
-    description={Giao thức điều khiển truyền vận (Transmission Control Protocol)},
+    description={Giao thức điều khiển truyền vận tin cậy của mô hình mạng (Transmission Control Protocol)},
     first={TCP}
 }
 
 \newglossaryentry{tls}{
     type=\acronymtype,
     name={TLS},
-    description={Giao thức bảo mật lớp truyền tải dữ liệu (Transport Layer Security)},
+    description={Giao thức bảo mật lớp truyền tải dữ liệu kế nhiệm của SSL (Transport Layer Security)},
     first={TLS}
 }
 
 \newglossaryentry{uat}{
     type=\acronymtype,
     name={UAT},
-    description={Kiểm thử chấp nhận người dùng (User Acceptance Testing)},
+    description={Kiểm thử chấp nhận người dùng thực tế cuối cùng trước khi đưa hệ thống chạy sản xuất (User Acceptance Testing)},
     first={UAT}
 }
 
 \newglossaryentry{ui}{
     type=\acronymtype,
     name={UI},
-    description={Giao diện người dùng (User Interface)},
+    description={Giao diện tương tác người dùng của phần mềm (User Interface)},
     first={UI}
 }
 
 \newglossaryentry{uuid}{
     type=\acronymtype,
     name={UUID},
-    description={Mã định danh duy nhất toàn cầu (Universally Unique Identifier)},
+    description={Mã định danh 128 bit duy nhất toàn cầu (Universally Unique Identifier)},
     first={UUID}
+}
+
+\newglossaryentry{vggface2}{
+    type=\acronymtype,
+    name={VGGFace2},
+    description={Bộ dữ liệu hình ảnh khuôn mặt lớn phục vụ huấn luyện và đánh giá nhận diện khuôn mặt sâu},
+    first={VGGFace2}
 }
 
 \newglossaryentry{vps}{
     type=\acronymtype,
     name={VPS},
-    description={Máy chủ ảo cá nhân (Virtual Private Server)},
+    description={Máy chủ ảo cá nhân chạy trên môi trường điện toán đám mây (Virtual Private Server)},
     first={VPS}
 }
 
 \newglossaryentry{webrtc}{
     type=\acronymtype,
     name={WebRTC},
-    description={Công nghệ hỗ trợ truyền dữ liệu và truyền thông tin thời gian thực trong trình duyệt web (Web Real-Time Communication)},
+    description={Giao thức truyền thông tin video, âm thanh thời gian thực peer-to-peer trực tiếp trên trình duyệt (Web Real-Time Communication)},
     first={WebRTC}
+}
+
+\newglossaryentry{websocket}{
+    type=\acronymtype,
+    name={WebSockets},
+    description={Giao thức truyền thông hai chiều thời gian thực liên tục qua một kết nối TCP duy nhất},
+    first={WebSockets}
 }
 
 \newglossaryentry{ws}{
     type=\acronymtype,
     name={WS},
-    description={Giao thức truyền thông hai chiều thời gian thực qua kết nối TCP (WebSocket)},
+    description={Từ viết tắt chỉ WebSocket hoặc máy chủ WebSocket},
     first={WS}
 }
 
