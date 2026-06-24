@@ -944,7 +944,7 @@ Các yêu cầu phi chức năng của hệ thống được xác định theo b
          & Tính toàn vẹn dữ liệu & Tự động lưu bản nháp bài thi (Auto-save) định kỳ sau mỗi 30 giây hoặc khi chuyển đổi câu hỏi về PostgreSQL. \\ \hline
         \multirow{3}{3cm}{Bảo mật \& Riêng tư (Security \& Privacy)} & Xác thực người dùng & Kiểm soát phiên truy cập tập trung qua Keycloak SSO \cite{keycloak2026} trên môi trường mã hóa HTTPS/TLS. \\ \cline{2-3}
          & An toàn dữ liệu khuôn mặt & Lưu trữ mã hóa vector sinh trắc học 512 chiều trong cơ sở dữ liệu PostgreSQL; không lưu trữ ảnh gốc độ phân giải cao ngoại trừ ảnh crop khuôn mặt. \\ \cline{2-3}
-         & Chống giả mạo vị trí & Phát hiện và chặn hoàn toàn các ứng dụng giả lập tọa độ (Mock Location/GPS Spoofer) trên Android/iOS. \\ \hline
+          & Chống giả mạo vị trí & Phát hiện và từ chối các yêu cầu check-in sử dụng định vị giả lập (Mock Location) thông qua cờ báo cáo của hệ điều hành trên Android/iOS. \\ \hline
         \multirow{2}{3cm}{Khả năng tương thích (Compatibility)} & Ứng dụng di động & Vận hành mượt mà trên hệ điều hành Android (từ phiên bản 9.0) và iOS (từ phiên bản 13.0). \\ \cline{2-3}
          & Trình duyệt Web & Tương thích tốt với các trình duyệt phổ biến: Google Chrome, Mozilla Firefox, Microsoft Edge và Safari. \\ \hline
 \end{longtable}
