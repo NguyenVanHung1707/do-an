@@ -1204,7 +1204,7 @@ Nghiệp vụ này kiểm tra quy trình phê duyệt tài khoản giảng viên
     TC-APR-01 & Trạng thái tài khoản giảng viên ngay sau khi đăng ký mới. & Đăng ký thông tin giảng viên hợp lệ qua form đăng ký. & Tạo bản ghi trong bảng \path{teacher} với trạng thái \path{account_status = PENDING}. & Đạt \\ \hline
     TC-APR-02 & Đăng nhập của giảng viên khi tài khoản chưa được phê duyệt. & Giảng viên đăng nhập bằng tài khoản \path{PENDING}. & Hệ thống hiển thị màn hình chờ phê duyệt \path{PendingApproval}, chặn mọi menu chức năng quản lý lớp. & Đạt \\ \hline
     TC-APR-03 & Admin phê duyệt thành công tài khoản giảng viên. & Admin chọn tài khoản \path{PENDING}, bấm nút "Phê duyệt" (Approve). & Trạng thái cập nhật thành \path{APPROVED}, kích hoạt tài khoản hoạt động trên Keycloak SSO. & Đạt \\ \hline
-    TC-APR-04 & Admin từ chối phê duyệt tài khoản giảng viên kèm lý do. & Admin chọn từ chối (Reject), điền lý do: \path{"Sai mã số giảng viên"}. & Trạng thái cập nhật thành \path{REJECTED}, lưu lý do từ chối vào cột \path{rejection_reason}. & Đạt \\ \hline
+    TC-APR-04 & Admin từ chối phê duyệt tài khoản giảng viên kèm lý do. & Admin chọn từ chối (Reject), điền lý do: \texttt{"Sai mã số giảng viên"}. & Trạng thái cập nhật thành \path{REJECTED}, lưu lý do từ chối vào cột \path{rejection_reason}. & Đạt \\ \hline
 \end{longtable}
 
 \subsection{Tổng kết kết quả kiểm thử}
