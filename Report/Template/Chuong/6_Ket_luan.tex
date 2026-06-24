@@ -1,76 +1,66 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
-Chương 6 trình bày các kết luận tổng quan về kết quả nghiên cứu và thực nghiệm thu được trong suốt quá trình thực hiện đề tài tốt nghiệp "Xây dựng phần mềm tối ưu hóa quy trình điểm danh và quản lý học sinh". Đồng thời, chương này cũng thẳng thắn chỉ ra các mặt hạn chế còn tồn tại của hệ thống hiện tại và đề xuất định hướng nghiên cứu, phát triển công việc trong tương lai nhằm nâng cấp, hoàn thiện giải pháp.
+Chương 6 tổng kết những kết quả chính đạt được trong quá trình thực hiện đề tài tốt nghiệp ``Xây dựng phần mềm tối ưu hóa quy trình điểm danh và quản lý học sinh''. Trên cơ sở đó, chương cũng chỉ ra các hạn chế còn tồn tại và đề xuất những hướng phát triển tiếp theo để hệ thống có thể hoàn thiện hơn khi triển khai trong môi trường giáo dục thực tế.
 
 \section{Kết luận}
 \label{section:6.1}
 
 \subsection{So sánh kết quả nghiên cứu với các giải pháp tương tự}
-Để đánh giá một cách khách quan đóng góp kỹ thuật và tính thực tiễn của đề tài tốt nghiệp, kết quả nghiên cứu và sản phẩm phần mềm của hệ thống được đối chiếu với các phương pháp điểm danh và giám sát lớp học phổ biến:
+Kết quả của đồ án được đối chiếu với một số phương pháp điểm danh và giám sát học tập phổ biến nhằm làm rõ giá trị ứng dụng của hệ thống:
 \begin{itemize}
-    \item \textbf{So với phương pháp điểm danh truyền thống (gọi tên, ký tên giấy)}: 
-    Phương pháp điểm danh thủ công truyền thống gây lãng phí từ $10$ đến $15$ phút của mỗi tiết học đối với các lớp học phần đông từ $50$ đến $100$ sinh viên, đồng thời dễ xảy ra sai sót hoặc gian lận điểm danh hộ. Trong khi đó, giải pháp điểm danh nhóm tự động (Group FaceID) được đề xuất trong đồ án chỉ mất từ $1.5$ đến $2.5$ giây để xử lý ảnh chụp tập thể lớp học. Hệ thống tự động phát hiện, cắt khuôn mặt và so khớp sinh trắc học ArcFace \cite{Deng_2019_CVPR} hàng loạt sinh viên, loại bỏ hoàn toàn khả năng gian lận ký tên hộ và trả lại trọn vẹn thời gian giảng dạy cho giảng viên.
-    \item \textbf{So với giải pháp điểm danh sinh trắc học cá nhân (quét vân tay hoặc nhận diện khuôn mặt đơn lẻ)}: 
-    Triển khai điểm danh vân tay hoặc FaceID cá nhân yêu cầu sinh viên phải xếp hàng lần lượt quét tại thiết bị di động cá nhân hoặc tại cửa lớp, dễ dẫn đến hiện tượng ùn tắc trước giờ học. Giải pháp điểm danh nhóm của đồ án cho phép giảng viên chụp một bức ảnh tập thể cả lớp và tải lên hệ thống. Nhờ thuật toán gán cặp tối ưu Greedy Matching dựa trên ma trận khoảng cách Cosine và kỹ thuật Lazy Cropping đồng bộ ảnh khuôn mẫu, hệ thống thực hiện điểm danh đồng thời hàng chục sinh viên có mặt trong phòng học chỉ qua một lần chụp duy nhất, cải thiện đáng kể trải nghiệm người dùng và thông lượng xử lý.
-    \item \textbf{So với các giải pháp giám sát thi trực tuyến (AI Proctoring) thương mại}: 
-    Các phần mềm proctoring thương mại hiện nay thường chạy các mô hình mạng nơ-ron tích chập (CNN) sâu, cồng kềnh trực tiếp trên server để phân loại hướng khuôn mặt. Phương pháp này yêu cầu máy chủ phải có cấu hình GPU hiệu năng cao vô cùng tốn kém và băng thông mạng cực kỳ lớn để truyền tải toàn bộ luồng video thô từ Client lên Server. Hệ thống proctoring của đồ án giải quyết tối ưu bài toán tài nguyên nhờ sự kết hợp lai giữa phát hiện điểm mốc 2D gọn nhẹ trên trình duyệt web và giải thuật toán học hình học 3D solvePnP để ước lượng tư thế đầu (Head Pose Estimation) trên máy chủ CPU thông thường. Nhờ vậy, hệ thống đáp ứng thời gian thực với độ trễ WebSocket dưới $80$ ms, đồng thời tiết kiệm chi phí hạ tầng máy chủ khi tổ chức thi đồng thời cho số lượng thí sinh lớn.
-    \item \textbf{So với các cơ chế định vị địa lý (Geofencing) thông thường}: 
-    Các ứng dụng điểm danh GPS cơ bản chỉ đơn thuần lấy tọa độ từ thiết bị di động rồi gửi về Server để so khớp khoảng cách Haversine \cite{sinnott1984virtues}. Điều này dễ dàng bị vượt qua bởi các ứng dụng giả lập vị trí (Fake GPS / Mock Location). Đồ án đã giải quyết triệt để nguy cơ này bằng cơ chế bảo mật định vị hai lớp: Client-side quét sâu để phát hiện các cờ giả lập vị trí (\path{isMock} trên Android, kiểm tra biến động độ chính xác \path{horizontalAccuracy} trên iOS) và chặn đứng yêu cầu ngay tại lớp phần cứng trước khi gửi lên server; kết hợp với xác thực Haversine chặt chẽ tại Backend Spring Boot trong bán kính cấu hình từ $50$ đến $500$ mét.
+    \item \textbf{So với điểm danh truyền thống}: Cách gọi tên hoặc ký tên giấy thường mất nhiều thời gian, đặc biệt ở các lớp đông từ $50$ đến $100$ sinh viên, đồng thời dễ phát sinh sai sót hoặc điểm danh hộ. Giải pháp Group FaceID của đồ án cho phép giảng viên chụp ảnh tập thể lớp học, sau đó hệ thống tự động phát hiện khuôn mặt, trích xuất đặc trưng ArcFace \cite{Deng_2019_CVPR} và ghi nhận kết quả trong khoảng $1.5$ đến $2.5$ giây.
+    \item \textbf{So với nhận diện sinh trắc học cá nhân}: Các mô hình quét vân tay hoặc FaceID từng người yêu cầu sinh viên xếp hàng lần lượt, dễ gây ùn tắc trước giờ học. Hệ thống của đồ án xử lý đồng thời nhiều khuôn mặt trong một ảnh nhờ Greedy Matching và Lazy Cropping, từ đó giảm thao tác cho cả giảng viên lẫn sinh viên.
+    \item \textbf{So với các phần mềm AI Proctoring thương mại}: Nhiều giải pháp giám sát thi trực tuyến cần truyền video liên tục lên máy chủ và xử lý bằng mô hình nặng, làm tăng chi phí GPU và băng thông. Đồ án lựa chọn hướng kết hợp điểm mốc khuôn mặt 2D trên trình duyệt với solvePnP để ước lượng tư thế đầu, giúp hệ thống có thể vận hành trên CPU thông thường với độ trễ WebSocket dưới $80$ ms.
+    \item \textbf{So với quản lý dữ liệu bằng bảng tính thủ công}: Cách tổng hợp chuyên cần, điểm số và sự kiện thi bằng Excel dễ phân tán dữ liệu, khó đối soát khi có khiếu nại. Hệ thống tập trung hóa dữ liệu theo lớp học phần, cung cấp dashboard, lịch sử chuyên cần, bảng điểm và nhật ký giám sát để giảng viên, học viên và quản trị viên theo dõi minh bạch hơn.
 \end{itemize}
 
 \subsection{Các kết quả cụ thể đạt được của đề tài}
-Trong suốt quá trình thiết kế và triển khai thực nghiệm đồ án tốt nghiệp, tác giả đã hoàn thành toàn bộ các mục tiêu đặt ra ban đầu, cụ thể:
+Trong phạm vi đồ án, hệ thống đã hoàn thành các mục tiêu chính đã đặt ra:
 \begin{itemize}
-    \item \textbf{Về mặt kiến trúc hệ thống}: Xây dựng thành công hệ thống phần mềm dựa trên kiến trúc Microservices phân tách nghiệp vụ rõ ràng, bao gồm phân hệ backend chính (Spring Boot), phân hệ xử lý AI nhận diện khuôn mặt nhóm (FastAPI), phân hệ giám sát thi trực tuyến (FastAPI \& WebSockets), và hệ thống xác thực tập trung SSO (Keycloak). Hệ thống được triển khai container hóa hoàn chỉnh qua Docker Compose trên máy chủ ảo VPS Ubuntu Server.
-    \item \textbf{Về mặt ứng dụng và giao diện}: Hiện thực hóa hai giao diện người dùng chính là ứng dụng di động React Native dành cho học sinh (hỗ trợ check-in FaceID chân dung, GPS/OTP, xem lịch sử điểm danh, làm bài kiểm tra) và ứng dụng web React dành cho giảng viên/quản trị viên (hỗ trợ tạo ca học, quản lý danh sách lớp, xem báo cáo, giám sát thi trực tuyến thời gian thực).
-    \item \textbf{Về mặt tích hợp AI và thuật toán}: Tích hợp thành công các mô hình học máy hiện đại bao gồm RetinaFace \cite{Deng_2020_CVPR} (phát hiện khuôn mặt), ArcFace \cite{Deng_2019_CVPR} (trích xuất đặc trưng sinh trắc học), MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe} (trích xuất điểm mốc 2D), solvePnP (ước lượng tư thế đầu 3D), và công thức Haversine (tính khoảng cách địa lý).
-    \item \textbf{Về mặt kiểm thử và vận hành thực tế}: Hệ thống đã được triển khai thử nghiệm thực tế tại môi trường giảng đường với quy mô thử nghiệm $150$ học viên và $10$ giảng viên. Kết quả ghi nhận hệ thống hoạt động ổn định, độ trễ API dưới $150$ ms, độ chính xác điểm danh đạt trên $95\%$ và chặn đứng thành công $100\%$ các hành vi giả lập tọa độ GPS.
+    \item \textbf{Kiến trúc hệ thống}: Xây dựng mô hình Microservices gồm backend Spring Boot, dịch vụ AI nhận diện khuôn mặt nhóm bằng FastAPI, dịch vụ giám sát thi trực tuyến bằng FastAPI \& WebSockets và hệ thống xác thực tập trung Keycloak. Toàn bộ các thành phần được container hóa và triển khai qua Docker Compose trên VPS Ubuntu.
+    \item \textbf{Ứng dụng người dùng}: Hoàn thiện ứng dụng di động React Native cho học sinh với các chức năng check-in FaceID, GPS/OTP, xem lịch sử điểm danh và làm bài kiểm tra. Đồng thời, xây dựng ứng dụng web React cho giảng viên/quản trị viên để tạo ca học, quản lý lớp, xem báo cáo và theo dõi thi trực tuyến.
+    \item \textbf{Tích hợp AI và thuật toán}: Tích hợp các thành phần RetinaFace \cite{Deng_2020_CVPR}, ArcFace \cite{Deng_2019_CVPR}, MediaPipe FaceMesh \cite{Lugaresi2019MediaPipe}, solvePnP và Haversine vào các nghiệp vụ nhận diện, giám sát và định vị. Các kỹ thuật này được kết hợp theo hướng phục vụ trực tiếp cho quy trình điểm danh thay vì chỉ dừng ở mức thử nghiệm mô hình.
+    \item \textbf{Kiểm thử thực tế}: Hệ thống được thử nghiệm trong môi trường giảng đường với $150$ học viên và $10$ giảng viên. Kết quả ghi nhận hệ thống hoạt động ổn định, độ trễ API dưới $150$ ms, cơ chế đối soát chuyên cần hoạt động hiệu quả qua việc kết hợp GPS/FaceID và dữ liệu chuyên cần, điểm số, nhật ký giám sát được hiển thị thống nhất trên các giao diện tra cứu.
 \end{itemize}
 
 \subsection{Các mặt hạn chế còn tồn tại}
-Mặc dù đã đạt được những kết quả khả quan, hệ thống vẫn tồn tại một số mặt hạn chế kỹ thuật cần được khắc phục:
+Bên cạnh các kết quả đã đạt được, hệ thống vẫn còn một số hạn chế cần tiếp tục cải thiện:
 \begin{itemize}
-    \item \textbf{Giới hạn của nhận diện ảnh nhóm tập thể}: Trong điều kiện lớp học có quy mô quá lớn (trên $50$ học sinh) hoặc phòng học sâu, các học sinh ngồi ở hàng ghế cuối cùng có kích thước khuôn mặt trong ảnh rất nhỏ và mờ. Khi đó mô hình RetinaFace khó phát hiện chính xác, hoặc ArcFace trích xuất đặc trưng bị nhiễu dẫn đến tỷ lệ nhận diện sai tăng lên.
-    \item \textbf{Độ ổn định của tín hiệu GPS}: Cơ chế Geofencing phụ thuộc lớn vào chất lượng bắt sóng định vị của chip GPS trên điện thoại. Trong các phòng học kiên cố, tầng hầm hoặc góc khuất của tòa nhà, sai số định vị GPS có thể lên đến hàng chục mét, gây ra hiện tượng từ chối check-in nhầm đối với học sinh thực tế có mặt tại lớp.
-    \item \textbf{Khả năng thích ứng của dữ liệu khuôn mẫu}: Hệ thống hiện tại lưu trữ ảnh khuôn mẫu tĩnh của học sinh lúc đăng ký tài khoản. Khi học sinh thay đổi diện mạo đáng kể (ví dụ thay đổi kiểu tóc, đeo kính cận dày, tăng/giảm cân rõ rệt), tỷ lệ so khớp ArcFace sẽ bị giảm sút nếu không được cập nhật lại ảnh mẫu mới.
-    \item \textbf{Tính toàn vẹn của bằng chứng giám sát thi}: Luồng WebSocket truyền dữ liệu camera giám sát AI phụ thuộc vào độ ổn định kết nối mạng của thí sinh. Nếu mạng Client bị ngắt quãng đột ngột, hàng đợi xoay vòng (\path{gaze_buffer}) tại server sẽ bị khuyết khung hình, dẫn đến video bằng chứng vi phạm tạo ra bị giật hoặc không liền mạch.
+    \item \textbf{Nhận diện ảnh nhóm}: Với lớp quá đông hoặc phòng học sâu, khuôn mặt ở hàng cuối có thể nhỏ, mờ hoặc bị che khuất, làm giảm chất lượng phát hiện của RetinaFace và độ tin cậy khi so khớp bằng ArcFace.
+    \item \textbf{Độ ổn định của điểm danh theo vị trí}: Việc xác nhận vị trí phụ thuộc vào chất lượng tín hiệu định vị của điện thoại. Trong phòng kín, tầng hầm hoặc khu vực nhiều vật cản, sai số GPS có thể tăng cao và gây từ chối check-in nhầm.
+    \item \textbf{Dữ liệu khuôn mẫu}: Ảnh mẫu hiện được lưu tại thời điểm đăng ký, nên hệ thống có thể giảm độ chính xác khi học sinh thay đổi diện mạo đáng kể nếu không cập nhật lại dữ liệu.
+    \item \textbf{Bằng chứng giám sát thi}: Luồng WebSocket phụ thuộc vào kết nối mạng của thí sinh. Khi mạng bị ngắt quãng, dữ liệu trong \path{gaze_buffer} có thể bị thiếu khung hình, làm video bằng chứng chưa thật sự liền mạch.
 \end{itemize}
 
 \subsection{Các bài học kinh nghiệm rút ra}
-Quá trình thực hiện đồ án tốt nghiệp mang lại cho tác giả nhiều bài học chuyên môn và kỹ năng quý giá:
+Quá trình thực hiện đồ án giúp tác giả rút ra một số kinh nghiệm quan trọng:
 \begin{itemize}
-    \item \textbf{Tư duy tối ưu hóa thiết kế hệ thống}: Nhận thức rõ rằng một giải pháp AI tốt không chỉ nằm ở độ chính xác của mô hình học sâu mà còn là cách thức tích hợp thông minh vào hệ thống. Việc áp dụng các kỹ thuật bổ trợ nhỏ như padding hộp giới hạn 15%, đồng bộ hóa Lazy Cropping ảnh mẫu, hay thiết kế giải thuật PnP hình học cổ điển chạy trên CPU thay vì mô hình CNN nặng nề đã giúp giảm đáng kể chi phí hạ tầng máy chủ mà vẫn duy trì chất lượng dịch vụ tốt.
-    \item \textbf{Kỹ năng làm việc với hệ thống phân tán và bảo mật}: Học hỏi sâu sắc về cơ chế vận hành của giao thức WebSockets truyền luồng thời gian thực, quản lý phân luồng bất tuần tự (asynchronous background tasks), cấu hình kiểm soát truy cập và bảo mật API qua cổng Keycloak SSO, cũng như các kỹ thuật can thiệp sâu vào phần cứng di động để bảo vệ tính toàn vẹn dữ liệu.
+    \item \textbf{Tư duy thiết kế hệ thống}: Một giải pháp AI hiệu quả không chỉ phụ thuộc vào mô hình, mà còn nằm ở cách tích hợp vào luồng nghiệp vụ. Các kỹ thuật như padding hộp giới hạn, Lazy Cropping và solvePnP giúp cân bằng giữa độ chính xác, tốc độ xử lý và chi phí hạ tầng.
+    \item \textbf{Kỹ năng triển khai thực tế}: Đề tài giúp tác giả hiểu rõ hơn về Microservices, WebSockets, xử lý bất đồng bộ, bảo mật API qua Keycloak SSO và các cơ chế kiểm tra phần cứng di động để bảo vệ tính toàn vẹn dữ liệu điểm danh.
 \end{itemize}
 
 \section{Hướng phát triển}
 \label{section:6.2}
 
-Để giải quyết triệt để các hạn chế còn tồn tại và đưa hệ thống phần mềm tối ưu hóa quy trình điểm danh hướng tới ứng dụng rộng rãi trong các cơ sở đào tạo lớn, các hướng phát triển tiếp theo được vạch ra cụ thể như sau:
+Để hệ thống có thể vận hành ổn định hơn và mở rộng cho nhiều cơ sở đào tạo, các hướng phát triển tiếp theo được chia thành nhóm ngắn hạn và dài hạn.
 
 \subsection{Các công việc cần thiết hoàn thiện hệ thống trong ngắn hạn}
-Trong thời gian tới, tác giả tập trung hoàn thiện các tính năng cốt lõi hiện có để nâng cao tính ổn định và chính xác:
+Trong giai đoạn gần, hệ thống cần tập trung vào các cải tiến có thể nâng cao trực tiếp trải nghiệm sử dụng:
 \begin{itemize}
-    \item \textbf{Cải tiến kỹ thuật điểm danh nhóm}: 
-    Nghiên cứu áp dụng thuật toán ghép ảnh (Image Stitching) để giảng viên có thể chụp 2-3 bức ảnh cận cảnh ở các góc phòng học khác nhau, sau đó hệ thống tự động ghép lại thành một ảnh toàn cảnh chất lượng cao trước khi đưa vào RetinaFace. Điều này giúp khuôn mặt học sinh ở các hàng ghế xa sắc nét hơn và giải quyết bài toán che khuất chéo lẫn nhau giữa các học sinh ngồi trước-sau.
-    \item \textbf{Bổ sung cơ chế xác thực Geofencing đa thông số}: 
-    Nhằm khắc phục tình trạng mất sóng GPS trong các tòa nhà cao tầng, hệ thống sẽ kết hợp thêm thông số địa chỉ MAC (BSSID) của bộ phát Wi-Fi phòng học hoặc tín hiệu từ các thiết bị Bluetooth Low Energy (BLE) Beacon gắn tại cửa lớp. Khi đó, học sinh chỉ cần kết nối vào mạng Wi-Fi trường học hoặc ở trong tầm phát sóng Beacon là có thể check-in hợp lệ mà không cần định vị GPS ngoài trời.
-    \item \textbf{Nâng cấp giao diện giám sát thi trực tuyến}: 
-    Bổ sung hệ thống cảnh báo âm thanh và cửa sổ Popup đẩy thông tin vi phạm thời gian thực trực tiếp lên trình duyệt của giám thị qua kênh WebSockets. Giám thị có thể nhấp chuột xem trực tiếp luồng video webcam thời gian thực của thí sinh bị nghi ngờ gian lận để đưa ra nhắc nhở kịp thời.
+    \item \textbf{Cải tiến điểm danh nhóm}: Bổ sung cơ chế chụp nhiều ảnh ở các góc khác nhau hoặc áp dụng Image Stitching để tạo ảnh lớp học rõ hơn, từ đó giảm lỗi với học sinh ngồi xa hoặc bị che khuất.
+    \item \textbf{Tăng độ tin cậy của điểm danh trong nhà}: Kết hợp thêm BSSID của Wi-Fi phòng học hoặc tín hiệu BLE Beacon để hỗ trợ check-in trong nhà, nhất là ở những khu vực GPS yếu.
+    \item \textbf{Nâng cấp giao diện giám sát thi}: Bổ sung cảnh báo âm thanh, popup thời gian thực và khả năng xem nhanh luồng webcam của thí sinh bị nghi ngờ gian lận, giúp giám thị phản ứng kịp thời hơn.
 \end{itemize}
 
 \subsection{Các định hướng phát triển mở rộng trong dài hạn}
-Về lâu dài, hệ thống sẽ được nâng cấp về mặt công nghệ và quy mô triển khai theo các hướng đi mới:
+Về lâu dài, hệ thống có thể được phát triển theo các hướng sau:
 \begin{itemize}
-    \item \textbf{Cơ chế học gia tăng (Incremental Face Learning)}: 
-    Nghiên cứu giải pháp tự động cập nhật vector đặc trưng sinh trắc học của học sinh. Mỗi khi học sinh điểm danh thành công với khoảng cách Cosine cực nhỏ (độ tin cậy cực cao), hệ thống sẽ sử dụng vector khuôn mặt mới đó cập nhật tích lũy vào cơ sở dữ liệu mẫu khuôn mặt của học sinh, giúp mô hình ArcFace tự động thích ứng với sự thay đổi diện mạo tự nhiên của học sinh mà không cần giảng viên cập nhật ảnh mẫu thủ công.
-    \item \textbf{Giám sát thi trực tuyến đa chế độ (Multi-modal Proctoring)}: 
-    Nâng cấp phân hệ \path{ai-proctor} tích hợp giám sát âm thanh môi trường xung quanh thí sinh bằng cách truyền luồng audio WebRTC và áp dụng thuật toán Speech Detection nhằm phát hiện tiếng người trao đổi nói chuyện. Đồng thời phát triển tiện ích mở rộng (Browser Extension) để theo dõi hành vi chuyển tab trình duyệt hoặc kết nối màn hình ngoài của thí sinh khi làm bài thi.
-    \item \textbf{Đóng gói giải pháp SaaS đa người thuê (Multi-tenant SaaS Architecture)}: 
-    Tái cấu trúc cơ sở dữ liệu và phân hệ quản trị để chuyển đổi hệ thống thành một nền tảng dịch vụ đám mây (SaaS) dùng chung. Mỗi trường học hoặc trung tâm giáo dục khi đăng ký sẽ được cấp một phân vùng dữ liệu cô lập (Tenant) riêng biệt, cho phép mở rộng quy mô phục vụ hàng chục nghìn học viên trên cùng một hạ tầng máy chủ phân tán.
+    \item \textbf{Học gia tăng cho dữ liệu khuôn mặt}: Cho phép hệ thống cập nhật dần vector đặc trưng khi học sinh điểm danh thành công với độ tin cậy cao, giúp dữ liệu khuôn mẫu thích ứng tốt hơn với sự thay đổi diện mạo tự nhiên.
+    \item \textbf{Giám sát thi đa chế độ}: Mở rộng phân hệ \path{ai-proctor} bằng giám sát âm thanh, phát hiện chuyển tab trình duyệt và kiểm tra thiết bị ngoại vi, từ đó tăng khả năng phát hiện gian lận trong thi trực tuyến.
+    \item \textbf{Mô hình SaaS đa đơn vị}: Tái cấu trúc cơ sở dữ liệu và phân hệ quản trị theo hướng Multi-tenant, cho phép nhiều trường học hoặc trung tâm giáo dục sử dụng chung hạ tầng nhưng vẫn tách biệt dữ liệu.
 \end{itemize}
 
-Kết chương, Chương 6 đã khép lại nội dung báo cáo tốt nghiệp bằng việc đúc kết những thành tựu đạt được của đề tài "Xây dựng phần mềm tối ưu hóa quy trình điểm danh và quản lý học sinh", đồng thời so sánh đối chiếu làm nổi bật tính thực tiễn của sản phẩm với các giải pháp hiện hành. Mặc dù vẫn còn những giới hạn kỹ thuật nhất định về quy mô ảnh nhóm hay sai số định vị GPS trong nhà, đồ án đã đề xuất một lộ trình phát triển chi tiết trong ngắn hạn và dài hạn. Những định hướng nâng cấp công nghệ và mở rộng mô hình SaaS này là tiền đề quan trọng để hoàn thiện và đưa hệ thống vào áp dụng thực tiễn rộng rãi tại các cơ sở giáo dục trong tương lai.
+Tổng kết lại, đồ án đã xây dựng được một hệ thống có khả năng hỗ trợ điểm danh và quản lý học sinh theo hướng tự động, nhanh và có tính bảo mật cao hơn so với phương pháp thủ công. Dù vẫn còn các hạn chế về ảnh nhóm, tín hiệu định vị và độ ổn định của luồng giám sát thi, các kết quả đạt được cho thấy hệ thống có tiềm năng tiếp tục hoàn thiện để triển khai rộng rãi trong môi trường giáo dục.
 
 \end{document}
