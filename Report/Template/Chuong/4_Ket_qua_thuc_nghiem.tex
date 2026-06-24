@@ -713,7 +713,7 @@ Dưới đây là giao diện thực tế của hệ thống trên nền tảng 
 
 \subsubsection{Giao diện đăng nhập}
 
-Quy trình xác thực người dùng được quản lý tập trung qua máy chủ Keycloak SSO \cite{keycloak2026}. Sau khi đăng nhập thành công trên Web hoặc ứng dụng di động, học viên thực hiện đăng ký sinh trắc học khuôn mặt qua camera để phục vụ điểm danh FaceID.
+Quy trình xác thực người dùng được quản lý tập trung qua máy chủ Keycloak SSO \cite{keycloak2026} trên cả nền tảng Web và ứng dụng di động.
 
 Hình \ref{fig:ui_login_web} minh họa giao diện đăng nhập hệ thống trên nền tảng Web thông qua Keycloak SSO với hai chế độ giao diện sáng (light mode) và tối (dark mode).
 
@@ -736,18 +736,6 @@ Hình \ref{fig:ui_login_app} minh họa giao diện đăng nhập hệ thống t
     \includegraphics[height=4.0cm]{Hinhve/ui_login_app_teacher.jpg}
     \caption{Giao diện đăng nhập trên ứng dụng di động của học viên và giảng viên}
     \label{fig:ui_login_app}
-\end{figure}
-\FloatBarrier
-
-Hình \ref{fig:ui_student_face_register} minh họa giao diện đăng ký hồ sơ sinh trắc học FaceID của học viên trên nền tảng Web và ứng dụng di động. Sau khi chụp ảnh thành công, ảnh được gửi tới phân hệ AI \path{detect-face} để phát hiện khuôn mặt bằng RetinaFace \cite{Deng_2020_CVPR} và trích xuất vector đặc trưng $512$-chiều bằng mô hình ArcFace \cite{Deng_2019_CVPR}.
-
-\begin{figure}[!htbp]
-    \centering
-    \includegraphics[height=4.0cm]{Hinhve/ui_student_web_face_register.png}
-    \hspace{1.5cm}
-    \includegraphics[height=4.0cm]{Hinhve/ui_student_app_face_register.png}
-    \caption{Giao diện học viên đăng ký khuôn mẫu FaceID trên Web và App di động}
-    \label{fig:ui_student_face_register}
 \end{figure}
 \FloatBarrier
 
@@ -792,6 +780,18 @@ Hình \ref{fig:ui_admin_approve_teacher} và Hình \ref{fig:ui_admin_profile} mi
 \FloatBarrier
 
 \subsubsection{Giao diện Sinh viên}
+
+Hình \ref{fig:ui_student_face_register} minh họa giao diện đăng ký hồ sơ sinh trắc học FaceID của học viên trên nền tảng Web và ứng dụng di động. Sau khi chụp ảnh thành công, ảnh được gửi tới phân hệ AI \path{detect-face} để phát hiện khuôn mặt bằng RetinaFace \cite{Deng_2020_CVPR} và trích xuất vector đặc trưng $128$-chiều bằng mô hình ArcFace \cite{Deng_2019_CVPR}.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[height=4.0cm]{Hinhve/ui_student_web_face_register.png}
+    \hspace{1.5cm}
+    \includegraphics[height=4.0cm]{Hinhve/ui_student_app_face_register.png}
+    \caption{Giao diện học viên đăng ký khuôn mẫu FaceID trên Web và App di động}
+    \label{fig:ui_student_face_register}
+\end{figure}
+\FloatBarrier
 
 Hình \ref{fig:ui_student_schedule} và Hình \ref{fig:ui_student_grades} minh họa giao diện thời khóa biểu và kết quả học tập của học viên trên Web và ứng dụng di động.
 
